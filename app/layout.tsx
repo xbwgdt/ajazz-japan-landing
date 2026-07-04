@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import "./survey/survey.css";
 
 const siteUrl = "https://ajazz-japan-landing.vercel.app";
 

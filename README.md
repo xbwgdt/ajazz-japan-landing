@@ -1,104 +1,47 @@
-# Ajazz 日本官网 - 最简版（方案 C）
+# AJAZZ Japan Landing
 
-## 项目信息
-- **项目名**：ajazz-japan-landing
-- **目标**：快速上线验证日本市场需求
-- **上线时间**：3-5 天
-- **技术栈**：Next.js + Vercel（免费）
+AJAZZ Japanの製品紹介サイトです。Next.js App Routerで構築し、Vercelへのデプロイを前提としています。
 
----
+## ページ
 
-## 页面结构（单页）
+- `/` — 製品一覧、購入リンク、ドライバー、FAQ
+- `/survey` — 記名式ゲーミングデバイス調査
+- `/survey/admin` — 回答集計、CSV/Excel出力（パスワード保護）
 
-### 1. Hero 区域
-- 品牌 Logo
-- 主标语（日语）
-- CTA 按钮（查看产品）
+## ローカル起動
 
-### 2. 产品列表（3-5 款核心产品）
-- AK029（猫键盘）
-- AK820 Pro
-- AK980
-- AJ159 系列鼠标
-
-每款产品卡片：
-- 产品图
-- 产品名（日语）
-- 简短描述
-- 价格（日元）
-- 购买按钮（跳转亚马逊日本/乐天）
-
-### 3. 品牌优势
-- 免费配送
-- 1 年保修
-- 客服支持
-
-### 4. 用户评价（3-4 条）
-- 从 ajazzstore.com 翻译日语
-
-### 5. 页脚
-- 联系邮箱
-- 社交媒体链接（X @AjazzJapan）
-- 政策链接（配送/条款/联系）
-
----
-
-## 日语内容框架
-
-### 主标语
-```
-AJAZZ - ゲーミングギアの新基準
+```bash
+npm install
+npm run dev
 ```
 
-### 副标语
-```
-プロゲーマーも愛用する、高性能キーボード＆マウス
-```
+http://localhost:3007 で確認できます。
 
-### CTA 按钮
-```
-製品を見る
-```
+## アンケート用環境変数
 
-### 产品描述示例（AK029）
-```
-AJAZZ AK029
-29 キー配置の片手ゲーミングキーボード
-超低遅延、トレーマウント式、メカニカルスイッチ
+`.env.example` を `.env.local` にコピーして設定してください。
 
-価格：¥6,980
-[Amazon で購入]
+```env
+DATABASE_URL=postgresql://user:password@host/database?sslmode=require
+SURVEY_ADMIN_PASSWORD=十分に長い管理者パスワード
+SURVEY_ADMIN_SECRET=32文字以上のランダムな秘密文字列
 ```
 
----
+`POSTGRES_URL` も `DATABASE_URL` の代わりに使用できます。テーブルは初回アクセス時に自動作成されます。SQLを先に適用する場合は `db/schema.sql` を使用してください。
 
-## 购买链接（待确认）
-- AK029 亚马逊日本：待补充
-- AK820 Pro 亚马逊日本：待补充
-- AK980 乐天：待补充
+## Vercelへの公開
 
----
+1. VercelプロジェクトのMarketplaceからNeonを接続する
+2. `DATABASE_URL` または `POSTGRES_URL` が設定されたことを確認する
+3. `SURVEY_ADMIN_PASSWORD` と `SURVEY_ADMIN_SECRET` をProduction環境に設定する
+4. mainブランチへ反映してデプロイする
 
-## 部署流程
-1. 本地开发（Next.js）
-2. 推送到 GitHub
-3. Vercel 自动部署
-4. 绑定域名（可选）
+永続データベースが未設定の場合、アンケートページは表示されますが送信は `503` で拒否され、回答が消失しないように明示的なエラーを表示します。
 
----
+## 確認コマンド
 
-## 时间表
-| 日期 | 任务 |
-|------|------|
-| Day 1 | 项目搭建 + 内容框架 |
-| Day 2 | 日语文案 + 产品图 |
-| Day 3 | 页面开发 |
-| Day 4 | 测试 + 修改 |
-| Day 5 | 上线 |
-
----
-
-## 下一步
-1. 确认产品购买链接（亚马逊日本/乐天）
-2. 提供产品图片（或从 ajazzstore.com 抓取）
-3. 确认日语文案（可机器翻译 + 人工校对）
+```bash
+npm run lint
+npm run build
+npm audit
+```
