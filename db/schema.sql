@@ -1,0 +1,8 @@
+CREATE TABLE IF NOT EXISTS survey_responses (
+  id BIGSERIAL PRIMARY KEY,
+  name VARCHAR(100) NOT NULL,
+  name_key CHAR(64) NOT NULL UNIQUE,
+  participant_hash CHAR(64) NOT NULL UNIQUE,
+  answers JSONB NOT NULL,
+  submitted_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);

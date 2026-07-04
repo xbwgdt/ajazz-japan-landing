@@ -266,6 +266,7 @@ export default function Home() {
             <a href="#products" onClick={() => setMobileOpen(false)}>製品一覧</a>
             <a href="#driver" onClick={() => setMobileOpen(false)}>ドライバー</a>
             <a href="#faq" onClick={() => setMobileOpen(false)}>FAQ</a>
+            <a href="/survey" onClick={() => setMobileOpen(false)}>アンケート</a>
             <a href="mailto:support@ajazz.jp">お問い合わせ</a>
           </nav>
         </div>
@@ -277,7 +278,10 @@ export default function Home() {
           <h1 className="hero-title">ゲーミングギアの新基準</h1>
           <p className="hero-subtitle">AJAZZ 日本公式サイト</p>
           <p className="hero-desc">プロゲーマーも愛用する、高性能キーボード＆マウス — 楽天公式ストアで販売中</p>
-          <a href="#products" className="cta-button">製品を見る</a>
+          <div className="hero-actions">
+            <a href="#products" className="cta-button">製品を見る</a>
+            <a href="/survey" className="survey-cta-button">アンケートに回答</a>
+          </div>
         </div>
       </section>
 
@@ -348,6 +352,17 @@ export default function Home() {
             <h3>カスタマーサポート</h3>
             <p>3 営業日以内に返信</p>
           </div>
+        </div>
+      </section>
+
+      <section className="research-promo">
+        <div>
+          <p>AJAZZ PRODUCT RESEARCH · 2026</p>
+          <h2>次のデバイスを、<br />あなたとつくる。</h2>
+        </div>
+        <div>
+          <p>キーボードとマウスに関する10問・約3分の記名式アンケートです。</p>
+          <a href="/survey">アンケートに回答する <span>↗</span></a>
         </div>
       </section>
 
