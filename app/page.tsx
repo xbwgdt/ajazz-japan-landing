@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import './globals.css';
+import BrandStory from './components/BrandStory';
 
 const DRIVER_BASE = 'https://www.a-jazz.com/en/search.jsp?id=422&q=a';
 const AMAZON_STORE = 'https://www.amazon.co.jp/b?node=26286483051&me=A2M27Q6LMJP4TA';
@@ -264,6 +265,7 @@ export default function Home() {
           </button>
           <nav className={`nav-links ${mobileOpen ? 'nav-open' : ''}`}>
             <a href="#products" onClick={() => setMobileOpen(false)}>製品一覧</a>
+            <a href="#brand" onClick={() => setMobileOpen(false)}>ブランド</a>
             <a href="#driver" onClick={() => setMobileOpen(false)}>ドライバー</a>
             <a href="#faq" onClick={() => setMobileOpen(false)}>FAQ</a>
             <a href="/survey" onClick={() => setMobileOpen(false)}>アンケート</a>
@@ -283,6 +285,11 @@ export default function Home() {
             <a href="/survey" className="survey-cta-button">アンケートに回答</a>
           </div>
         </div>
+      </section>
+
+      {/* Brand Story Section */}
+      <section id="brand">
+        <BrandStory />
       </section>
 
       {/* Products Section */}
@@ -454,6 +461,7 @@ export default function Home() {
         <div className="footer-content">
           <p>&copy; 2026 AJAZZ Japan. All rights reserved.</p>
           <div className="footer-links">
+            <a href="/about">AJAZZについて</a>
             <a href="https://item.rakuten.co.jp/ajazz" target="_blank" rel="noopener noreferrer">楽天市場</a>
             <a href="https://www.youtube.com/@AJAZZJAPAN" target="_blank" rel="noopener noreferrer">YouTube</a>
             <a href="https://www.instagram.com/ajazzjp/" target="_blank" rel="noopener noreferrer">Instagram</a>

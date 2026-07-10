@@ -644,6 +644,280 @@ body {
   display: block;
 }
 
+/* ===== Brand Story Section ===== */
+.brand-section {
+  padding: 6rem 2rem;
+  background: linear-gradient(180deg, var(--dark) 0%, var(--dark-light) 100%);
+  position: relative;
+  overflow: hidden;
+}
+
+.brand-hero {
+  text-align: center;
+  max-width: 800px;
+  margin: 0 auto 5rem;
+}
+
+.brand-tagline-label {
+  font-size: 0.75rem;
+  font-weight: 800;
+  letter-spacing: 0.3em;
+  color: var(--primary);
+  margin-bottom: 1rem;
+}
+
+.brand-tagline {
+  font-size: clamp(2rem, 5vw, 3.5rem);
+  font-weight: 900;
+  line-height: 1.2;
+  margin-bottom: 1.5rem;
+}
+
+.brand-catch {
+  font-size: 1.05rem;
+  color: var(--gray);
+  line-height: 1.9;
+  max-width: 640px;
+  margin: 0 auto;
+}
+
+/* Timeline */
+.brand-timeline {
+  max-width: 800px;
+  margin: 0 auto 5rem;
+  position: relative;
+  padding-left: 0;
+}
+
+.timeline-node {
+  position: relative;
+  padding: 0 0 0 2.5rem;
+  cursor: pointer;
+  transition: opacity 0.3s;
+}
+
+.timeline-node:hover {
+  opacity: 0.9;
+}
+
+.timeline-dot {
+  position: absolute;
+  left: 0;
+  top: 0.6rem;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: var(--primary);
+  border: 3px solid var(--dark);
+  box-shadow: 0 0 0 2px var(--primary);
+  z-index: 2;
+}
+
+.timeline-node.last .timeline-dot {
+  background: var(--accent);
+  border-color: var(--dark);
+  box-shadow: 0 0 0 2px var(--accent);
+}
+
+.timeline-content {
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 12px;
+  padding: 1.25rem 1.5rem;
+  margin-bottom: 1rem;
+  transition: background 0.3s, border-color 0.3s;
+}
+
+.timeline-node.open .timeline-content,
+.timeline-node:hover .timeline-content {
+  background: rgba(0, 212, 255, 0.04);
+  border-color: rgba(0, 212, 255, 0.15);
+}
+
+.timeline-header {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.timeline-year {
+  font-size: 1.4rem;
+  font-weight: 900;
+  color: var(--primary);
+  flex-shrink: 0;
+  min-width: 4.5rem;
+}
+
+.timeline-title {
+  font-size: 1.05rem;
+  color: var(--white);
+  flex: 1;
+}
+
+.timeline-chevron {
+  font-size: 1.3rem;
+  color: var(--gray);
+  font-weight: 300;
+  flex-shrink: 0;
+  transition: color 0.3s, transform 0.3s;
+}
+
+.timeline-node.open .timeline-chevron {
+  color: var(--primary);
+}
+
+.timeline-body {
+  max-height: 0;
+  overflow: hidden;
+  transition: max-height 0.4s ease, padding 0.4s ease;
+}
+
+.timeline-node.open .timeline-body {
+  max-height: 200px;
+}
+
+.timeline-body p {
+  padding-top: 1rem;
+  color: var(--gray);
+  font-size: 0.92rem;
+  line-height: 1.7;
+}
+
+/* Values */
+.brand-values {
+  max-width: 900px;
+  margin: 0 auto 4rem;
+  text-align: center;
+}
+
+.values-title {
+  font-size: 1rem;
+  font-weight: 800;
+  color: var(--gray);
+  letter-spacing: 0.2em;
+  margin-bottom: 2rem;
+}
+
+.values-grid {
+  display: grid;
+  grid-template-columns: repeat(6, 1fr);
+  gap: 1rem;
+}
+
+.value-card {
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 12px;
+  padding: 1.5rem 0.5rem;
+  text-align: center;
+  transition: background 0.3s, transform 0.3s;
+}
+
+.value-card:hover {
+  background: rgba(0, 212, 255, 0.06);
+  transform: translateY(-3px);
+}
+
+.value-icon {
+  font-size: 1.8rem;
+  display: block;
+  margin-bottom: 0.6rem;
+}
+
+.value-ja {
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--white);
+  margin-bottom: 0.3rem;
+}
+
+.value-en {
+  font-size: 0.7rem;
+  color: var(--gray);
+  letter-spacing: 0.05em;
+}
+
+/* Brand CTA */
+.brand-cta {
+  text-align: center;
+}
+
+.brand-about-link {
+  display: inline-block;
+  padding: 0.9rem 2.5rem;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 50px;
+  color: var(--white);
+  text-decoration: none;
+  font-weight: 700;
+  font-size: 0.95rem;
+  transition: border-color 0.3s, background 0.3s, color 0.3s;
+}
+
+.brand-about-link:hover {
+  border-color: var(--primary);
+  background: rgba(0, 212, 255, 0.08);
+  color: var(--primary);
+}
+
+/* Brand Story Responsive */
+@media (max-width: 767px) {
+  .brand-section {
+    padding: 3rem 1rem;
+  }
+
+  .brand-hero {
+    margin-bottom: 3rem;
+  }
+
+  .brand-timeline {
+    margin-bottom: 3rem;
+    padding-left: 0;
+  }
+
+  .timeline-node {
+    padding-left: 2rem;
+  }
+
+  .timeline-year {
+    font-size: 1.1rem;
+    min-width: 3.5rem;
+  }
+
+  .timeline-title {
+    font-size: 0.92rem;
+  }
+
+  .timeline-dot {
+    width: 12px;
+    height: 12px;
+    top: 0.5rem;
+  }
+
+  .values-grid {
+    grid-template-columns: repeat(3, 1fr);
+    gap: 0.7rem;
+  }
+
+  .value-card {
+    padding: 1rem 0.3rem;
+  }
+
+  .value-icon {
+    font-size: 1.3rem;
+  }
+}
+
+@media (min-width: 768px) and (max-width: 1023px) {
+  .brand-section {
+    padding: 4rem 1.5rem;
+  }
+
+  .values-grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
 /* ===== Responsive Patch (mobile/tablet/desktop) ===== */
 /* ===== Hamburger Menu ===== */
 .hamburger {

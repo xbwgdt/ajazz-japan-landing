@@ -1,0 +1,100 @@
+{
+  "_note": "各商品の割引情報と評価スコア。更新するときはこのJSONを編集 → build → deploy。",
+  "_updated": "2026-06-08",
+  "saleBanner": {
+    "title": "🎉 初夏セール開催中",
+    "subtitle": "期間限定！最大50%OFF",
+    "endDate": "2026-06-30"
+  },
+  "products": {
+    "af84": {
+      "originalPrice": "¥5,980",
+      "rating": 4.5,
+      "reviews": 128,
+      "platform": "rakuten"
+    },
+    "308i": {
+      "originalPrice": "¥4,280",
+      "rating": 4.3,
+      "reviews": 85,
+      "platform": "rakuten"
+    },
+    "ak820-3": {
+      "originalPrice": "¥12,800",
+      "rating": 4.6,
+      "reviews": 42,
+      "platform": "rakuten"
+    },
+    "n1": {
+      "originalPrice": "¥12,000",
+      "rating": 4.2,
+      "reviews": 18,
+      "platform": "rakuten"
+    },
+    "aj179apex": {
+      "originalPrice": "¥9,980",
+      "rating": 4.4,
+      "reviews": 56,
+      "platform": "rakuten"
+    },
+    "ak029": {
+      "originalPrice": "¥9,800",
+      "rating": 4.7,
+      "reviews": 203,
+      "platform": "rakuten"
+    },
+    "mk87": {
+      "originalPrice": "¥10,980",
+      "rating": 4.1,
+      "reviews": 33,
+      "platform": "rakuten"
+    },
+    "akp05pro": {
+      "originalPrice": "¥14,500",
+      "rating": 4.3,
+      "reviews": 27,
+      "platform": "rakuten"
+    },
+    "ak820pro": {
+      "originalPrice": "¥13,980",
+      "rating": 4.5,
+      "reviews": 91,
+      "platform": "rakuten"
+    },
+    "ak820max": {
+      "originalPrice": "¥15,980",
+      "rating": 4.6,
+      "reviews": 64,
+      "platform": "rakuten"
+    },
+    "ak820maxultra": {
+      "originalPrice": "¥17,980",
+      "rating": 4.7,
+      "reviews": 38,
+      "platform": "rakuten"
+    },
+    "akp815": {
+      "originalPrice": "¥12,980",
+      "rating": 4.0,
+      "reviews": 15,
+      "platform": "rakuten"
+    }
+  },
+  "saleItems": [
+    {
+      "productId": "ak820-3",
+      "discountPercent": 22,
+      "badge": "🔥 夏セール"
+    },
+    {
+      "productId": "akp05pro",
+      "discountPercent": 10,
+      "badge": "🔥 夏セール"
+    },
+    {
+      "productId": "mk87",
+      "discountPercent": 18,
+      "badge": "🔥 夏セール"
+    }
+  ]
+}
