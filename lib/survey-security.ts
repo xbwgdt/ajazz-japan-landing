@@ -14,10 +14,12 @@ export function normalizeNameKey(name: string) {
 
 function getAdminSecret() {
   const secret = process.env.SURVEY_ADMIN_SECRET;
-  if (!secret || secret.length < 32) {
-    throw new Error("SURVEY_ADMIN_SECRET is not configured");
-  }
-  return secret;
+  if (secret && secret.length >= 32) return secret;
+
+  const password = process.env.SURVEY_ADMIN_PASSWORD;
+  if (password) return password;
+
+  throw new Error("SURVEY_ADMIN_SECRET is not configured");
 }
 
 export function verifyAdminPassword(value: string) {
