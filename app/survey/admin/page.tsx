@@ -16,12 +16,16 @@ export default async function SurveyAdminPage() {
   if (!verifyAdminToken(token)) redirect("/survey/admin/login");
 
   let databaseError = false;
+  let dbConnectError = false;
   const rows = await listSurveyResponses().catch((error) => {
     if (error instanceof DatabaseNotConfiguredError) {
       databaseError = true;
       return [];
     }
-    throw error;
+    console.error("Survey DB error:", error);
+    dbConnectError = true;
+    databaseError = true;
+    return [];
   });
   const stats = buildSurveyStats(rows);
 
@@ -38,8 +42,8 @@ export default async function SurveyAdminPage() {
 
       {databaseError && (
         <div className="survey-config-alert">
-          <strong>データベース未設定</strong>
-          <span>VercelでNeonを接続し、DATABASE_URLまたはPOSTGRES_URLを設定してください。</span>
+          <strong>データベース接続エラー</strong>
+          <span>データベースに接続できませんでした。管理者に連絡してください。</span>
         </div>
       )}
 
