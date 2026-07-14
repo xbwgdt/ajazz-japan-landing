@@ -1,4 +1,4 @@
-import { neon } from "@neondatabase/serverless";
+import postgres from "postgres";
 import type { SurveyAnswers, SurveyResponseRecord } from "./survey";
 
 export class DatabaseNotConfiguredError extends Error {}
@@ -10,13 +10,24 @@ function databaseUrl() {
   return value;
 }
 
+let sqlClient: ReturnType<typeof postgres> | undefined;
+
 function client() {
-  return neon(databaseUrl());
+  if (!sqlClient) {
+    sqlClient = postgres(databaseUrl(), {
+      connect_timeout: 10,
+      idle_timeout: 20,
+      max: 1,
+      prepare: false,
+      ssl: "require",
+    });
+  }
+  return sqlClient;
 }
 
 async function ensureSchema() {
   const sql = client();
-  await sql.query(`
+  await sql`
     CREATE TABLE IF NOT EXISTS survey_responses (
       id BIGSERIAL PRIMARY KEY,
       name VARCHAR(100) NOT NULL,
@@ -25,7 +36,7 @@ async function ensureSchema() {
       answers JSONB NOT NULL,
       submitted_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
     )
-  `);
+  `;
 }
 
 export async function saveSurveyResponse(input: {
@@ -36,11 +47,11 @@ export async function saveSurveyResponse(input: {
 }) {
   await ensureSchema();
   try {
-    await client().query(
-      `INSERT INTO survey_responses (name, name_key, participant_hash, answers)
-       VALUES ($1, $2, $3, $4::jsonb)`,
-      [input.name, input.nameKey, input.participantHash, JSON.stringify(input.answers)],
-    );
+    const sql = client();
+    await sql`
+      INSERT INTO survey_responses (name, name_key, participant_hash, answers)
+      VALUES (${input.name}, ${input.nameKey}, ${input.participantHash}, ${sql.json(input.answers)})
+    `;
   } catch (error) {
     if (error && typeof error === "object" && "code" in error && error.code === "23505") {
       throw new DuplicateResponseError("Duplicate response");
@@ -51,11 +62,11 @@ export async function saveSurveyResponse(input: {
 
 export async function listSurveyResponses(): Promise<SurveyResponseRecord[]> {
   await ensureSchema();
-  const result = await client().query(
-    `SELECT id, name, answers, submitted_at
-     FROM survey_responses
-     ORDER BY submitted_at DESC, id DESC`,
-  );
+  const result = await client()`
+    SELECT id, name, answers, submitted_at
+    FROM survey_responses
+    ORDER BY submitted_at DESC, id DESC
+  `;
   return result.map((row) => ({
     id: Number(row.id),
     name: String(row.name),
