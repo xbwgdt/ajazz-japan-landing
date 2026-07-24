@@ -58,6 +58,56 @@ export const commerceSchemaSql = `
     quantity INTEGER NOT NULL CHECK (quantity > 0),
     PRIMARY KEY (reservation_id, variant_id)
   );
+
+  CREATE TABLE IF NOT EXISTS orders (
+    id UUID PRIMARY KEY,
+    reservation_id UUID NOT NULL UNIQUE REFERENCES stock_reservations(id),
+    stripe_checkout_session_id TEXT NOT NULL UNIQUE,
+    status TEXT NOT NULL DEFAULT 'paid',
+    customer_email TEXT,
+    shipping_address JSONB,
+    subtotal_jpy INTEGER NOT NULL,
+    shipping_jpy INTEGER NOT NULL DEFAULT 0,
+    total_jpy INTEGER NOT NULL,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+  );
+
+  CREATE TABLE IF NOT EXISTS order_items (
+    id BIGSERIAL PRIMARY KEY,
+    order_id UUID NOT NULL REFERENCES orders(id) ON DELETE CASCADE,
+    variant_id BIGINT NOT NULL REFERENCES product_variants(id),
+    name TEXT NOT NULL,
+    unit_price_jpy INTEGER NOT NULL,
+    quantity INTEGER NOT NULL CHECK (quantity > 0)
+  );
+
+  CREATE TABLE IF NOT EXISTS payments (
+    id BIGSERIAL PRIMARY KEY,
+    order_id UUID NOT NULL REFERENCES orders(id) ON DELETE CASCADE,
+    stripe_payment_intent_id TEXT UNIQUE,
+    amount_jpy INTEGER NOT NULL,
+    status TEXT NOT NULL,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+  );
+
+  CREATE TABLE IF NOT EXISTS refunds (
+    id BIGSERIAL PRIMARY KEY,
+    order_id UUID NOT NULL REFERENCES orders(id) ON DELETE CASCADE,
+    stripe_refund_id TEXT UNIQUE,
+    amount_jpy INTEGER NOT NULL,
+    status TEXT NOT NULL,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+  );
+
+  CREATE TABLE IF NOT EXISTS fulfillments (
+    id BIGSERIAL PRIMARY KEY,
+    order_id UUID NOT NULL REFERENCES orders(id) ON DELETE CASCADE,
+    carrier TEXT,
+    tracking_number TEXT UNIQUE,
+    shipped_at TIMESTAMPTZ,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+  );
 `;
 
 let sqlClient: ReturnType<typeof postgres> | undefined;

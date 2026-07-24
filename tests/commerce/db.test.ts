@@ -16,4 +16,13 @@ describe("commerce database schema", () => {
     expect(commerceSchemaSql).toContain("CREATE TABLE IF NOT EXISTS stock_reservation_items");
     expect(commerceSchemaSql).toContain("variant_id BIGINT NOT NULL REFERENCES product_variants(id)");
   });
+
+  it("stores Stripe payment and manual fulfillment records", () => {
+    expect(commerceSchemaSql).toContain("CREATE TABLE IF NOT EXISTS orders");
+    expect(commerceSchemaSql).toContain("stripe_checkout_session_id TEXT NOT NULL UNIQUE");
+    expect(commerceSchemaSql).toContain("CREATE TABLE IF NOT EXISTS order_items");
+    expect(commerceSchemaSql).toContain("CREATE TABLE IF NOT EXISTS payments");
+    expect(commerceSchemaSql).toContain("CREATE TABLE IF NOT EXISTS refunds");
+    expect(commerceSchemaSql).toContain("CREATE TABLE IF NOT EXISTS fulfillments");
+  });
 });
