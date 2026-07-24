@@ -81,3 +81,11 @@ export function databaseOrderStatusStore(): OrderStatusStore {
     },
   };
 }
+
+export async function findAdminOrderStatus(orderId: string): Promise<OrderStatus | undefined> {
+  await ensureCommerceSchema();
+  const [row] = await commerceSql()<Array<{ status: OrderStatus }>>`
+    SELECT status FROM orders WHERE id = ${orderId}
+  `;
+  return row?.status;
+}
