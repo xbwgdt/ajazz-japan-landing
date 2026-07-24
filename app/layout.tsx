@@ -1,41 +1,42 @@
 import type { Metadata } from "next";
+import "./globals.css";
 import "./survey/survey.css";
 
-const siteUrl = "https://ajazz-japan-landing.vercel.app";
+const siteUrl = "https://ajazz.jp";
 
 export const metadata: Metadata = {
-  title: "AJAZZ 日本公式 - ゲーミングキーボード＆マウス",
+  metadataBase: new URL(siteUrl),
+  title: {
+    default: "AJAZZ JAPAN | 高性能ゲーミングデバイス",
+    template: "%s | AJAZZ JAPAN",
+  },
   description:
-    "プロゲーマーも愛用する、高性能キーボード＆マウス。楽天公式ストアで販売中。",
+    "AJAZZ JAPAN公式オンラインストア。ラピッドトリガーキーボード、ゲーミングマウス、ストリームコントローラーを全国送料無料でお届けします。",
   openGraph: {
     type: "website",
     locale: "ja_JP",
     url: siteUrl,
-    siteName: "AJAZZ Japan",
-    title: "AJAZZ 日本公式 - ゲーミングキーボード＆マウス",
+    siteName: "AJAZZ JAPAN",
+    title: "AJAZZ JAPAN | 高性能ゲーミングデバイス",
     description:
-      "プロゲーマーも愛用する、高性能キーボード＆マウス。楽天公式ストアで販売中。",
+      "ラピッドトリガーキーボードから高性能ワイヤレスマウスまで。AJAZZ JAPAN公式オンラインストア。",
     images: [
       {
-        url: `${siteUrl}/images/ak029.webp`,
+        url: "/images/ak820maxultra.webp",
         width: 800,
         height: 800,
-        alt: "AJAZZ 日本公式",
+        alt: "AJAZZ AK820 MAX ULTRA",
       },
     ],
   },
   twitter: {
     card: "summary_large_image",
-    site: "@AjazzJapan",
-    title: "AJAZZ 日本公式 - ゲーミングキーボード＆マウス",
+    title: "AJAZZ JAPAN | 高性能ゲーミングデバイス",
     description:
-      "プロゲーマーも愛用する、高性能キーボード＆マウス。楽天公式ストアで販売中。",
-    images: [`${siteUrl}/images/ak029.webp`],
+      "ラピッドトリガーキーボードから高性能ワイヤレスマウスまで。AJAZZ JAPAN公式オンラインストア。",
+    images: ["/images/ak820maxultra.webp"],
   },
-  robots: {
-    index: true,
-    follow: true,
-  },
+  robots: { index: true, follow: true },
 };
 
 export default function RootLayout({
@@ -46,19 +47,11 @@ export default function RootLayout({
   return (
     <html lang="ja">
       <head>
-        {/* Google Analytics */}
-        <script
-          async
-          src="https://www.googletagmanager.com/gtag/js?id=G-BVGSTWFHYF"
-        />
+        <script async src="https://www.googletagmanager.com/gtag/js?id=G-BVGSTWFHYF" />
         <script
           dangerouslySetInnerHTML={{
-            __html: `
-              window.dataLayer = window.dataLayer || [];
-              function gtag(){dataLayer.push(arguments);}
-              gtag('js', new Date());
-              gtag('config', 'G-BVGSTWFHYF');
-            `,
+            __html:
+              "window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments)}gtag('js',new Date());gtag('config','G-BVGSTWFHYF');",
           }}
         />
       </head>
