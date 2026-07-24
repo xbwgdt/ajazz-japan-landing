@@ -1,3 +1,5 @@
+import { canTransitionOrder, type OrderStatus } from "./types";
+
 export class WebhookSignatureError extends Error {}
 
 export interface CheckoutCompletedEvent {
@@ -40,4 +42,37 @@ export async function processCheckoutCompleted(
   });
   await store.markEventProcessed(event.id);
   return order;
+}
+export class OrderTransitionError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = "OrderTransitionError";
+  }
+}
+
+export interface OrderStatusUpdate {
+  orderId: string;
+  currentStatus: OrderStatus;
+  nextStatus: OrderStatus;
+  trackingNumber: string;
+}
+
+export interface OrderStatusStore {
+  save(input: Pick<OrderStatusUpdate, "orderId" | "nextStatus" | "trackingNumber">): Promise<void>;
+}
+
+export async function updateOrderStatus(input: OrderStatusUpdate, store: OrderStatusStore) {
+  if (!canTransitionOrder(input.currentStatus, input.nextStatus)) {
+    throw new OrderTransitionError("This order status transition is not allowed.");
+  }
+
+  if (input.nextStatus === "shipped" && !input.trackingNumber.trim()) {
+    throw new OrderTransitionError("A tracking number is required before shipping an order.");
+  }
+
+  await store.save({
+    orderId: input.orderId,
+    nextStatus: input.nextStatus,
+    trackingNumber: input.trackingNumber.trim(),
+  });
 }
