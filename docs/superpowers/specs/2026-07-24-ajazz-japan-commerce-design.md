@@ -34,7 +34,7 @@ Pages:
 - Product category listings
 - Product details with image gallery, variant selection, price, availability, technical specifications, shipping information, returns policy, and related products
 - Brand Story and technology editorial pages
-- Support center
+- Driver downloads
 - Cart and Stripe checkout
 - Order lookup
 - Legal pages: 特定商取引法に基づく表記, privacy policy, terms, shipping, returns, and warranty
@@ -47,6 +47,8 @@ Customer flow:
 4. Receive confirmation email.
 5. Operations staff fulfills order manually.
 6. Staff enters tracking number and customer receives shipment email.
+
+Driver downloads provide software, firmware, and manuals by compatible product model. They are a public support resource and do not include a customer-service ticket workflow.
 
 ## Architecture
 
