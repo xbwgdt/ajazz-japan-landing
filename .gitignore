@@ -14,6 +14,7 @@ build/
 .DS_Store
 *.pem
 .superpowers/
+.worktrees/
 
 # debug
 npm-debug.log*
