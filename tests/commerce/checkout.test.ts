@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { CartValidationError, validateCart } from "../../lib/commerce/cart";
 import { createCheckoutSession } from "../../lib/commerce/checkout";
+import { createStripeCheckoutGateway } from "../../lib/commerce/stripe";
 import { reserveVariants } from "../../lib/commerce/reservations";
 
 describe("checkout cart validation", () => {
@@ -107,6 +108,35 @@ describe("Stripe Checkout", () => {
           quantity: 2,
         },
       ],
+    });
+  });
+
+  it("maps the checkout contract to Stripe's hosted checkout API", async () => {
+    let request: Record<string, unknown> | undefined;
+    const gateway = createStripeCheckoutGateway({
+      checkout: {
+        sessions: {
+          async create(input: Record<string, unknown>) {
+            request = input;
+            return { url: "https://checkout.stripe.com/pay/example" };
+          },
+        },
+      },
+    });
+
+    const session = await gateway.createSession({
+      currency: "jpy",
+      allowedCountries: ["JP"],
+      shippingAmountJpy: 0,
+      lineItems: [{ name: "AK820 MAX ULTRA", unitAmountJpy: 19980, quantity: 1 }],
+    });
+
+    expect(session.url).toBe("https://checkout.stripe.com/pay/example");
+    expect(request).toMatchObject({
+      mode: "payment",
+      billing_address_collection: "required",
+      shipping_address_collection: { allowed_countries: ["JP"] },
+      shipping_options: [{ shipping_rate_data: { fixed_amount: { amount: 0, currency: "jpy" } } }],
     });
   });
 });
