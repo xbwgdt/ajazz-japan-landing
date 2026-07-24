@@ -22,7 +22,11 @@ export function createCheckoutHandler(dependencies: CheckoutHandlerDependencies)
 
       const cart = await validateCart(lines, dependencies.variants);
       const reservation = await reserveVariants(lines, idempotencyKey, dependencies.reservations);
-      const { checkoutUrl } = await createCheckoutSession(cart, dependencies.gateway);
+      const { checkoutUrl } = await createCheckoutSession(
+        cart,
+        dependencies.gateway,
+        reservation.id,
+      );
 
       return Response.json({ checkoutUrl, reservationId: reservation.id });
     } catch {

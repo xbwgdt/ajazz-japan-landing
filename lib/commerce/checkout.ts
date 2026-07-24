@@ -14,6 +14,7 @@ export interface CheckoutSessionGateway {
     currency: "jpy";
     allowedCountries: ["JP"];
     shippingAmountJpy: 0;
+    metadata: { reservationId: string };
     lineItems: Array<{
       name: string;
       unitAmountJpy: number;
@@ -25,11 +26,13 @@ export interface CheckoutSessionGateway {
 export async function createCheckoutSession(
   cart: ValidatedCart,
   gateway: CheckoutSessionGateway,
+  reservationId: string,
 ) {
   const session = await gateway.createSession({
     currency: "jpy",
     allowedCountries: ["JP"],
     shippingAmountJpy: 0,
+    metadata: { reservationId },
     lineItems: cart.lines.map((line) => ({
       name: line.name,
       unitAmountJpy: line.unitPriceJpy,

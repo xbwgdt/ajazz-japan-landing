@@ -41,6 +41,7 @@ export function createStripeCheckoutGateway(
             product_data: { name: line.name },
           },
         })),
+        metadata: input.metadata,
         success_url: `${siteUrl()}/order/success?session_id={CHECKOUT_SESSION_ID}`,
         cancel_url: `${siteUrl()}/cart`,
       });

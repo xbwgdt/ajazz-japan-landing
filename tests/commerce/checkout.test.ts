@@ -94,13 +94,14 @@ describe("Stripe Checkout", () => {
         request = input;
         return { url: "https://checkout.stripe.com/pay/example" };
       },
-    });
+    }, "reservation_1");
 
     expect(result).toEqual({ checkoutUrl: "https://checkout.stripe.com/pay/example" });
     expect(request).toEqual({
       currency: "jpy",
       allowedCountries: ["JP"],
       shippingAmountJpy: 0,
+      metadata: { reservationId: "reservation_1" },
       lineItems: [
         {
           name: "AK820 MAX ULTRA / Black",
@@ -128,6 +129,7 @@ describe("Stripe Checkout", () => {
       currency: "jpy",
       allowedCountries: ["JP"],
       shippingAmountJpy: 0,
+      metadata: { reservationId: "reservation_1" },
       lineItems: [{ name: "AK820 MAX ULTRA", unitAmountJpy: 19980, quantity: 1 }],
     });
 
