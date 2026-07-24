@@ -43,6 +43,21 @@ export const commerceSchemaSql = `
     failed_count INTEGER NOT NULL DEFAULT 0,
     error_message TEXT
   );
+
+  CREATE TABLE IF NOT EXISTS stock_reservations (
+    id UUID PRIMARY KEY,
+    idempotency_key TEXT NOT NULL UNIQUE,
+    status TEXT NOT NULL DEFAULT 'active',
+    expires_at TIMESTAMPTZ NOT NULL,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+  );
+
+  CREATE TABLE IF NOT EXISTS stock_reservation_items (
+    reservation_id UUID NOT NULL REFERENCES stock_reservations(id) ON DELETE CASCADE,
+    variant_id BIGINT NOT NULL REFERENCES product_variants(id),
+    quantity INTEGER NOT NULL CHECK (quantity > 0),
+    PRIMARY KEY (reservation_id, variant_id)
+  );
 `;
 
 let sqlClient: ReturnType<typeof postgres> | undefined;

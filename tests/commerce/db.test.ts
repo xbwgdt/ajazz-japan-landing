@@ -8,4 +8,12 @@ describe("commerce database schema", () => {
     expect(commerceSchemaSql).toContain("CREATE TABLE IF NOT EXISTS product_images");
     expect(commerceSchemaSql).toContain("CREATE TABLE IF NOT EXISTS inventory_sync_logs");
   });
+
+  it("persists expiring checkout reservations by idempotency key", () => {
+    expect(commerceSchemaSql).toContain("CREATE TABLE IF NOT EXISTS stock_reservations");
+    expect(commerceSchemaSql).toContain("idempotency_key TEXT NOT NULL UNIQUE");
+    expect(commerceSchemaSql).toContain("expires_at TIMESTAMPTZ NOT NULL");
+    expect(commerceSchemaSql).toContain("CREATE TABLE IF NOT EXISTS stock_reservation_items");
+    expect(commerceSchemaSql).toContain("variant_id BIGINT NOT NULL REFERENCES product_variants(id)");
+  });
 });
