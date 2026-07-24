@@ -12,6 +12,16 @@ describe("manual fulfillment", () => {
     expect(updates).toEqual([{ orderId: "order_1", nextStatus: "shipped", trackingNumber: "1234567890" }]);
   });
 
+  it("allows a paid order to enter manual fulfillment", async () => {
+    const updates: unknown[] = [];
+    await updateOrderStatus(
+      { orderId: "order_1", currentStatus: "paid", nextStatus: "awaiting_fulfillment", trackingNumber: "" },
+      { async save(input) { updates.push(input); } },
+    );
+
+    expect(updates).toEqual([{ orderId: "order_1", nextStatus: "awaiting_fulfillment", trackingNumber: "" }]);
+  });
+
   it("rejects invalid transitions and duplicate tracking updates", async () => {
     const store = { async save() {} };
     await expect(updateOrderStatus(
