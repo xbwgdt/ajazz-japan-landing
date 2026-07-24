@@ -1,5 +1,6 @@
 import Stripe from "stripe";
 import type { CheckoutSessionGateway } from "./checkout";
+import type { VerifiedStripeEvent } from "./stripe-webhook";
 
 interface StripeCheckoutClient {
   checkout: {
@@ -62,6 +63,32 @@ export function configuredStripeCheckoutGateway() {
   }
 
   return createStripeCheckoutGateway(new Stripe(secretKey) as unknown as StripeCheckoutClient);
+}
+
+export function configuredStripeWebhookVerifier() {
+  const secretKey = process.env.STRIPE_SECRET_KEY;
+  const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
+  if (!secretKey || !webhookSecret) {
+    throw new Error("Stripe webhook configuration is missing");
+  }
+
+  const stripe = new Stripe(secretKey);
+  return {
+    async verify(rawBody: string, signature: string): Promise<VerifiedStripeEvent> {
+      const event = stripe.webhooks.constructEvent(rawBody, signature, webhookSecret);
+      const session = event.data.object as Stripe.Checkout.Session;
+      return {
+        id: event.id,
+        type: event.type,
+        data: {
+          object: {
+            id: session.id,
+            metadata: { reservationId: session.metadata?.reservationId },
+          },
+        },
+      };
+    },
+  };
 }
 
 function siteUrl() {
