@@ -24,5 +24,7 @@ describe("commerce database schema", () => {
     expect(commerceSchemaSql).toContain("CREATE TABLE IF NOT EXISTS payments");
     expect(commerceSchemaSql).toContain("CREATE TABLE IF NOT EXISTS refunds");
     expect(commerceSchemaSql).toContain("CREATE TABLE IF NOT EXISTS fulfillments");
+    expect(commerceSchemaSql).toContain("CREATE TABLE IF NOT EXISTS stripe_webhook_events");
+    expect(commerceSchemaSql).toContain("stripe_event_id TEXT NOT NULL UNIQUE");
   });
 });

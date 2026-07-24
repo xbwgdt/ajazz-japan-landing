@@ -108,6 +108,13 @@ export const commerceSchemaSql = `
     shipped_at TIMESTAMPTZ,
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
   );
+
+  CREATE TABLE IF NOT EXISTS stripe_webhook_events (
+    id BIGSERIAL PRIMARY KEY,
+    stripe_event_id TEXT NOT NULL UNIQUE,
+    event_type TEXT NOT NULL,
+    processed_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+  );
 `;
 
 let sqlClient: ReturnType<typeof postgres> | undefined;
