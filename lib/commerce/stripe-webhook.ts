@@ -7,6 +7,9 @@ export interface VerifiedStripeEvent {
     object: {
       id: string;
       metadata?: { reservationId?: string | null } | null;
+      customerEmail?: string | null;
+      shippingAddress?: Record<string, unknown> | null;
+      paymentIntentId?: string | null;
     };
   };
 }
@@ -39,6 +42,9 @@ export function createStripeWebhookHandler(dependencies: StripeWebhookDependenci
         checkoutSessionId: event.data.object.id,
         reservationId,
         signatureValid: true,
+        customerEmail: event.data.object.customerEmail,
+        shippingAddress: event.data.object.shippingAddress,
+        stripePaymentIntentId: event.data.object.paymentIntentId,
       });
       return Response.json({ received: true });
     } catch {

@@ -44,9 +44,11 @@ export function databasePaidOrderStore(): PaidOrderStore {
         const subtotalJpy = items.reduce((total, item) => total + item.price_jpy * item.quantity, 0);
         await sql`
           INSERT INTO orders (
-            id, reservation_id, stripe_checkout_session_id, subtotal_jpy, total_jpy
+            id, reservation_id, stripe_checkout_session_id, customer_email, shipping_address, subtotal_jpy, total_jpy
           ) VALUES (
-            ${orderId}, ${input.reservationId}, ${input.checkoutSessionId}, ${subtotalJpy}, ${subtotalJpy}
+            ${orderId}, ${input.reservationId}, ${input.checkoutSessionId}, ${input.customerEmail ?? null},
+            ${input.shippingAddress ? JSON.stringify(input.shippingAddress) : null}::jsonb,
+            ${subtotalJpy}, ${subtotalJpy}
           )
         `;
         for (const item of items) {
@@ -63,8 +65,8 @@ export function databasePaidOrderStore(): PaidOrderStore {
           `;
         }
         await sql`
-          INSERT INTO payments (order_id, amount_jpy, status)
-          VALUES (${orderId}, ${subtotalJpy}, 'paid')
+          INSERT INTO payments (order_id, stripe_payment_intent_id, amount_jpy, status)
+          VALUES (${orderId}, ${input.stripePaymentIntentId ?? null}, ${subtotalJpy}, 'paid')
         `;
         await sql`
           UPDATE stock_reservations SET status = 'consumed' WHERE id = ${input.reservationId}

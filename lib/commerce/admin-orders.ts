@@ -9,6 +9,7 @@ export interface AdminOrderSummary {
   totalJpy: number;
   createdAt: Date;
   trackingNumber: string | null;
+  shippingAddress: Record<string, unknown> | null;
 }
 
 export async function listAdminOrders(): Promise<AdminOrderSummary[]> {
@@ -20,6 +21,7 @@ export async function listAdminOrders(): Promise<AdminOrderSummary[]> {
     total_jpy: number;
     created_at: Date;
     tracking_number: string | null;
+    shipping_address: Record<string, unknown> | null;
   }>>`
     SELECT
       o.id::text AS id,
@@ -28,6 +30,7 @@ export async function listAdminOrders(): Promise<AdminOrderSummary[]> {
       o.total_jpy,
       o.created_at,
       f.tracking_number
+      , o.shipping_address
     FROM orders o
     LEFT JOIN LATERAL (
       SELECT tracking_number
@@ -46,6 +49,7 @@ export async function listAdminOrders(): Promise<AdminOrderSummary[]> {
     totalJpy: Number(row.total_jpy),
     createdAt: new Date(row.created_at),
     trackingNumber: row.tracking_number,
+    shippingAddress: row.shipping_address,
   }));
 }
 

@@ -39,10 +39,10 @@ export default async function AdminOrdersPage() {
       {unavailable ? <p className="store-admin__notice">データベース接続を設定すると、決済済みの注文が表示されます。</p> : null}
       <section className="store-admin__table-wrap">
         <table className="store-admin__table">
-          <thead><tr><th>注文番号</th><th>購入者</th><th>金額</th><th>状態</th><th>発送処理</th><th>受注日時</th></tr></thead>
+          <thead><tr><th>注文番号</th><th>購入者・配送先</th><th>金額</th><th>状態</th><th>発送処理</th><th>受注日時</th></tr></thead>
           <tbody>
             {orders.map((order) => <tr key={order.id}>
-              <td>{order.id}</td><td>{order.customerEmail ?? "-"}</td><td>¥{order.totalJpy.toLocaleString("ja-JP")}</td>
+              <td>{order.id}</td><td>{order.customerEmail ?? "-"}<br />{formatShippingAddress(order.shippingAddress)}</td><td>¥{order.totalJpy.toLocaleString("ja-JP")}</td>
               <td>{statusLabels[order.status] ?? order.status}</td><td><OrderShipmentForm orderId={order.id} status={order.status} trackingNumber={order.trackingNumber} /></td>
               <td>{order.createdAt.toLocaleString("ja-JP")}</td>
             </tr>)}
@@ -52,4 +52,12 @@ export default async function AdminOrdersPage() {
       </section>
     </main>
   );
+}
+
+function formatShippingAddress(value: Record<string, unknown> | null) {
+  if (!value) return "配送先未取得";
+  const address = (value.address ?? value) as Record<string, unknown>;
+  const fragments = [value.name, address.postal_code, address.state, address.city, address.line1, address.line2]
+    .filter((fragment): fragment is string => typeof fragment === "string" && Boolean(fragment));
+  return fragments.join(" ") || "配送先未取得";
 }
