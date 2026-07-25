@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { storefrontProducts } from "./catalogue";
+import { CartLink } from "./CartLink";
 
 export function Storefront() {
   return (
@@ -14,9 +15,7 @@ export function Storefront() {
           <Link href="/drivers">ドライバー</Link>
           <Link href="/about">ブランド</Link>
         </nav>
-        <button type="button" className="store-cart" aria-label="Cart" disabled>
-          <span aria-hidden="true">0</span>
-        </button>
+        <CartLink />
       </header>
 
       <section className="store-hero" aria-labelledby="hero-title">
