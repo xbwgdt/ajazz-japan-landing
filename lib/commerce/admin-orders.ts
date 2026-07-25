@@ -1,6 +1,7 @@
 import { commerceSql, ensureCommerceSchema } from "./db";
 import type { OrderStatusStore } from "./orders";
 import type { RefundOrderStore } from "./refunds";
+import type { ReturnRestockStore } from "./returns";
 import type { OrderStatus } from "./types";
 
 export interface AdminOrderSummary {
@@ -135,6 +136,38 @@ export function databaseRefundOrderStore(): RefundOrderStore {
           SET status = ${input.status === "succeeded" ? "refunded" : "refund_pending"}, updated_at = NOW()
           WHERE id = ${input.orderId}
         `;
+      });
+    },
+  };
+}
+
+export function databaseReturnRestockStore(): ReturnRestockStore {
+  return {
+    async findStatus(orderId) {
+      return findAdminOrderStatus(orderId);
+    },
+    async restock(orderId) {
+      await ensureCommerceSchema();
+      return commerceSql().begin(async (sql) => {
+        const [event] = await sql<Array<{ order_id: string }>>`
+          INSERT INTO return_restock_events (order_id)
+          VALUES (${orderId})
+          ON CONFLICT (order_id) DO NOTHING
+          RETURNING order_id::text AS order_id
+        `;
+        if (!event) return false;
+        const items = await sql<Array<{ variant_id: number; quantity: number }>>`
+          SELECT variant_id, quantity FROM order_items WHERE order_id = ${orderId}
+          FOR UPDATE
+        `;
+        for (const item of items) {
+          await sql`
+            UPDATE product_variants
+            SET available_quantity = available_quantity + ${item.quantity}, updated_at = NOW()
+            WHERE id = ${item.variant_id}
+          `;
+        }
+        return true;
       });
     },
   };

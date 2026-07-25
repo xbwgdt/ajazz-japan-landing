@@ -101,6 +101,11 @@ export const commerceSchemaSql = `
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
   );
 
+  CREATE TABLE IF NOT EXISTS return_restock_events (
+    order_id UUID PRIMARY KEY REFERENCES orders(id) ON DELETE CASCADE,
+    received_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+  );
+
   CREATE TABLE IF NOT EXISTS fulfillments (
     id BIGSERIAL PRIMARY KEY,
     order_id UUID NOT NULL REFERENCES orders(id) ON DELETE CASCADE,
