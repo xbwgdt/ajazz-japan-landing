@@ -1,4 +1,5 @@
 import { commerceSql, ensureCommerceSchema } from "./db";
+import { toStorefrontCards, type StorefrontCard } from "./storefront";
 
 export interface StorefrontDatabaseProduct {
   name: string;
@@ -44,4 +45,36 @@ export async function getStorefrontDatabaseProduct(slug: string): Promise<Storef
       availableQuantity: Number(variant.available_quantity),
     })),
   };
+}
+
+export async function listStorefrontDatabaseCards(): Promise<StorefrontCard[]> {
+  await ensureCommerceSchema();
+  const products = await commerceSql()<Array<{ id: number; slug: string; name: string; image: string | null }>>`
+    SELECT p.id, p.slug, p.name, (
+      SELECT url FROM product_images WHERE product_id = p.id ORDER BY position LIMIT 1
+    ) AS image
+    FROM products p
+    WHERE p.published = TRUE
+    ORDER BY p.created_at DESC
+  `;
+  if (!products.length) return [];
+
+  const variants = await commerceSql()<Array<{ product_id: number; price_jpy: number; available_quantity: number }>>`
+    SELECT product_id, price_jpy, available_quantity
+    FROM product_variants
+    WHERE product_id IN ${commerceSql()(products.map((product) => product.id))}
+  `;
+  const variantsByProduct = new Map<number, Array<{ priceJpy: number; availableQuantity: number }>>();
+  for (const variant of variants) {
+    const entries = variantsByProduct.get(variant.product_id) ?? [];
+    entries.push({ priceJpy: Number(variant.price_jpy), availableQuantity: Number(variant.available_quantity) });
+    variantsByProduct.set(variant.product_id, entries);
+  }
+
+  return toStorefrontCards(products.map((product) => ({
+    slug: product.slug,
+    name: product.name,
+    image: product.image ?? "",
+    variants: variantsByProduct.get(product.id) ?? [],
+  })));
 }

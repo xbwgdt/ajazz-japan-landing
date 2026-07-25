@@ -2,7 +2,15 @@ import Link from "next/link";
 import { storefrontProducts } from "./catalogue";
 import { CartLink } from "./CartLink";
 
-export function Storefront() {
+interface StorefrontCard {
+  slug: string;
+  name: string;
+  category: string;
+  tagline: string;
+  image: string;
+}
+
+export function Storefront({ products = storefrontProducts }: { products?: StorefrontCard[] }) {
   return (
     <main className="storefront">
       <header className="store-nav">
