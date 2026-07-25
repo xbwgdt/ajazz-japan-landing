@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { addCartLine, cartTotalQuantity, removeCartLine } from "../../lib/commerce/browser-cart";
+import { addCartLine, cartTotalQuantity, removeCartLine, setCartLineQuantity } from "../../lib/commerce/browser-cart";
 
 describe("browser cart", () => {
   it("merges matching variants and keeps the requested quantity", () => {
@@ -17,5 +17,11 @@ describe("browser cart", () => {
     ], "42");
 
     expect(cart).toEqual([{ variantId: "43", name: "AJ179 APEX", priceJpy: 8980, quantity: 1 }]);
+  });
+
+  it("updates a line quantity and removes it at zero", () => {
+    const lines = [{ variantId: "42", name: "AK820 MAX ULTRA", priceJpy: 19980, quantity: 1 }];
+    expect(setCartLineQuantity(lines, "42", 3)).toEqual([{ ...lines[0], quantity: 3 }]);
+    expect(setCartLineQuantity(lines, "42", 0)).toEqual([]);
   });
 });

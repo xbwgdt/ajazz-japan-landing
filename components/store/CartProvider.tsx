@@ -1,7 +1,7 @@
 "use client";
 
 import { createContext, useContext, useEffect, useMemo, useState } from "react";
-import { addCartLine, cartTotalQuantity, removeCartLine, type BrowserCartLine } from "../../lib/commerce/browser-cart";
+import { addCartLine, cartTotalQuantity, removeCartLine, setCartLineQuantity, type BrowserCartLine } from "../../lib/commerce/browser-cart";
 
 const storageKey = "ajazz-japan-cart";
 
@@ -10,6 +10,7 @@ interface CartContextValue {
   quantity: number;
   add(line: BrowserCartLine): void;
   remove(variantId: string): void;
+  setQuantity(variantId: string, quantity: number): void;
 }
 
 const CartContext = createContext<CartContextValue | undefined>(undefined);
@@ -37,6 +38,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     quantity: cartTotalQuantity(lines),
     add: (line: BrowserCartLine) => setLines((current) => addCartLine(current, line)),
     remove: (variantId: string) => setLines((current) => removeCartLine(current, variantId)),
+    setQuantity: (variantId: string, quantity: number) => setLines((current) => setCartLineQuantity(current, variantId, quantity)),
   }), [lines]);
 
   return <CartContext.Provider value={value}>{children}</CartContext.Provider>;
