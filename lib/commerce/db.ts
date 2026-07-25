@@ -21,6 +21,7 @@ export const commerceSchemaSql = `
     rms_sku_number TEXT NOT NULL,
     price_jpy INTEGER NOT NULL,
     available_quantity INTEGER NOT NULL DEFAULT 0,
+    reserved_quantity INTEGER NOT NULL DEFAULT 0,
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     UNIQUE (product_id, rms_sku_number)
@@ -115,6 +116,9 @@ export const commerceSchemaSql = `
     event_type TEXT NOT NULL,
     processed_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
   );
+
+  ALTER TABLE product_variants
+  ADD COLUMN IF NOT EXISTS reserved_quantity INTEGER NOT NULL DEFAULT 0;
 `;
 
 let sqlClient: ReturnType<typeof postgres> | undefined;

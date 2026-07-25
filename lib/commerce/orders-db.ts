@@ -37,16 +37,16 @@ export function databasePaidOrderStore(): PaidOrderStore {
         }
 
         const items = await sql<
-          Array<{ variant_id: number; quantity: number; name: string; price_jpy: number; available_quantity: number }>
+          Array<{ variant_id: number; quantity: number; name: string; price_jpy: number; available_quantity: number; reserved_quantity: number }>
         >`
-          SELECT sri.variant_id, sri.quantity, p.name, pv.price_jpy, pv.available_quantity
+          SELECT sri.variant_id, sri.quantity, p.name, pv.price_jpy, pv.available_quantity, pv.reserved_quantity
           FROM stock_reservation_items sri
           JOIN product_variants pv ON pv.id = sri.variant_id
           JOIN products p ON p.id = pv.product_id
           WHERE sri.reservation_id = ${input.reservationId}
           FOR UPDATE OF pv
         `;
-        if (!items.length || items.some((item) => item.available_quantity < item.quantity)) {
+        if (!items.length || items.some((item) => item.available_quantity < item.quantity || item.reserved_quantity < item.quantity)) {
           throw new Error("Reserved inventory is no longer available");
         }
 
@@ -65,7 +65,9 @@ export function databasePaidOrderStore(): PaidOrderStore {
           `;
           await sql`
             UPDATE product_variants
-            SET available_quantity = available_quantity - ${item.quantity}, updated_at = NOW()
+            SET available_quantity = available_quantity - ${item.quantity},
+                reserved_quantity = reserved_quantity - ${item.quantity},
+                updated_at = NOW()
             WHERE id = ${item.variant_id}
           `;
         }
