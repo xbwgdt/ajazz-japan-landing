@@ -1,14 +1,28 @@
-import { importRmsWorkbook } from "./import-rms-catalog";
+import { importRmsWorkbook, readRmsWorkbook } from "./import-rms-catalog";
+import { buildRmsCatalogImport } from "../lib/commerce/catalog";
 
-export function resolveRmsWorkbookPath(arguments_: string[]) {
-  if (arguments_.length !== 1 || !arguments_[0]?.trim()) {
-    throw new Error("Usage: pnpm import:rms <path-to-rms-xlsx>");
+export function resolveRmsImportArguments(arguments_: string[]) {
+  const dryRun = arguments_[0] === "--dry-run";
+  const paths = dryRun ? arguments_.slice(1) : arguments_;
+  if (paths.length !== 1 || !paths[0]?.trim()) {
+    throw new Error("Usage: pnpm import:rms [--dry-run] <path-to-rms-xlsx>");
   }
-  return arguments_[0];
+  return { filePath: paths[0], dryRun };
 }
 
 async function main() {
-  const filePath = resolveRmsWorkbookPath(process.argv.slice(2));
+  const { filePath, dryRun } = resolveRmsImportArguments(process.argv.slice(2));
+  if (dryRun) {
+    const rows = await readRmsWorkbook(filePath);
+    const products = buildRmsCatalogImport(rows);
+    console.log(JSON.stringify({
+      rows: rows.length,
+      products: products.length,
+      variants: products.reduce((total, product) => total + product.variants.length, 0),
+      productsWithImages: products.filter((product) => product.images.length > 0).length,
+    }, null, 2));
+    return;
+  }
   const count = await importRmsWorkbook(filePath);
   console.log(`Imported ${count} RMS products.`);
 }

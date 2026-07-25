@@ -1,10 +1,11 @@
 import { describe, expect, it } from "vitest";
-import { resolveRmsWorkbookPath } from "../../scripts/import-rms-catalog-cli";
+import { resolveRmsImportArguments } from "../../scripts/import-rms-catalog-cli";
 
 describe("RMS import CLI", () => {
-  it("accepts exactly one workbook path", () => {
-    expect(resolveRmsWorkbookPath(["C:/exports/catalog.xlsx"])).toBe("C:/exports/catalog.xlsx");
-    expect(() => resolveRmsWorkbookPath([])).toThrow("Usage");
-    expect(() => resolveRmsWorkbookPath(["one.xlsx", "two.xlsx"])).toThrow("Usage");
+  it("accepts one workbook path and an optional dry-run flag", () => {
+    expect(resolveRmsImportArguments(["C:/exports/catalog.xlsx"])).toEqual({ filePath: "C:/exports/catalog.xlsx", dryRun: false });
+    expect(resolveRmsImportArguments(["--dry-run", "C:/exports/catalog.xlsx"])).toEqual({ filePath: "C:/exports/catalog.xlsx", dryRun: true });
+    expect(() => resolveRmsImportArguments([])).toThrow("Usage");
+    expect(() => resolveRmsImportArguments(["one.xlsx", "two.xlsx"])).toThrow("Usage");
   });
 });
