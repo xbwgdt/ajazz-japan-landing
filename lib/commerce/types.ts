@@ -26,9 +26,9 @@ export interface FulfillmentProvider {
 }
 
 const transitions: Record<OrderStatus, readonly OrderStatus[]> = {
-  paid: ["awaiting_fulfillment"],
+  paid: ["awaiting_fulfillment", "refund_pending"],
   awaiting_fulfillment: ["shipped", "cancelled", "refund_pending"],
-  shipped: [],
+  shipped: ["refund_pending"],
   cancelled: [],
   refund_pending: ["refunded"],
   refunded: [],

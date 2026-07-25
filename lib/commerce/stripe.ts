@@ -1,6 +1,7 @@
 import Stripe from "stripe";
 import type { CheckoutSessionGateway } from "./checkout";
 import type { VerifiedStripeEvent } from "./stripe-webhook";
+import type { StripeRefundGateway } from "./refunds";
 
 interface StripeCheckoutClient {
   checkout: {
@@ -8,6 +9,10 @@ interface StripeCheckoutClient {
       create(input: Record<string, unknown>): Promise<{ url: string | null }>;
     };
   };
+}
+
+interface StripeRefundClient {
+  refunds: { create(input: { payment_intent: string; amount: number }): Promise<{ id: string; status: string | null }> };
 }
 
 export function createStripeCheckoutGateway(
@@ -63,6 +68,21 @@ export function configuredStripeCheckoutGateway() {
   }
 
   return createStripeCheckoutGateway(new Stripe(secretKey) as unknown as StripeCheckoutClient);
+}
+
+export function createStripeRefundGateway(client: StripeRefundClient): StripeRefundGateway {
+  return {
+    async createRefund(input) {
+      const refund = await client.refunds.create({ payment_intent: input.paymentIntentId, amount: input.amountJpy });
+      return { id: refund.id, status: refund.status ?? "pending" };
+    },
+  };
+}
+
+export function configuredStripeRefundGateway() {
+  const secretKey = process.env.STRIPE_SECRET_KEY;
+  if (!secretKey) throw new Error("STRIPE_SECRET_KEY is not configured");
+  return createStripeRefundGateway(new Stripe(secretKey) as unknown as StripeRefundClient);
 }
 
 export function configuredStripeWebhookVerifier() {
