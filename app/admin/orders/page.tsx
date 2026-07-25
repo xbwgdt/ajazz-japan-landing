@@ -36,7 +36,7 @@ export default async function AdminOrdersPage() {
     <main className="store-admin">
       <header className="store-admin__header">
         <div><p>AJAZZ JAPAN</p><h1>注文管理</h1></div>
-        <a href="/">ストアを見る</a>
+        <div className="store-admin__links"><a href="/api/admin/orders/export.csv">CSV出力</a><a href="/">ストアを見る</a></div>
       </header>
       {unavailable ? <p className="store-admin__notice">データベース接続を設定すると、決済済みの注文が表示されます。</p> : null}
       <section className="store-admin__table-wrap">
