@@ -10,13 +10,11 @@ export interface CheckoutCompletedEvent {
 }
 
 export interface PaidOrderStore {
-  hasProcessedEvent(eventId: string): Promise<boolean>;
-  getReservation(reservationId: string): Promise<{ id: string; active: boolean } | undefined>;
   createPaidOrder(input: {
+    eventId: string;
     checkoutSessionId: string;
     reservationId: string;
-  }): Promise<{ id: string }>;
-  markEventProcessed(eventId: string): Promise<void>;
+  }): Promise<{ id: string } | undefined>;
 }
 
 export async function processCheckoutCompleted(
@@ -27,21 +25,11 @@ export async function processCheckoutCompleted(
     throw new WebhookSignatureError("Stripe webhook signature is invalid");
   }
 
-  if (await store.hasProcessedEvent(event.id)) {
-    return undefined;
-  }
-
-  const reservation = await store.getReservation(event.reservationId);
-  if (!reservation?.active) {
-    throw new Error("Reservation is no longer active");
-  }
-
-  const order = await store.createPaidOrder({
+  return store.createPaidOrder({
+    eventId: event.id,
     checkoutSessionId: event.checkoutSessionId,
-    reservationId: reservation.id,
+    reservationId: event.reservationId,
   });
-  await store.markEventProcessed(event.id);
-  return order;
 }
 export class OrderTransitionError extends Error {
   constructor(message: string) {

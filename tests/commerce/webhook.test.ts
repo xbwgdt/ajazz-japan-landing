@@ -5,10 +5,7 @@ describe("Stripe checkout completion", () => {
   it("creates a paid order once for a valid, active reservation", async () => {
     const created: string[] = [];
     const store = {
-      async hasProcessedEvent() { return false; },
-      async getReservation() { return { id: "reservation_1", active: true }; },
       async createPaidOrder(input: { checkoutSessionId: string }) { created.push(input.checkoutSessionId); return { id: "order_1" }; },
-      async markEventProcessed() {},
     };
 
     const result = await processCheckoutCompleted(
@@ -20,14 +17,11 @@ describe("Stripe checkout completion", () => {
     expect(created).toEqual(["cs_1"]);
   });
 
-  it("does not create a second order for a duplicate event", async () => {
+  it("does not create a second order when the database transaction has already claimed the event", async () => {
     const result = await processCheckoutCompleted(
       { id: "evt_1", checkoutSessionId: "cs_1", reservationId: "reservation_1", signatureValid: true },
       {
-        async hasProcessedEvent() { return true; },
-        async getReservation() { return { id: "reservation_1", active: true }; },
-        async createPaidOrder() { throw new Error("must not run"); },
-        async markEventProcessed() {},
+        async createPaidOrder() { return undefined; },
       },
     );
 
@@ -36,10 +30,7 @@ describe("Stripe checkout completion", () => {
 
   it("rejects an invalid signature and an expired reservation", async () => {
     const store = {
-      async hasProcessedEvent() { return false; },
-      async getReservation() { return { id: "reservation_1", active: false }; },
-      async createPaidOrder() { throw new Error("must not run"); },
-      async markEventProcessed() {},
+      async createPaidOrder() { throw new Error("Reservation is no longer active"); },
     };
 
     await expect(processCheckoutCompleted(

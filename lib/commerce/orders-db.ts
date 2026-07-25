@@ -4,26 +4,19 @@ import type { PaidOrderStore } from "./orders";
 
 export function databasePaidOrderStore(): PaidOrderStore {
   return {
-    async hasProcessedEvent(eventId) {
-      await ensureCommerceSchema();
-      const [row] = await commerceSql()<Array<{ stripe_event_id: string }>>`
-        SELECT stripe_event_id FROM stripe_webhook_events WHERE stripe_event_id = ${eventId}
-      `;
-      return Boolean(row);
-    },
-    async getReservation(reservationId) {
-      await ensureCommerceSchema();
-      const [row] = await commerceSql()<Array<{ id: string; active: boolean }>>`
-        SELECT id::text AS id, (status = 'active' AND expires_at > NOW()) AS active
-        FROM stock_reservations
-        WHERE id = ${reservationId}
-      `;
-      return row;
-    },
     async createPaidOrder(input) {
       await ensureCommerceSchema();
       const orderId = randomUUID();
-      await commerceSql().begin(async (sql) => {
+      return commerceSql().begin(async (sql) => {
+        // This claim is rolled back with the order if any following step fails.
+        const [claimedEvent] = await sql<Array<{ stripe_event_id: string }>>`
+          INSERT INTO stripe_webhook_events (stripe_event_id, event_type)
+          VALUES (${input.eventId}, 'checkout.session.completed')
+          ON CONFLICT (stripe_event_id) DO NOTHING
+          RETURNING stripe_event_id
+        `;
+        if (!claimedEvent) return undefined;
+
         const [reservation] = await sql<Array<{ id: string }>>`
           SELECT id::text AS id
           FROM stock_reservations
@@ -32,9 +25,7 @@ export function databasePaidOrderStore(): PaidOrderStore {
             AND expires_at > NOW()
           FOR UPDATE
         `;
-        if (!reservation) {
-          throw new Error("Reservation is no longer active");
-        }
+        if (!reservation) throw new Error("Reservation is no longer active");
 
         const items = await sql<
           Array<{ variant_id: number; quantity: number; name: string; price_jpy: number; available_quantity: number; reserved_quantity: number }>
@@ -78,16 +69,8 @@ export function databasePaidOrderStore(): PaidOrderStore {
         await sql`
           UPDATE stock_reservations SET status = 'consumed' WHERE id = ${input.reservationId}
         `;
+        return { id: orderId };
       });
-      return { id: orderId };
-    },
-    async markEventProcessed(eventId) {
-      await ensureCommerceSchema();
-      await commerceSql()`
-        INSERT INTO stripe_webhook_events (stripe_event_id, event_type)
-        VALUES (${eventId}, 'checkout.session.completed')
-        ON CONFLICT (stripe_event_id) DO NOTHING
-      `;
     },
   };
 }
