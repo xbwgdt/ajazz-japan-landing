@@ -15,6 +15,7 @@ describe("product detail", () => {
     expect(html).toContain("在庫あり");
     expect(html).toContain("日本全国送料無料");
     expect(html).toContain("商品到着後7日以内");
+    expect(html).toContain("AK820-BLACK");
     expect(html).toContain("https://image.rakuten.co.jp/ajazz/cabinet/12437413/ak820/hero.jpg");
   });
 

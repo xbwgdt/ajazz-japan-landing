@@ -1,11 +1,6 @@
-import { AddToCartButton } from "./AddToCartButton";
+import { VariantPurchasePanel, type PurchasableVariant } from "./VariantPurchasePanel";
 
-interface StoreVariant {
-  id?: string;
-  rmsSkuNumber: string;
-  priceJpy: number;
-  availableQuantity: number;
-}
+interface StoreVariant extends PurchasableVariant {}
 
 interface StoreProduct {
   name: string;
@@ -15,11 +10,6 @@ interface StoreProduct {
 }
 
 export function ProductDetail({ product }: { product: StoreProduct }) {
-  const primaryVariant = product.variants[0];
-  const isAvailable = Boolean(primaryVariant && primaryVariant.availableQuantity > 0);
-  const price = primaryVariant
-    ? new Intl.NumberFormat("ja-JP", { style: "currency", currency: "JPY", maximumFractionDigits: 0 }).format(primaryVariant.priceJpy)
-    : null;
 
   return (
     <article className="store-product-detail">
@@ -29,9 +19,7 @@ export function ProductDetail({ product }: { product: StoreProduct }) {
       <div className="store-product-summary">
         <p className="store-overline">AJAZZ PERFORMANCE SERIES</p>
         <h1>{product.name}</h1>
-        {price ? <p className="store-price">{price}</p> : null}
-        <p className={isAvailable ? "store-stock is-available" : "store-stock is-unavailable"}>{isAvailable ? "在庫あり" : "在庫切れ"}</p>
-        <AddToCartButton variantId={primaryVariant?.id} name={product.name} priceJpy={primaryVariant?.priceJpy ?? 0} available={isAvailable} />
+        <VariantPurchasePanel name={product.name} variants={product.variants} />
         <dl className="store-product-terms">
           <div><dt>送料</dt><dd>日本全国送料無料。ご注文から3営業日以内に発送します。</dd></div>
           <div><dt>返品・交換</dt><dd>商品到着後7日以内。お客様都合の返送料はご負担ください。初期不良が確認された場合はAJAZZが負担します。</dd></div>
