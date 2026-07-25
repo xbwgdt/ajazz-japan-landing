@@ -1,47 +1,69 @@
-# AJAZZ Japan Landing
+# AJAZZ JAPAN Official Store
 
-AJAZZ Japanの製品紹介サイトです。Next.js App Routerで構築し、Vercelへのデプロイを前提としています。
+Japanese direct-to-consumer storefront for AJAZZ JAPAN. The application keeps
+the existing survey at `/survey` and adds catalog, cart, Stripe Checkout,
+manual fulfillment, driver downloads, and legal pages for `https://ajazz.jp`.
 
-## ページ
+## Local development
 
-- `/` — 製品一覧、購入リンク、ドライバー、FAQ
-- `/survey` — 記名式ゲーミングデバイス調査
-- `/survey/admin` — 回答集計、CSV/Excel出力（パスワード保護）
-
-## ローカル起動
-
-```bash
-npm install
-npm run dev
+```powershell
+pnpm install
+pnpm dev
 ```
 
-http://localhost:3007 で確認できます。
+Open `http://localhost:3007`.
 
-## アンケート用環境変数
+## Verification
 
-`.env.example` を `.env.local` にコピーして設定してください。
+```powershell
+pnpm test
+pnpm build
+```
+
+## Required production configuration
+
+Set these values in the Vercel project. Do not commit production credentials.
 
 ```env
 DATABASE_URL=postgresql://user:password@host/database?sslmode=require
-SURVEY_ADMIN_PASSWORD=十分に長い管理者パスワード
-SURVEY_ADMIN_SECRET=32文字以上のランダムな秘密文字列
+SURVEY_ADMIN_PASSWORD=replace-with-a-strong-password
+SURVEY_ADMIN_SECRET=replace-with-at-least-32-random-characters
+STRIPE_SECRET_KEY=sk_live_replace_me
+STRIPE_WEBHOOK_SECRET=whsec_replace_me
+NEXT_PUBLIC_SITE_URL=https://ajazz.jp
+CRON_SECRET=replace-with-a-long-random-value
 ```
 
-`POSTGRES_URL` も `DATABASE_URL` の代わりに使用できます。テーブルは初回アクセス時に自動作成されます。SQLを先に適用する場合は `db/schema.sql` を使用してください。
+`POSTGRES_URL` is accepted as an alternative to `DATABASE_URL`.
 
-## Vercelへの公開
+## First deployment checklist
 
-1. VercelプロジェクトのMarketplaceからNeonを接続する
-2. `DATABASE_URL` または `POSTGRES_URL` が設定されたことを確認する
-3. `SURVEY_ADMIN_PASSWORD` と `SURVEY_ADMIN_SECRET` をProduction環境に設定する
-4. mainブランチへ反映してデプロイする
+1. Deploy this branch through the repository owner that controls the Vercel project.
+2. Add `ajazz.jp` and `www.ajazz.jp` to the Vercel project, then update DNS as instructed by Vercel.
+3. Configure the environment variables above for Production and redeploy.
+4. In Stripe Dashboard, set the public terms-of-service URL to `https://ajazz.jp/terms`. Checkout requires this URL because customers must accept the terms before payment.
+5. In Stripe Dashboard, add `https://ajazz.jp/api/stripe/webhook` as a webhook endpoint and subscribe to `checkout.session.completed`. Copy the endpoint signing secret to `STRIPE_WEBHOOK_SECRET`.
+6. Import the current RMS catalog after the database is configured:
 
-永続データベースが未設定の場合、アンケートページは表示されますが送信は `503` で拒否され、回答が消失しないように明示的なエラーを表示します。
+   ```powershell
+   pnpm import:rms "C:\path\to\dl-normal-item.xlsx"
+   ```
 
-## 確認コマンド
+   Run `pnpm import:rms --dry-run "C:\path\to\dl-normal-item.xlsx"` first to review product and SKU totals without writing data.
 
-```bash
-npm run lint
-npm run build
-npm audit
-```
+7. Configure a protected scheduler to request `GET /api/cron/release-reservations` with `Authorization: Bearer <CRON_SECRET>`. This releases stock reservations left behind by abandoned checkout sessions.
+8. Complete a Stripe test-mode purchase, confirm the webhook creates an order, check the order in `/admin/orders`, and test manual fulfillment and refund handling before switching to live keys.
+
+## Operational limits before launch
+
+- The supplied RMS workbook imports the initial catalog, prices, variants, and product image URLs.
+- The live RMS inventory HTTP adapter still needs the merchant-specific API endpoint, request schema, and credentials. Do not claim real-time RMS inventory synchronization until it has been connected and tested.
+- Customer confirmation and shipment emails require a transactional email provider. No email provider is configured in this repository.
+- Fulfillment remains manual through `/admin/orders` for the first release.
+
+## Business information
+
+- Seller: アジャズジャパン株式会社
+- Address: 〒340-0043 埼玉県草加市草加2-13-21-7
+- Phone: 070-9319-5121
+- Contact: xiet@a-jazz.com

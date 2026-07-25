@@ -24,6 +24,7 @@ export function createStripeCheckoutGateway(
         mode: "payment",
         payment_method_types: ["card"],
         billing_address_collection: "required",
+        consent_collection: { terms_of_service: "required" },
         shipping_address_collection: {
           allowed_countries: input.allowedCountries,
         },

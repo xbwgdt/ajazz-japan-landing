@@ -137,6 +137,7 @@ describe("Stripe Checkout", () => {
     expect(request).toMatchObject({
       mode: "payment",
       billing_address_collection: "required",
+      consent_collection: { terms_of_service: "required" },
       shipping_address_collection: { allowed_countries: ["JP"] },
       shipping_options: [{ shipping_rate_data: { fixed_amount: { amount: 0, currency: "jpy" } } }],
     });
