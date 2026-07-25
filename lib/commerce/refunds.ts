@@ -4,7 +4,7 @@ export class RefundTransitionError extends Error {}
 
 export interface RefundOrderStore {
   find(orderId: string): Promise<{ status: OrderStatus; paymentIntentId: string | null; amountJpy: number } | undefined>;
-  record(input: { orderId: string; stripeRefundId: string; amountJpy: number; status: string }): Promise<void>;
+  record(input: { orderId: string; stripeRefundId: string; amountJpy: number; status: string; restock: boolean }): Promise<void>;
 }
 
 export interface StripeRefundGateway {
@@ -18,6 +18,12 @@ export async function requestOrderRefund(orderId: string, store: RefundOrderStor
   }
 
   const refund = await gateway.createRefund({ paymentIntentId: order.paymentIntentId, amountJpy: order.amountJpy });
-  await store.record({ orderId, stripeRefundId: refund.id, amountJpy: order.amountJpy, status: refund.status });
+  await store.record({
+    orderId,
+    stripeRefundId: refund.id,
+    amountJpy: order.amountJpy,
+    status: refund.status,
+    restock: order.status !== "shipped" && refund.status === "succeeded",
+  });
   return refund;
 }

@@ -117,6 +117,19 @@ export function databaseRefundOrderStore(): RefundOrderStore {
           VALUES (${input.orderId}, ${input.stripeRefundId}, ${input.amountJpy}, ${input.status})
           ON CONFLICT (stripe_refund_id) DO NOTHING
         `;
+        if (input.restock) {
+          const items = await sql<Array<{ variant_id: number; quantity: number }>>`
+            SELECT variant_id, quantity FROM order_items WHERE order_id = ${input.orderId}
+            FOR UPDATE
+          `;
+          for (const item of items) {
+            await sql`
+              UPDATE product_variants
+              SET available_quantity = available_quantity + ${item.quantity}, updated_at = NOW()
+              WHERE id = ${item.variant_id}
+            `;
+          }
+        }
         await sql`
           UPDATE orders
           SET status = ${input.status === "succeeded" ? "refunded" : "refund_pending"}, updated_at = NOW()

@@ -2,17 +2,27 @@ import { describe, expect, it } from "vitest";
 import { RefundTransitionError, requestOrderRefund } from "../../lib/commerce/refunds";
 
 describe("Stripe refunds", () => {
-  it("refunds an eligible shipped order and records the provider refund", async () => {
+  it("restocks a paid order after a successful refund", async () => {
     const records: unknown[] = [];
     const result = await requestOrderRefund("order_1", {
-      async find() { return { status: "shipped", paymentIntentId: "pi_1", amountJpy: 19980 }; },
+      async find() { return { status: "paid", paymentIntentId: "pi_1", amountJpy: 19980 }; },
       async record(input) { records.push(input); },
     }, {
       async createRefund(input) { expect(input).toEqual({ paymentIntentId: "pi_1", amountJpy: 19980 }); return { id: "re_1", status: "succeeded" }; },
     });
 
     expect(result).toEqual({ id: "re_1", status: "succeeded" });
-    expect(records).toEqual([{ orderId: "order_1", stripeRefundId: "re_1", amountJpy: 19980, status: "succeeded" }]);
+    expect(records).toEqual([{ orderId: "order_1", stripeRefundId: "re_1", amountJpy: 19980, status: "succeeded", restock: true }]);
+  });
+
+  it("does not restock a shipped order before the return is received", async () => {
+    const records: unknown[] = [];
+    await requestOrderRefund("order_1", {
+      async find() { return { status: "shipped", paymentIntentId: "pi_1", amountJpy: 19980 }; },
+      async record(input) { records.push(input); },
+    }, { async createRefund() { return { id: "re_1", status: "succeeded" }; } });
+
+    expect(records).toEqual([{ orderId: "order_1", stripeRefundId: "re_1", amountJpy: 19980, status: "succeeded", restock: false }]);
   });
 
   it("rejects refunds for orders without a refundable status or payment", async () => {
