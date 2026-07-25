@@ -88,7 +88,7 @@ export function Storefront({ products = storefrontProducts }: { products?: Store
         <img src="/brand/ajazz-japan-logo.jpg" alt="AJAZZ JAPAN" />
         <p>アジャズジャパン株式会社<br />〒340-0043 埼玉県草加市草加2-13-21-7</p>
         <div><Link href="/drivers">ドライバー</Link><Link href="/survey">アンケート</Link></div>
-        <div className="store-footer-legal"><Link href="/legal">特定商取引法に基づく表記</Link><Link href="/privacy">プライバシーポリシー</Link></div>
+        <div className="store-footer-legal"><Link href="/legal">特定商取引法に基づく表記</Link><Link href="/privacy">プライバシーポリシー</Link><Link href="/terms">利用規約</Link></div>
       </footer>
     </main>
   );
