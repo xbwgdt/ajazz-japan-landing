@@ -58,7 +58,7 @@ export function Storefront({ products = storefrontProducts }: { products?: Store
           <p>日本国内送料無料。ご注文から3営業日以内に発送します。</p>
         </div>
         <div className="store-product-grid">
-          {storefrontProducts.map((product, index) => (
+          {products.map((product, index) => (
             <Link className="store-card" href={`/products/${product.slug}`} key={product.slug}>
               <div className="store-card-image">
                 <img src={product.image} alt={product.name} />
@@ -88,6 +88,7 @@ export function Storefront({ products = storefrontProducts }: { products?: Store
         <img src="/brand/ajazz-japan-logo.jpg" alt="AJAZZ JAPAN" />
         <p>アジャズジャパン株式会社<br />〒340-0043 埼玉県草加市草加2-13-21-7</p>
         <div><Link href="/drivers">ドライバー</Link><Link href="/survey">アンケート</Link></div>
+        <div className="store-footer-legal"><Link href="/legal">特定商取引法に基づく表記</Link><Link href="/privacy">プライバシーポリシー</Link></div>
       </footer>
     </main>
   );
