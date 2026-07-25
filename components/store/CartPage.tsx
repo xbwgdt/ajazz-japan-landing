@@ -32,6 +32,7 @@ export function CartPage() {
         </article>)}</div>
         <div className="store-cart-summary"><p>送料 <span>無料</span></p><strong>合計 <span>¥{total.toLocaleString("ja-JP")}</span></strong>{error ? <p className="store-cart-error">{error}</p> : null}<button className="store-button store-button-primary" type="button" onClick={checkout} disabled={isCheckingOut}>{isCheckingOut ? "決済画面へ移動中" : "安全な決済へ進む"}</button></div>
       </>}
+      <p className="store-cart-legal">ご購入前に <Link href="/terms">利用規約</Link> と <Link href="/legal">特定商取引法に基づく表記</Link> をご確認ください。決済画面で利用規約への同意をお願いしています。</p>
     </section>
   </main>;
 }
