@@ -44,10 +44,11 @@ export function databasePaidOrderStore(): PaidOrderStore {
         const subtotalJpy = items.reduce((total, item) => total + item.price_jpy * item.quantity, 0);
         await sql`
           INSERT INTO orders (
-            id, reservation_id, stripe_checkout_session_id, customer_email, shipping_address, subtotal_jpy, total_jpy
+            id, reservation_id, stripe_checkout_session_id, customer_email, shipping_address, terms_accepted_at, subtotal_jpy, total_jpy
           ) VALUES (
             ${orderId}, ${input.reservationId}, ${input.checkoutSessionId}, ${input.customerEmail ?? null},
             ${input.shippingAddress ? JSON.stringify(input.shippingAddress) : null}::jsonb,
+            CASE WHEN ${input.termsAccepted ?? false} THEN NOW() ELSE NULL END,
             ${subtotalJpy}, ${subtotalJpy}
           )
         `;

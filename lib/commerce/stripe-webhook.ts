@@ -10,6 +10,7 @@ export interface VerifiedStripeEvent {
       customerEmail?: string | null;
       shippingAddress?: Record<string, unknown> | null;
       paymentIntentId?: string | null;
+      termsAccepted?: boolean;
     };
   };
 }
@@ -45,6 +46,7 @@ export function createStripeWebhookHandler(dependencies: StripeWebhookDependenci
         customerEmail: event.data.object.customerEmail,
         shippingAddress: event.data.object.shippingAddress,
         stripePaymentIntentId: event.data.object.paymentIntentId,
+        termsAccepted: event.data.object.termsAccepted,
       });
       return Response.json({ received: true });
     } catch {

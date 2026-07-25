@@ -111,6 +111,7 @@ export function configuredStripeWebhookVerifier() {
             metadata: { reservationId: session.metadata?.reservationId },
             customerEmail: session.customer_details?.email ?? session.customer_email,
             paymentIntentId: typeof session.payment_intent === "string" ? session.payment_intent : session.payment_intent?.id,
+            termsAccepted: session.consent?.terms_of_service === "accepted",
             shippingAddress: shippingDetails.collected_information?.shipping_details
               ?? shippingDetails.shipping_details
               ?? null,

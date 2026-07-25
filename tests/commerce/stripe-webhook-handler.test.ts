@@ -26,7 +26,7 @@ describe("Stripe webhook handler", () => {
           type: "checkout.session.completed",
           data: { object: {
             id: "cs_1", metadata: { reservationId: "reservation_1" }, customerEmail: "buyer@example.jp",
-            paymentIntentId: "pi_1", shippingAddress: { postal_code: "340-0043", country: "JP" },
+            paymentIntentId: "pi_1", termsAccepted: true, shippingAddress: { postal_code: "340-0043", country: "JP" },
           } },
         };
       },
@@ -44,7 +44,7 @@ describe("Stripe webhook handler", () => {
     expect(response.status).toBe(200);
     expect(processed).toEqual({
       id: "evt_1", checkoutSessionId: "cs_1", reservationId: "reservation_1", signatureValid: true,
-      customerEmail: "buyer@example.jp", stripePaymentIntentId: "pi_1", shippingAddress: { postal_code: "340-0043", country: "JP" },
+      customerEmail: "buyer@example.jp", stripePaymentIntentId: "pi_1", termsAccepted: true, shippingAddress: { postal_code: "340-0043", country: "JP" },
     });
   });
 });

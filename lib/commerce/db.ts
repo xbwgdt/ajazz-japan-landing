@@ -67,6 +67,7 @@ export const commerceSchemaSql = `
     status TEXT NOT NULL DEFAULT 'paid',
     customer_email TEXT,
     shipping_address JSONB,
+    terms_accepted_at TIMESTAMPTZ,
     subtotal_jpy INTEGER NOT NULL,
     shipping_jpy INTEGER NOT NULL DEFAULT 0,
     total_jpy INTEGER NOT NULL,
@@ -124,6 +125,9 @@ export const commerceSchemaSql = `
 
   ALTER TABLE product_variants
   ADD COLUMN IF NOT EXISTS reserved_quantity INTEGER NOT NULL DEFAULT 0;
+
+  ALTER TABLE orders
+  ADD COLUMN IF NOT EXISTS terms_accepted_at TIMESTAMPTZ;
 `;
 
 let sqlClient: ReturnType<typeof postgres> | undefined;

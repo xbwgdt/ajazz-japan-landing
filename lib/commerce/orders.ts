@@ -10,6 +10,7 @@ export interface CheckoutCompletedEvent {
   customerEmail?: string | null;
   shippingAddress?: Record<string, unknown> | null;
   stripePaymentIntentId?: string | null;
+  termsAccepted?: boolean;
 }
 
 export interface PaidOrderStore {
@@ -20,6 +21,7 @@ export interface PaidOrderStore {
     customerEmail?: string | null;
     shippingAddress?: Record<string, unknown> | null;
     stripePaymentIntentId?: string | null;
+    termsAccepted?: boolean;
   }): Promise<{ id: string } | undefined>;
 }
 
@@ -38,6 +40,7 @@ export async function processCheckoutCompleted(
     customerEmail: event.customerEmail,
     shippingAddress: event.shippingAddress,
     stripePaymentIntentId: event.stripePaymentIntentId,
+    termsAccepted: event.termsAccepted,
   });
 }
 export class OrderTransitionError extends Error {
