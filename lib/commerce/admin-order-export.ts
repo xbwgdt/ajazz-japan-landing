@@ -1,7 +1,7 @@
 import type { AdminOrderSummary } from "./admin-orders";
 
 export function toOrderCsv(orders: AdminOrderSummary[]) {
-  const rows = [["注文番号", "購入者メール", "配送先", "金額", "状態", "追跡番号", "受注日時"]];
+  const rows = [["注文番号", "購入者メール", "配送先", "金額", "状態", "追跡番号", "利用規約同意日時", "受注日時"]];
   for (const order of orders) {
     rows.push([
       order.id,
@@ -10,6 +10,7 @@ export function toOrderCsv(orders: AdminOrderSummary[]) {
       String(order.totalJpy),
       order.status,
       order.trackingNumber ?? "",
+      order.termsAcceptedAt?.toISOString() ?? "",
       order.createdAt.toISOString(),
     ]);
   }

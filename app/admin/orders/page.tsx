@@ -41,16 +41,17 @@ export default async function AdminOrdersPage() {
       {unavailable ? <p className="store-admin__notice">データベース接続を設定すると、決済済みの注文が表示されます。</p> : null}
       <section className="store-admin__table-wrap">
         <table className="store-admin__table">
-          <thead><tr><th>注文番号</th><th>購入者・配送先</th><th>金額</th><th>状態</th><th>発送処理</th><th>返金</th><th>返品入庫</th><th>受注日時</th></tr></thead>
+          <thead><tr><th>注文番号</th><th>購入者・配送先</th><th>金額</th><th>状態</th><th>発送処理</th><th>返金</th><th>返品入庫</th><th>利用規約</th><th>受注日時</th></tr></thead>
           <tbody>
             {orders.map((order) => <tr key={order.id}>
               <td>{order.id}</td><td>{order.customerEmail ?? "-"}<br />{formatShippingAddress(order.shippingAddress)}</td><td>¥{order.totalJpy.toLocaleString("ja-JP")}</td>
               <td>{statusLabels[order.status] ?? order.status}</td><td><OrderShipmentForm orderId={order.id} status={order.status} trackingNumber={order.trackingNumber} /></td>
               <td><OrderRefundButton orderId={order.id} status={order.status} /></td>
               <td><OrderRestockButton orderId={order.id} status={order.status} /></td>
+              <td>{order.termsAcceptedAt ? `同意済み ${order.termsAcceptedAt.toLocaleString("ja-JP")}` : "記録なし"}</td>
               <td>{order.createdAt.toLocaleString("ja-JP")}</td>
             </tr>)}
-            {!orders.length && !unavailable ? <tr><td colSpan={8}>現在、表示できる注文はありません。</td></tr> : null}
+            {!orders.length && !unavailable ? <tr><td colSpan={9}>現在、表示できる注文はありません。</td></tr> : null}
           </tbody>
         </table>
       </section>
