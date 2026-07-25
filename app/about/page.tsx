@@ -1,113 +1,39 @@
-import type { Metadata } from "next";
+import Link from "next/link";
 
-const siteUrl = "https://ajazz-japan-landing.vercel.app";
-
-export const metadata: Metadata = {
-  title: "AJAZZについて - AJAZZ 日本公式",
-  description:
-    "AJAZZ（黑爵）は2009年に設立された、ゲーミングギア＆キーボードブランドです。世界中のゲーマーに愛される製品をお届けします。",
-  openGraph: {
-    type: "website",
-    locale: "ja_JP",
-    url: `${siteUrl}/about`,
-    siteName: "AJAZZ Japan",
-    title: "AJAZZについて - AJAZZ 日本公式",
-    description:
-      "AJAZZ（黑爵）は2009年に設立された、ゲーミングギア＆キーボードブランドです。",
-  },
+export const metadata = {
+  title: "AJAZZ JAPANについて | AJAZZ JAPAN",
+  description: "AJAZZ JAPAN公式ストアの運営会社とブランドについて。",
 };
 
 export default function AboutPage() {
-  return (
-    <main className="main">
-      <div className="about-page">
-        <section className="about-hero">
-          <h1>AJAZZ について</h1>
-          <p className="about-subtitle">ゲーミングギアの可能性を広げる</p>
-        </section>
-
-        <section className="about-section">
-          <div className="about-card">
-            <h2>ブランドストーリー</h2>
-            <p>
-              AJAZZ（黑爵）は2009年に中国で誕生したゲーミングギアブランドです。
-              設立以来、「高品質・高コスパ」をモットーに、世界中のゲーマーに向けて
-              キーボード、マウス、オーディオ機器を開発・提供しています。
-            </p>
-            <p>
-              私たちは単なる製品メーカーではなく、ゲーマーの声に耳を傾け、
-              実際のプレイ体験を向上させる製品づくりを追求しています。
-              プロゲーマーからカジュアルユーザーまで、あらゆるプレイヤーに
-              最適なギアをお届けします。
-            </p>
-          </div>
-
-          <div className="about-card">
-            <h2>私たちの強み</h2>
-            <div className="strength-grid">
-              <div className="strength-item">
-                <span className="strength-icon">🔧</span>
-                <h3>高品質な製造</h3>
-                <p>自社工場と厳格な品質管理により、安定した製品品質を実現。</p>
-              </div>
-              <div className="strength-item">
-                <span className="strength-icon">💡</span>
-                <h3>革新的なデザイン</h3>
-                <p>TFTスクリーン搭載、磁気スイッチ、ガスケットマウントなど、最新技術を積極採用。</p>
-              </div>
-              <div className="strength-item">
-                <span className="strength-icon">💰</span>
-                <h3>圧倒的なコスパ</h3>
-                <p>高機能でありながら手の届きやすい価格設定。ゲーマーの味方であり続けます。</p>
-              </div>
-              <div className="strength-item">
-                <span className="strength-icon">🌏</span>
-                <h3>グローバル展開</h3>
-                <p>日本・アメリカ・ヨーロッパ・東南アジアなど、世界各国で販売中。</p>
-              </div>
-            </div>
-          </div>
-
-          <div className="about-card">
-            <h2>日本におけるAJAZZ</h2>
-            <p>
-              AJAZZ Japanは日本のゲーマーの皆様に最適な製品をお届けするため、
-              楽天市場とAmazon.co.jpに公式ストアを開設しています。
-              すべての製品は日本国内発送・送料無料でお届け。
-              日本語カスタマーサポートも対応しておりますので、
-              安心してご購入いただけます。
-            </p>
-          </div>
-
-          <div className="about-card">
-            <h2>お問い合わせ</h2>
-            <p>
-              製品に関するご質問・ご要望がございましたら、
-              以下のメールアドレスまでお気軽にご連絡ください。
-            </p>
-            <p className="about-email">
-              📧 <a href="mailto:xiet@a-jazz.com">xiet@a-jazz.com</a>
-            </p>
-          </div>
-        </section>
-
-        <div className="about-footer-link">
-          <a href="/" className="cta-button">製品一覧に戻る</a>
-        </div>
-      </div>
-
-      <footer className="footer">
-        <div className="footer-content">
-          <p>&copy; 2026 AJAZZ Japan. All rights reserved.</p>
-          <div className="footer-links">
-            <a href="https://item.rakuten.co.jp/ajazz" target="_blank" rel="noopener noreferrer">楽天市場</a>
-            <a href="https://www.youtube.com/@AJAZZJAPAN" target="_blank" rel="noopener noreferrer">YouTube</a>
-            <a href="https://www.instagram.com/ajazzjp/" target="_blank" rel="noopener noreferrer">Instagram</a>
-            <a href="https://x.com/AjazzJapan" target="_blank" rel="noopener noreferrer">X (Twitter)</a>
-            <a href="mailto:xiet@a-jazz.com">お問い合わせ</a>
-          </div>
-        </div>
-      </footer>
-    </main>
-  );
+  return <main className="storefront store-about-page">
+    <header className="store-nav">
+      <Link href="/" className="store-brand" aria-label="AJAZZ JAPAN home"><img src="/brand/ajazz-japan-logo.jpg" alt="AJAZZ JAPAN" /></Link>
+      <nav aria-label="Primary navigation"><Link href="/">ストア</Link><Link href="/drivers">ドライバー</Link><Link href="/legal">特定商取引法に基づく表記</Link></nav>
+    </header>
+    <section className="store-about-hero">
+      <p className="store-eyebrow">AJAZZ JAPAN</p>
+      <h1>PERFORMANCE<br />WITHOUT<br />COMPROMISE.</h1>
+      <p>ラピッドトリガー、ハイポーリングレート、細部まで調整できる入力体験。AJAZZ JAPANは、日本のゲーマーとクリエイターに向けて、性能を妥協しないデバイスを届けます。</p>
+    </section>
+    <section className="store-about-grid">
+      <article><p className="store-eyebrow">OUR APPROACH</p><h2>毎日の入力を、<br />もっと正確に。</h2><p>キーボード、マウス、ストリームコントローラーを通じて、プレイと作業の反応速度、操作性、カスタマイズ性を追求します。</p></article>
+      <article className="store-about-mark" aria-hidden="true"><img src="/brand/ajazz-japan-logo.jpg" alt="" /></article>
+    </section>
+    <section className="store-about-company">
+      <p className="store-eyebrow">COMPANY</p><h2>会社情報</h2>
+      <dl>
+        <div><dt>会社名</dt><dd>アジャズジャパン株式会社</dd></div>
+        <div><dt>代表者</dt><dd>代表取締役社長 謝天</dd></div>
+        <div><dt>所在地</dt><dd>〒340-0043 埼玉県草加市草加2-13-21-7</dd></div>
+        <div><dt>電話番号</dt><dd>070-9319-5121</dd></div>
+        <div><dt>メール</dt><dd><a href="mailto:xiet@a-jazz.com">xiet@a-jazz.com</a></dd></div>
+      </dl>
+    </section>
+    <footer className="store-footer">
+      <img src="/brand/ajazz-japan-logo.jpg" alt="AJAZZ JAPAN" />
+      <p>アジャズジャパン株式会社<br />〒340-0043 埼玉県草加市草加2-13-21-7</p>
+      <div><Link href="/legal">特定商取引法に基づく表記</Link><Link href="/privacy">プライバシーポリシー</Link></div>
+    </footer>
+  </main>;
 }
