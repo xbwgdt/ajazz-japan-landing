@@ -2,7 +2,7 @@ import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
 import { updateAdminOrder } from "../../../../../lib/commerce/admin-order-handler";
 import { databaseOrderStatusStore, findAdminOrderStatus } from "../../../../../lib/commerce/admin-orders";
-import { ADMIN_COOKIE, isSameOrigin, verifyAdminToken } from "../../../../../lib/survey-security";
+import { ADMIN_COOKIE, isSameOrigin, verifyAdminToken } from "../../../../../lib/admin-security";
 import type { OrderStatus } from "../../../../../lib/commerce/types";
 
 const statuses = new Set<OrderStatus>(["paid", "awaiting_fulfillment", "shipped", "cancelled", "refund_pending", "refunded"]);

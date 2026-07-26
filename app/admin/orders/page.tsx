@@ -2,7 +2,7 @@ import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { listAdminOrders } from "../../../lib/commerce/admin-orders";
 import { CommerceDatabaseNotConfiguredError } from "../../../lib/commerce/db";
-import { ADMIN_COOKIE, verifyAdminToken } from "../../../lib/survey-security";
+import { ADMIN_COOKIE, verifyAdminToken } from "../../../lib/admin-security";
 import { OrderShipmentForm } from "../../../components/store/OrderShipmentForm";
 import { OrderRefundButton } from "../../../components/store/OrderRefundButton";
 import { OrderRestockButton } from "../../../components/store/OrderRestockButton";
@@ -21,7 +21,7 @@ const statusLabels: Record<string, string> = {
 
 export default async function AdminOrdersPage() {
   const token = (await cookies()).get(ADMIN_COOKIE)?.value;
-  if (!verifyAdminToken(token)) redirect("/survey/admin/login");
+  if (!verifyAdminToken(token)) redirect("/admin/login");
 
   let unavailable = false;
   const orders = await listAdminOrders().catch((error) => {

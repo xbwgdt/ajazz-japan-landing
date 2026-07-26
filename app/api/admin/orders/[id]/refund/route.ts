@@ -3,7 +3,7 @@ import { NextResponse } from "next/server";
 import { databaseRefundOrderStore } from "../../../../../../lib/commerce/admin-orders";
 import { requestOrderRefund } from "../../../../../../lib/commerce/refunds";
 import { configuredStripeRefundGateway } from "../../../../../../lib/commerce/stripe";
-import { ADMIN_COOKIE, isSameOrigin, verifyAdminToken } from "../../../../../../lib/survey-security";
+import { ADMIN_COOKIE, isSameOrigin, verifyAdminToken } from "../../../../../../lib/admin-security";
 
 export async function POST(request: Request, context: { params: Promise<{ id: string }> }) {
   const token = (await cookies()).get(ADMIN_COOKIE)?.value;

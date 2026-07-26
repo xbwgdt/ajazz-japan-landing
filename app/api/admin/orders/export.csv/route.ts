@@ -2,7 +2,7 @@ import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
 import { listAdminOrders } from "../../../../../lib/commerce/admin-orders";
 import { toOrderCsv } from "../../../../../lib/commerce/admin-order-export";
-import { ADMIN_COOKIE, verifyAdminToken } from "../../../../../lib/survey-security";
+import { ADMIN_COOKIE, verifyAdminToken } from "../../../../../lib/admin-security";
 
 export async function GET() {
   const token = (await cookies()).get(ADMIN_COOKIE)?.value;

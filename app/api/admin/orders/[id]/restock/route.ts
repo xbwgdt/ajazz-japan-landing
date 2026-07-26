@@ -2,7 +2,7 @@ import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
 import { databaseReturnRestockStore } from "../../../../../../lib/commerce/admin-orders";
 import { restockReturnedOrder } from "../../../../../../lib/commerce/returns";
-import { ADMIN_COOKIE, isSameOrigin, verifyAdminToken } from "../../../../../../lib/survey-security";
+import { ADMIN_COOKIE, isSameOrigin, verifyAdminToken } from "../../../../../../lib/admin-security";
 
 export async function POST(request: Request, context: { params: Promise<{ id: string }> }) {
   const token = (await cookies()).get(ADMIN_COOKIE)?.value;
