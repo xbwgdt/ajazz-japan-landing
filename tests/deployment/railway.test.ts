@@ -16,7 +16,7 @@ describe("Railway deployment", () => {
 
     expect(config.build.buildCommand).toBe("pnpm build");
     expect(config.deploy).toMatchObject({
-      startCommand: "pnpm start",
+      startCommand: "HOSTNAME=0.0.0.0 pnpm start",
       healthcheckPath: "/api/health",
       restartPolicyType: "ON_FAILURE",
     });

@@ -4,7 +4,7 @@
     "buildCommand": "pnpm build"
   },
   "deploy": {
-    "startCommand": "pnpm start",
+    "startCommand": "HOSTNAME=0.0.0.0 pnpm start",
     "healthcheckPath": "/api/health",
     "healthcheckTimeout": 100,
     "restartPolicyType": "ON_FAILURE",
