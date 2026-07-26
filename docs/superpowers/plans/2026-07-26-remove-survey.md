@@ -60,7 +60,7 @@ Expected: FAIL because `lib/admin-security` does not exist.
 
 - [ ] **Step 3: Implement the module and admin login routes**
 
-Extract only the HMAC token, constant-time password comparison, and same-origin helpers from `lib/survey-security.ts` into `lib/admin-security.ts`. Use `ADMIN_PASSWORD` and `ADMIN_SECRET`; reject secrets shorter than 32 characters. Copy the current login/logout flow to `/api/admin/login` and `/api/admin/logout`, redirect successful login to `/admin/orders`, and set `ADMIN_COOKIE` only for the `/admin` path. Replace every order-admin import of `lib/survey-security` with `lib/admin-security`.
+Extract only the HMAC token, constant-time password comparison, and same-origin helpers from `lib/survey-security.ts` into `lib/admin-security.ts`. Use `ADMIN_PASSWORD` and `ADMIN_SECRET`; reject secrets shorter than 32 characters. Copy the current login/logout flow to `/api/admin/login` and `/api/admin/logout`, redirect successful login to `/admin/orders`, and set the `httpOnly`, `secure`, `sameSite: "lax"` `ADMIN_COOKIE` path to `/` so `/api/admin/*` receives it. Replace every order-admin import of `lib/survey-security` with `lib/admin-security`.
 
 - [ ] **Step 4: Run focused tests and confirm GREEN**
 
@@ -191,4 +191,3 @@ git add .env.example README.md tests/deployment
 git commit -m "docs: configure store admin credentials"
 git push fork feat/ajazz-japan-store
 ```
-

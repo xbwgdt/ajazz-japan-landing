@@ -1,8 +1,8 @@
 # AJAZZ JAPAN Official Store
 
-Japanese direct-to-consumer storefront for AJAZZ JAPAN. The application keeps
-the existing survey at `/survey` and adds catalog, cart, Stripe Checkout,
-manual fulfillment, driver downloads, and legal pages for `https://ajazz.jp`.
+Japanese direct-to-consumer storefront for AJAZZ JAPAN with catalog, cart,
+Stripe Checkout, manual fulfillment, driver downloads, and legal pages for
+`https://ajazz.jp`.
 
 ## Local development
 
@@ -26,8 +26,8 @@ Set these values in the Railway service. Do not commit production credentials.
 
 ```env
 DATABASE_URL=postgresql://user:password@host/database?sslmode=require
-SURVEY_ADMIN_PASSWORD=replace-with-a-strong-password
-SURVEY_ADMIN_SECRET=replace-with-at-least-32-random-characters
+ADMIN_PASSWORD=replace-with-a-strong-password
+ADMIN_SECRET=replace-with-at-least-32-random-characters
 STRIPE_SECRET_KEY=sk_live_replace_me
 STRIPE_WEBHOOK_SECRET=whsec_replace_me
 NEXT_PUBLIC_SITE_URL=https://ajazz.jp
@@ -57,7 +57,7 @@ When Cloudflare proxying is enabled for the Railway domain, set Cloudflare SSL/T
    Run `pnpm import:rms --dry-run "C:\path\to\dl-normal-item.xlsx"` first to review product and SKU totals without writing data.
 
 8. Deploy the Cloudflare Worker described below, then configure protected schedules to request `GET /api/cron/release-reservations` and `GET /api/cron/rms-inventory` with `Authorization: Bearer <CRON_SECRET>`. The first releases abandoned checkout reservations; the second reads current stock from RMS InventoryAPI 2.1.
-9. Complete a Stripe test-mode purchase, confirm the webhook creates an order, check the order in `/admin/orders`, and test manual fulfillment and refund handling before switching to live keys.
+9. Complete a Stripe test-mode purchase, confirm the webhook creates an order, sign in at `/admin/login`, check the order in `/admin/orders`, and test manual fulfillment and refund handling before switching to live keys.
 
 ## Operational limits before launch
 
@@ -86,6 +86,7 @@ npx wrangler deploy
 Cloudflare stores both values as Worker secrets. Do not add either value to `wrangler.json` or commit it. Confirm both schedules appear under **Workers & Pages > ajazz-operations-cron > Settings > Triggers**, then inspect Worker logs after the first execution. RMS credentials remain only in Railway.
 - Customer confirmation and shipment emails require a transactional email provider. No email provider is configured in this repository.
 - Fulfillment remains manual through `/admin/orders` for the first release.
+- `ADMIN_PASSWORD` and `ADMIN_SECRET` protect `/admin/login` and the order administration APIs. `ADMIN_SECRET` must be at least 32 characters.
 
 ## Business information
 

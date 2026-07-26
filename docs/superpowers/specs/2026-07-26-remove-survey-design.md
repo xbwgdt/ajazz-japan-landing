@@ -24,7 +24,9 @@ order exports. The legacy survey deployment and its database are out of scope.
   no longer exist and return Next.js 404 responses.
 - `/admin/orders` and its order-management APIs remain password protected.
 - A valid admin session is created only with `ADMIN_PASSWORD` and signed with
-  `ADMIN_SECRET`, which must be at least 32 characters.
+  `ADMIN_SECRET`, which must be at least 32 characters. Its `httpOnly`,
+  `secure`, `sameSite: "lax"` cookie uses the `/` path so `/api/admin/*`
+  order actions receive the same authenticated session.
 - Existing survey cookies are not accepted by the new order administration
   authentication.
 
