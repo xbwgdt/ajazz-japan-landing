@@ -4,7 +4,7 @@ const baseUrl = "https://ajazz.jp";
 
 export default function robots(): MetadataRoute.Robots {
   return {
-    rules: { userAgent: "*", allow: "/", disallow: ["/survey/admin", "/admin"] },
+    rules: { userAgent: "*", allow: "/", disallow: ["/admin"] },
     sitemap: `${baseUrl}/sitemap.xml`,
   };
 }

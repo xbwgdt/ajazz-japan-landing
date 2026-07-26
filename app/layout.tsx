@@ -1,6 +1,5 @@
 import type { Metadata } from "next";
 import "./globals.css";
-import "./survey/survey.css";
 import { CartProvider } from "../components/store/CartProvider";
 
 const siteUrl = "https://ajazz.jp";
