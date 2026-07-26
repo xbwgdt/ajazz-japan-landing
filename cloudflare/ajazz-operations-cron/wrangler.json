@@ -1,0 +1,9 @@
+{
+  "$schema": "https://unpkg.com/wrangler/config-schema.json",
+  "name": "ajazz-operations-cron",
+  "main": "src/index.ts",
+  "compatibility_date": "2026-07-26",
+  "triggers": {
+    "crons": ["*/10 * * * *", "*/15 * * * *"]
+  }
+}

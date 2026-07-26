@@ -60,6 +60,27 @@ RMS_LICENSE_KEY=replace-with-rms-license-key
 
 - The supplied RMS workbook imports the initial catalog, prices, variants, and product image URLs.
 - RMS InventoryAPI 2.1 uses `RMS_SERVICE_SECRET` and `RMS_LICENSE_KEY`. Configure them only in Vercel, then confirm a real cron run updates `inventory_sync_logs` before claiming real-time synchronization is live.
+
+## Cloudflare scheduled operations
+
+The included Cloudflare Worker removes the need for Vercel Pro cron scheduling. It calls the production website without changing DNS, using these UTC schedules:
+
+- Every 10 minutes: releases expired checkout reservations.
+- Every 15 minutes: synchronizes published SKU stock from RMS.
+
+Deploy it separately after the Vercel production deployment is live:
+
+```bash
+cd cloudflare/ajazz-operations-cron
+npx wrangler login
+npx wrangler secret put AJAZZ_ORIGIN
+# Enter https://ajazz.jp
+npx wrangler secret put CRON_SECRET
+# Enter the exact same value configured in Vercel.
+npx wrangler deploy
+```
+
+Cloudflare stores both values as Worker secrets. Do not add either value to `wrangler.json` or commit it. Confirm both schedules appear under **Workers & Pages > ajazz-operations-cron > Settings > Triggers**, then inspect Worker logs after the first execution. RMS credentials remain only in Vercel.
 - Customer confirmation and shipment emails require a transactional email provider. No email provider is configured in this repository.
 - Fulfillment remains manual through `/admin/orders` for the first release.
 
