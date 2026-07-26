@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { chunkInventoryKeys } from "../../lib/rms/client";
+import { chunkInventoryKeys, createRmsInventoryHttpClient } from "../../lib/rms/client";
 import { syncRmsInventory } from "../../lib/rms/sync";
 
 describe("RMS inventory synchronization", () => {
@@ -10,6 +10,34 @@ describe("RMS inventory synchronization", () => {
     }));
 
     expect(chunkInventoryKeys(keys).map((batch) => batch.length)).toEqual([1000, 1]);
+  });
+
+  it("calls InventoryAPI 2.1 with ESA credentials and maps returned stock", async () => {
+    let request: { url: string; init?: RequestInit } | undefined;
+    const client = createRmsInventoryHttpClient({
+      serviceSecret: "service-secret",
+      licenseKey: "license-key",
+      fetch: async (url, init) => {
+        request = { url, init };
+        return new Response(JSON.stringify({
+          inventories: [{ manageNumber: "ak820-max", variantId: "AK820-BLACK", quantity: 12 }],
+        }), { status: 200, headers: { "content-type": "application/json" } });
+      },
+    });
+
+    await expect(client.getInventories([{ rmsManageNumber: "ak820-max", rmsSkuNumber: "AK820-BLACK" }]))
+      .resolves.toEqual([{ rmsManageNumber: "ak820-max", rmsSkuNumber: "AK820-BLACK", quantity: 12 }]);
+    expect(request).toEqual({
+      url: "https://api.rms.rakuten.co.jp/es/2.1/inventories/bulk-get",
+      init: {
+        method: "POST",
+        headers: {
+          Authorization: "ESA c2VydmljZS1zZWNyZXQ6bGljZW5zZS1rZXk=",
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ inventories: [{ manageNumber: "ak820-max", variantId: "AK820-BLACK" }] }),
+      },
+    });
   });
 
   it("keeps prior stock for a failed batch and records the failure", async () => {

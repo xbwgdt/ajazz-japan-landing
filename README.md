@@ -32,6 +32,8 @@ STRIPE_SECRET_KEY=sk_live_replace_me
 STRIPE_WEBHOOK_SECRET=whsec_replace_me
 NEXT_PUBLIC_SITE_URL=https://ajazz.jp
 CRON_SECRET=replace-with-a-long-random-value
+RMS_SERVICE_SECRET=replace-with-rms-service-secret
+RMS_LICENSE_KEY=replace-with-rms-license-key
 ```
 
 `POSTGRES_URL` is accepted as an alternative to `DATABASE_URL`.
@@ -51,13 +53,13 @@ CRON_SECRET=replace-with-a-long-random-value
 
    Run `pnpm import:rms --dry-run "C:\path\to\dl-normal-item.xlsx"` first to review product and SKU totals without writing data.
 
-7. Configure a protected scheduler to request `GET /api/cron/release-reservations` with `Authorization: Bearer <CRON_SECRET>`. This releases stock reservations left behind by abandoned checkout sessions.
+7. Configure protected schedules to request `GET /api/cron/release-reservations` and `GET /api/cron/rms-inventory` with `Authorization: Bearer <CRON_SECRET>`. The first releases abandoned checkout reservations; the second reads current stock from RMS InventoryAPI 2.1.
 8. Complete a Stripe test-mode purchase, confirm the webhook creates an order, check the order in `/admin/orders`, and test manual fulfillment and refund handling before switching to live keys.
 
 ## Operational limits before launch
 
 - The supplied RMS workbook imports the initial catalog, prices, variants, and product image URLs.
-- The live RMS inventory HTTP adapter still needs the merchant-specific API endpoint, request schema, and credentials. Do not claim real-time RMS inventory synchronization until it has been connected and tested.
+- RMS InventoryAPI 2.1 uses `RMS_SERVICE_SECRET` and `RMS_LICENSE_KEY`. Configure them only in Vercel, then confirm a real cron run updates `inventory_sync_logs` before claiming real-time synchronization is live.
 - Customer confirmation and shipment emails require a transactional email provider. No email provider is configured in this repository.
 - Fulfillment remains manual through `/admin/orders` for the first release.
 
