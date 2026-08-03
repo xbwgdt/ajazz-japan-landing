@@ -37,6 +37,7 @@ Pages:
 - Driver downloads
 - Cart and Stripe checkout
 - Order lookup
+- Member registration, sign-in, account management, order history, saved addresses, and point history
 - Legal pages: 特定商取引法に基づく表記, privacy policy, terms, shipping, returns, and warranty
 
 Customer flow:
@@ -47,6 +48,14 @@ Customer flow:
 4. Receive confirmation email.
 5. Operations staff fulfills order manually.
 6. Staff enters tracking number and customer receives shipment email.
+
+Logged-in members earn one point for each JPY 100 of eligible product spend. One point is worth JPY 1 and can be redeemed from one point. Points remain pending until 14 days after shipment, expire 12 months after the member's latest point accrual or redemption, and are reversed or restored consistently when an order is refunded or cancelled. Guest checkout remains available but does not earn points.
+
+Product variants must link each RMS SKU to its own color name, color thumbnail, gallery images, price, comparison price, and inventory. Product cards show up to four color thumbnails plus an overflow count; product pages use image thumbnails rather than abstract color dots and expose the selected color in the URL.
+
+The product-detail information hierarchy may draw from the AJAZZ Rakuten store, but the official site must reorganize the content into a concise gallery and purchase panel followed by selling points, specifications, downloads, shipping, returns, and related products.
+
+OEM and wholesale do not receive dedicated pages or detailed public option lists. The company page presents these capabilities as evidence of AJAZZ's product-development and supply strength and directs interested businesses to `xiet@a-jazz.com`.
 
 Driver downloads provide software, firmware, and manuals by compatible product model. They are a public support resource and do not include a customer-service ticket workflow.
 
@@ -67,6 +76,9 @@ Driver downloads provide software, firmware, and manuals by compatible product m
 - If RMS sync fails, retain the most recent successful availability, show an admin alert, and never convert failed records to zero stock.
 - Out-of-stock variants cannot be checked out.
 - Refunds are initiated only by staff in the admin console and reconciled against Stripe webhook status.
+- Member and point balances use an append-only point ledger. A cached balance may be stored for display, but the ledger is the source of truth.
+- Point redemption and order payment must be committed atomically so the same points cannot be spent twice.
+- Refunds cancel pending earned points, deduct confirmed earned points, and restore redeemed points in proportion to the refunded amount.
 
 ## Acceptance Criteria
 
@@ -78,9 +90,13 @@ Driver downloads provide software, firmware, and manuals by compatible product m
 - Staff can enter a tracking number and send a shipment notification.
 - Required legal and customer-service information matches the confirmed seller, shipping, and returns rules.
 - Key storefront views are visually tested at desktop and mobile breakpoints.
+- Members can register, sign in, reset access, review orders, manage saved addresses, and inspect point balance and history.
+- Point earning, 14-day pending status, redemption, 12-month rolling expiry, cancellation, and refund adjustments are covered by automated tests.
+- Every selectable color renders the correct image, SKU, price, comparison price, and live RMS availability on product cards and product pages.
+- The company page contains the approved OEM and wholesale capability message and a working email action to `xiet@a-jazz.com`; no standalone OEM or wholesale route is published.
 
 ## Out of Scope for First Release
 
 - RSL BOSS external API integration and RSL automated fulfillment.
-- Membership, points, subscriptions, pre-order lotteries, and complex marketing automation.
+- Subscriptions, pre-order lotteries, tiered membership, point campaigns or multipliers, point transfer, and complex marketing automation.
 - Non-Japanese storefront localization.

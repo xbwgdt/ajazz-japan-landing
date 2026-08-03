@@ -9,6 +9,9 @@ export interface StorefrontDatabaseProduct {
     id: string;
     rmsSkuNumber: string;
     priceJpy: number;
+    compareAtPriceJpy?: number;
+    colorName?: string;
+    imageUrl?: string;
     availableQuantity: number;
   }>;
 }
@@ -30,8 +33,8 @@ export async function getStorefrontDatabaseProduct(slug: string): Promise<Storef
     commerceSql()<Array<{ url: string }>>`
       SELECT url FROM product_images WHERE product_id = ${product.id} ORDER BY position
     `,
-    commerceSql()<Array<{ id: number; rms_sku_number: string; price_jpy: number; available_quantity: number; reserved_quantity: number }>>`
-      SELECT id, rms_sku_number, price_jpy, available_quantity, reserved_quantity
+    commerceSql()<Array<{ id: number; rms_sku_number: string; price_jpy: number; compare_at_price_jpy: number | null; color_name: string | null; image_url: string | null; available_quantity: number; reserved_quantity: number }>>`
+      SELECT id, rms_sku_number, price_jpy, compare_at_price_jpy, color_name, image_url, available_quantity, reserved_quantity
       FROM product_variants
       WHERE product_id = ${product.id}
       ORDER BY id
@@ -46,6 +49,9 @@ export async function getStorefrontDatabaseProduct(slug: string): Promise<Storef
       id: String(variant.id),
       rmsSkuNumber: variant.rms_sku_number,
       priceJpy: Number(variant.price_jpy),
+      compareAtPriceJpy: variant.compare_at_price_jpy ? Number(variant.compare_at_price_jpy) : undefined,
+      colorName: variant.color_name ?? undefined,
+      imageUrl: variant.image_url ?? undefined,
       availableQuantity: getSellableQuantity(Number(variant.available_quantity), Number(variant.reserved_quantity)),
     })),
   };
@@ -63,17 +69,19 @@ export async function listStorefrontDatabaseCards(): Promise<StorefrontCard[]> {
   `;
   if (!products.length) return [];
 
-  const variants = await commerceSql()<Array<{ product_id: number; price_jpy: number; available_quantity: number; reserved_quantity: number }>>`
-    SELECT product_id, price_jpy, available_quantity, reserved_quantity
+  const variants = await commerceSql()<Array<{ product_id: number; price_jpy: number; color_name: string | null; image_url: string | null; available_quantity: number; reserved_quantity: number }>>`
+    SELECT product_id, price_jpy, color_name, image_url, available_quantity, reserved_quantity
     FROM product_variants
     WHERE product_id IN ${commerceSql()(products.map((product) => product.id))}
   `;
-  const variantsByProduct = new Map<number, Array<{ priceJpy: number; availableQuantity: number }>>();
+  const variantsByProduct = new Map<number, Array<{ priceJpy: number; availableQuantity: number; colorName?: string; imageUrl?: string }>>();
   for (const variant of variants) {
     const entries = variantsByProduct.get(variant.product_id) ?? [];
     entries.push({
       priceJpy: Number(variant.price_jpy),
       availableQuantity: getSellableQuantity(Number(variant.available_quantity), Number(variant.reserved_quantity)),
+      colorName: variant.color_name ?? undefined,
+      imageUrl: variant.image_url ?? undefined,
     });
     variantsByProduct.set(variant.product_id, entries);
   }

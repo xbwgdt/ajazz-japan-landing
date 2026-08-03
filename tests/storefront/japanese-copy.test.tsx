@@ -4,6 +4,7 @@ import LegalPage from "../../app/legal/page";
 import PrivacyPage from "../../app/privacy/page";
 import { CartProvider } from "../../components/store/CartProvider";
 import { Storefront } from "../../components/store/Storefront";
+import AboutPage from "../../app/about/page";
 
 describe("Japanese storefront copy", () => {
   it("renders the official store navigation and service commitments in Japanese", () => {
@@ -18,5 +19,25 @@ describe("Japanese storefront copy", () => {
   it("renders readable legal notices and links to the terms page", () => {
     expect(renderToStaticMarkup(<LegalPage />)).toContain("特定商取引法に基づく表記");
     expect(renderToStaticMarkup(<PrivacyPage />)).toContain("プライバシーポリシー");
+  });
+
+  it("keeps the responsible person in the legal disclosure but not the company profile", () => {
+    expect(renderToStaticMarkup(<AboutPage />)).not.toContain("代表取締役社長 謝天");
+    expect(renderToStaticMarkup(<LegalPage />)).toContain("代表取締役社長 謝天");
+  });
+
+  it("presents OEM and wholesale capability inside the company page", () => {
+    const html = renderToStaticMarkup(<AboutPage />);
+    expect(html).toContain("AJAZZ、2009年に誕生した");
+    expect(html).toContain("PC周辺機器ブランド");
+    expect(html).toContain("エントリーモデルから、ラピッドトリガー対応キーボード");
+    expect(html).toContain("AJAZZ日本法人による");
+    expect(html).toContain("安心サポート");
+    expect(html).toContain("日本人スタッフがご購入後のお問い合わせや保証相談まで丁寧にサポート");
+    expect(html).toContain("初期設定や使い方の不安にも寄り添い、日本品質のサポートを提供します");
+    expect(html).toContain("日本市場と世界のものづくりをつなぐ");
+    expect(html).toContain("OEM製品の企画・開発");
+    expect(html).toContain("法人・事業相談をメールする");
+    expect(html).toContain("mailto:xiet@a-jazz.com");
   });
 });

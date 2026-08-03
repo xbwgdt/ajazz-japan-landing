@@ -28,4 +28,10 @@ describe("commerce database schema", () => {
     expect(commerceSchemaSql).toContain("CREATE TABLE IF NOT EXISTS stripe_webhook_events");
     expect(commerceSchemaSql).toContain("stripe_event_id TEXT NOT NULL UNIQUE");
   });
+
+  it("stores merchandising fields for selectable color variants", () => {
+    expect(commerceSchemaSql).toContain("color_name TEXT");
+    expect(commerceSchemaSql).toContain("image_url TEXT");
+    expect(commerceSchemaSql).toContain("compare_at_price_jpy INTEGER");
+  });
 });

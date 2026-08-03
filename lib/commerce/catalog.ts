@@ -12,6 +12,7 @@ export interface RmsCatalogRow {
   name?: string;
   descriptionHtml?: string;
   salePriceJpy?: number;
+  displayPriceJpy?: number;
   stockQuantity?: number;
   imagePaths?: string[];
 }
@@ -25,7 +26,10 @@ export interface RmsCatalogImportProduct {
   variants: Array<{
     rmsSkuNumber: string;
     priceJpy: number;
+    compareAtPriceJpy?: number;
     stockQuantity: number;
+    colorName?: string;
+    imageUrl?: string;
   }>;
 }
 
@@ -51,17 +55,25 @@ export function parseRmsWorksheetRows(rows: RmsWorksheetRow[]): RmsCatalogRow[] 
         return undefined;
       }
 
-      return {
+      const parsed: RmsCatalogRow = {
         rmsManageNumber,
-        rmsSkuNumber: getString(row.SKU管理番号),
-        name: getString(row.商品名),
-        descriptionHtml: getString(row.PC用商品説明文),
-        salePriceJpy: getNumber(row.通常販売価格),
-        stockQuantity: getNumber(row.在庫数),
         imagePaths: Array.from({ length: 20 }, (_, index) =>
           getString(row[`商品画像パス${index + 1}`]),
         ).filter((path): path is string => Boolean(path)),
       };
+      const rmsSkuNumber = getString(row.SKU管理番号);
+      const name = getString(row.商品名);
+      const descriptionHtml = getString(row.PC用商品説明文);
+      const salePriceJpy = getNumber(row.通常購入販売価格);
+      const displayPriceJpy = getNumber(row.表示価格);
+      const stockQuantity = getNumber(row.在庫数);
+      if (rmsSkuNumber) parsed.rmsSkuNumber = rmsSkuNumber;
+      if (name) parsed.name = name;
+      if (descriptionHtml) parsed.descriptionHtml = descriptionHtml;
+      if (salePriceJpy !== undefined) parsed.salePriceJpy = salePriceJpy;
+      if (displayPriceJpy !== undefined) parsed.displayPriceJpy = displayPriceJpy;
+      if (stockQuantity !== undefined) parsed.stockQuantity = stockQuantity;
+      return parsed;
     })
     .filter((row): row is RmsCatalogRow => Boolean(row));
 }
@@ -97,6 +109,10 @@ export function buildRmsCatalogImport(rows: RmsCatalogRow[]): RmsCatalogImportPr
       existing.variantMap.set(row.rmsSkuNumber, {
         rmsSkuNumber: row.rmsSkuNumber,
         priceJpy: row.salePriceJpy ?? 0,
+        compareAtPriceJpy:
+          row.displayPriceJpy && row.displayPriceJpy > (row.salePriceJpy ?? 0)
+            ? row.displayPriceJpy
+            : undefined,
         stockQuantity: row.stockQuantity ?? 0,
       });
     }
@@ -104,12 +120,92 @@ export function buildRmsCatalogImport(rows: RmsCatalogRow[]): RmsCatalogImportPr
     products.set(row.rmsManageNumber, existing);
   }
 
-  return [...products.values()]
+  const rawProducts = [...products.values()]
     .filter((product) => product.name)
     .map(({ variantMap, ...product }) => ({
       ...product,
       variants: [...variantMap.values()],
     }));
+
+  return consolidateColorListings(rawProducts);
+}
+
+function consolidateColorListings(products: RmsCatalogImportProduct[]) {
+  const productIndexesBySku = new Map<string, number[]>();
+  products.forEach((product, productIndex) => {
+    for (const variant of product.variants) {
+      const indexes = productIndexesBySku.get(variant.rmsSkuNumber) ?? [];
+      indexes.push(productIndex);
+      productIndexesBySku.set(variant.rmsSkuNumber, indexes);
+    }
+  });
+
+  const consumed = new Set<number>();
+  const consolidated: RmsCatalogImportProduct[] = [];
+
+  products.forEach((product, startIndex) => {
+    if (consumed.has(startIndex)) return;
+    const component = new Set<number>([startIndex]);
+    const queue = [startIndex];
+    while (queue.length) {
+      const currentIndex = queue.shift()!;
+      for (const variant of products[currentIndex].variants) {
+        for (const relatedIndex of productIndexesBySku.get(variant.rmsSkuNumber) ?? []) {
+          if (!component.has(relatedIndex)) {
+            component.add(relatedIndex);
+            queue.push(relatedIndex);
+          }
+        }
+      }
+    }
+
+    component.forEach((index) => consumed.add(index));
+    const members = [...component].map((index) => products[index]);
+    if (members.length === 1) {
+      consolidated.push(product);
+      return;
+    }
+    const canonical = [...members].sort((left, right) =>
+      right.variants.length - left.variants.length
+      || left.rmsManageNumber.length - right.rmsManageNumber.length
+      || left.rmsManageNumber.localeCompare(right.rmsManageNumber),
+    )[0];
+
+    const variants = canonical.variants.map((variant, variantIndex) => {
+      const source = [...members]
+        .filter((member) => member.variants.some((candidate) => candidate.rmsSkuNumber === variant.rmsSkuNumber))
+        .sort((left, right) =>
+          left.variants.length - right.variants.length
+          || Number(left === canonical) - Number(right === canonical)
+          || right.images.length - left.images.length,
+        )[0] ?? canonical;
+      const sourceVariant = source.variants.find((candidate) => candidate.rmsSkuNumber === variant.rmsSkuNumber);
+      return {
+        ...variant,
+        compareAtPriceJpy: sourceVariant?.compareAtPriceJpy ?? variant.compareAtPriceJpy,
+        colorName: inferColorName(source.rmsManageNumber, variantIndex),
+        imageUrl: source.images[0] ?? canonical.images[0],
+      };
+    });
+
+    consolidated.push({ ...canonical, variants });
+  });
+
+  return consolidated;
+}
+
+const colorNames: Record<string, string> = {
+  black: "ブラック", white: "ホワイト", blue: "ブルー", green: "グリーン",
+  red: "レッド", pink: "ピンク", orange: "オレンジ", brown: "ブラウン",
+  purple: "パープル", yellow: "イエロー", gray: "グレー", grey: "グレー",
+  silver: "シルバー", gold: "ゴールド", navy: "ネイビー", cyan: "シアン",
+  beige: "ベージュ", bp: "ブルー・ピンク", pb: "ピンク・ブルー",
+  w: "ホワイト", b: "ブラック",
+};
+
+function inferColorName(manageNumber: string, index: number) {
+  const token = manageNumber.toLowerCase().split("-").filter(Boolean).at(-1) ?? "";
+  return colorNames[token] ?? (token && /[a-z]/.test(token) ? token.toUpperCase() : `カラー ${index + 1}`);
 }
 
 export async function writeRmsCatalog(
@@ -168,17 +264,26 @@ export async function upsertRmsCatalog(rows: RmsCatalogRow[]) {
             product_id,
             rms_sku_number,
             price_jpy,
+            compare_at_price_jpy,
+            color_name,
+            image_url,
             available_quantity
           )
           VALUES (
             ${productId},
             ${variant.rmsSkuNumber},
             ${variant.priceJpy},
+            ${variant.compareAtPriceJpy ?? null},
+            ${variant.colorName ?? null},
+            ${variant.imageUrl ?? null},
             ${variant.stockQuantity}
           )
           ON CONFLICT (product_id, rms_sku_number) DO UPDATE
           SET
             price_jpy = EXCLUDED.price_jpy,
+            compare_at_price_jpy = EXCLUDED.compare_at_price_jpy,
+            color_name = EXCLUDED.color_name,
+            image_url = EXCLUDED.image_url,
             available_quantity = EXCLUDED.available_quantity,
             updated_at = NOW()
         `;

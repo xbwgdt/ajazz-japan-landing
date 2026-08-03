@@ -80,7 +80,8 @@ describe("RMS catalog images", () => {
         {
           "商品管理番号（商品URL）": "ak820-max",
           SKU管理番号: "AK820-BLACK",
-          通常販売価格: "19,980",
+          通常購入販売価格: "19,980",
+          表示価格: "24,980",
           在庫数: "4",
         },
       ]),
@@ -98,8 +99,42 @@ describe("RMS catalog images", () => {
         rmsManageNumber: "ak820-max",
         rmsSkuNumber: "AK820-BLACK",
         salePriceJpy: 19980,
+        displayPriceJpy: 24980,
         stockQuantity: 4,
         imagePaths: [],
+      },
+    ]);
+  });
+
+  it("merges dedicated color listings into the canonical multi-SKU product", () => {
+    const catalog = buildRmsCatalogImport([
+      { rmsManageNumber: "aj159apex", name: "AJ159 APEX", imagePaths: ["/aj159/main.jpg"] },
+      { rmsManageNumber: "aj159apex", rmsSkuNumber: "SKU-ORANGE", salePriceJpy: 8980, stockQuantity: 2 },
+      { rmsManageNumber: "aj159apex", rmsSkuNumber: "SKU-BLUE", salePriceJpy: 8980, stockQuantity: 3 },
+      { rmsManageNumber: "aj159apex-orange", name: "AJ159 APEX Orange", imagePaths: ["/aj159/orange.jpg"] },
+      { rmsManageNumber: "aj159apex-orange", rmsSkuNumber: "SKU-ORANGE", salePriceJpy: 8980, displayPriceJpy: 9980, stockQuantity: 2 },
+      { rmsManageNumber: "aj159apex-blue", name: "AJ159 APEX Blue", imagePaths: ["/aj159/blue.jpg"] },
+      { rmsManageNumber: "aj159apex-blue", rmsSkuNumber: "SKU-BLUE", salePriceJpy: 8980, stockQuantity: 3 },
+    ]);
+
+    expect(catalog).toHaveLength(1);
+    expect(catalog[0].rmsManageNumber).toBe("aj159apex");
+    expect(catalog[0].variants).toEqual([
+      {
+        rmsSkuNumber: "SKU-ORANGE",
+        priceJpy: 8980,
+        compareAtPriceJpy: 9980,
+        stockQuantity: 2,
+        colorName: "オレンジ",
+        imageUrl: "https://image.rakuten.co.jp/ajazz/cabinet/aj159/orange.jpg",
+      },
+      {
+        rmsSkuNumber: "SKU-BLUE",
+        priceJpy: 8980,
+        compareAtPriceJpy: undefined,
+        stockQuantity: 3,
+        colorName: "ブルー",
+        imageUrl: "https://image.rakuten.co.jp/ajazz/cabinet/aj159/blue.jpg",
       },
     ]);
   });

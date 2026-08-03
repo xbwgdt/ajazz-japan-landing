@@ -8,7 +8,14 @@ describe("product detail", () => {
     const html = renderToStaticMarkup(<CartProvider><ProductDetail product={{
       name: "AK820 MAX", descriptionHtml: "<p>Rapid trigger keyboard</p>",
       images: ["https://image.rakuten.co.jp/ajazz/cabinet/12437413/ak820/hero.jpg"],
-      variants: [{ rmsSkuNumber: "AK820-BLACK", priceJpy: 19980, availableQuantity: 4 }],
+      variants: [{
+        rmsSkuNumber: "AK820-BLACK",
+        colorName: "ブラック",
+        imageUrl: "https://image.rakuten.co.jp/ajazz/cabinet/12437413/ak820/black.jpg",
+        priceJpy: 19980,
+        compareAtPriceJpy: 24980,
+        availableQuantity: 4,
+      }],
     }} /></CartProvider>);
 
     expect(html).toContain("19,980");
@@ -16,6 +23,14 @@ describe("product detail", () => {
     expect(html).toContain("日本全国送料無料");
     expect(html).toContain("商品到着後7日以内");
     expect(html).toContain("AK820-BLACK");
+    expect(html).toContain("カラー：");
+    expect(html).toContain("ブラック");
+    expect(html).toContain("24,980");
+    expect(html).toContain("199ポイント");
+    expect(html).toContain("獲得予定");
+    expect(html).toContain("aria-pressed=\"true\"");
+    expect(html).toContain("商品仕様");
+    expect(html).toContain("ドライバー・マニュアル");
     expect(html).toContain("https://image.rakuten.co.jp/ajazz/cabinet/12437413/ak820/hero.jpg");
   });
 

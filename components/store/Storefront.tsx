@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { storefrontProducts } from "./catalogue";
 import { CartLink } from "./CartLink";
+import { ProductCard } from "./ProductCard";
 
 interface StorefrontCard {
   slug: string;
@@ -8,6 +9,7 @@ interface StorefrontCard {
   category: string;
   tagline: string;
   image: string;
+  variants?: Array<{ colorName?: string; imageUrl?: string; availableQuantity: number }>;
 }
 
 export function Storefront({ products = storefrontProducts }: { products?: StorefrontCard[] }) {
@@ -59,17 +61,7 @@ export function Storefront({ products = storefrontProducts }: { products?: Store
         </div>
         <div className="store-product-grid">
           {products.map((product, index) => (
-            <Link className="store-card" href={`/products/${product.slug}`} key={product.slug}>
-              <div className="store-card-image">
-                <img src={product.image} alt={product.name} />
-                <span>{String(index + 1).padStart(2, "0")}</span>
-              </div>
-              <div className="store-card-meta">
-                <p>{product.category}</p>
-                <h3>{product.name}</h3>
-                <span>{product.tagline}</span>
-              </div>
-            </Link>
+            <ProductCard {...product} index={index} key={product.slug} />
           ))}
         </div>
       </section>

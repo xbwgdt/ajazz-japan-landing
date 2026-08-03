@@ -9,6 +9,9 @@ export interface StoreProductRecord {
   variants: Array<{
     rmsSkuNumber: string;
     priceJpy: number;
+    compareAtPriceJpy?: number;
+    colorName?: string;
+    imageUrl?: string;
     availableQuantity: number;
   }>;
 }
@@ -22,7 +25,7 @@ export const storefrontProducts: StoreProductRecord[] = [
     image: "/images/ak820maxultra.webp",
     descriptionHtml: "磁気スイッチと高速入力のための75%レイアウト。",
     images: ["/images/ak820maxultra.webp"],
-    variants: [{ rmsSkuNumber: "AK820-MAX-ULTRA", priceJpy: 19980, availableQuantity: 1 }],
+    variants: [{ rmsSkuNumber: "AK820-MAX-ULTRA", priceJpy: 19980, colorName: "ブラック", imageUrl: "/images/ak820maxultra.webp", availableQuantity: 1 }],
   },
   {
     slug: "ak820-pro",
@@ -32,7 +35,7 @@ export const storefrontProducts: StoreProductRecord[] = [
     image: "/images/ak820pro.webp",
     descriptionHtml: "ワークスペースにもゲーム環境にも対応するコンパクトメカニカル。",
     images: ["/images/ak820pro.webp"],
-    variants: [{ rmsSkuNumber: "AK820-PRO", priceJpy: 12980, availableQuantity: 1 }],
+    variants: [{ rmsSkuNumber: "AK820-PRO", priceJpy: 12980, colorName: "ブラック", imageUrl: "/images/ak820pro.webp", availableQuantity: 1 }],
   },
   {
     slug: "aj179-apex",
@@ -42,7 +45,7 @@ export const storefrontProducts: StoreProductRecord[] = [
     image: "/images/aj179apex.webp",
     descriptionHtml: "8000Hzポーリングレートに対応した軽量ワイヤレスマウス。",
     images: ["/images/aj179apex.webp"],
-    variants: [{ rmsSkuNumber: "AJ179-APEX", priceJpy: 8980, availableQuantity: 1 }],
+    variants: [{ rmsSkuNumber: "AJ179-APEX", priceJpy: 8980, colorName: "ブラック", imageUrl: "/images/aj179apex.webp", availableQuantity: 1 }],
   },
   {
     slug: "akp05-pro",
@@ -52,7 +55,7 @@ export const storefrontProducts: StoreProductRecord[] = [
     image: "/images/akp05pro.webp",
     descriptionHtml: "配信とクリエイティブワークのためのプログラマブルコントロール。",
     images: ["/images/akp05pro.webp"],
-    variants: [{ rmsSkuNumber: "AKP05-PRO", priceJpy: 7980, availableQuantity: 1 }],
+    variants: [{ rmsSkuNumber: "AKP05-PRO", priceJpy: 7980, colorName: "ブラック", imageUrl: "/images/akp05pro.webp", availableQuantity: 1 }],
   },
 ];
 

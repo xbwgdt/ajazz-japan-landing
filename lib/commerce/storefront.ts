@@ -2,7 +2,12 @@ export interface StorefrontCardSource {
   slug: string;
   name: string;
   image: string;
-  variants: Array<{ priceJpy: number; availableQuantity: number }>;
+  variants: Array<{
+    priceJpy: number;
+    availableQuantity: number;
+    colorName?: string;
+    imageUrl?: string;
+  }>;
 }
 
 export interface StorefrontCard {
@@ -12,6 +17,7 @@ export interface StorefrontCard {
   category: string;
   tagline: string;
   available: boolean;
+  variants: StorefrontCardSource["variants"];
 }
 
 export function toStorefrontCards(products: StorefrontCardSource[]): StorefrontCard[] {
@@ -25,6 +31,7 @@ export function toStorefrontCards(products: StorefrontCardSource[]): StorefrontC
       category: "AJAZZ HARDWARE",
       tagline: price ? `¥${price.toLocaleString("ja-JP")}から` : "価格準備中",
       available: product.variants.some((variant) => variant.availableQuantity > 0),
+      variants: product.variants,
     };
   });
 }

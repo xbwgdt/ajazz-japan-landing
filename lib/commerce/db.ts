@@ -20,6 +20,9 @@ export const commerceSchemaSql = `
     product_id BIGINT NOT NULL REFERENCES products(id) ON DELETE CASCADE,
     rms_sku_number TEXT NOT NULL,
     price_jpy INTEGER NOT NULL,
+    compare_at_price_jpy INTEGER,
+    color_name TEXT,
+    image_url TEXT,
     available_quantity INTEGER NOT NULL DEFAULT 0,
     reserved_quantity INTEGER NOT NULL DEFAULT 0,
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
@@ -125,6 +128,15 @@ export const commerceSchemaSql = `
 
   ALTER TABLE product_variants
   ADD COLUMN IF NOT EXISTS reserved_quantity INTEGER NOT NULL DEFAULT 0;
+
+  ALTER TABLE product_variants
+  ADD COLUMN IF NOT EXISTS compare_at_price_jpy INTEGER;
+
+  ALTER TABLE product_variants
+  ADD COLUMN IF NOT EXISTS color_name TEXT;
+
+  ALTER TABLE product_variants
+  ADD COLUMN IF NOT EXISTS image_url TEXT;
 
   ALTER TABLE orders
   ADD COLUMN IF NOT EXISTS terms_accepted_at TIMESTAMPTZ;

@@ -25,7 +25,7 @@ describe("RMS workbook reader", () => {
       "PC用商品説明文",
       "商品画像パス1",
       "SKU管理番号",
-      "通常販売価格",
+      "通常購入販売価格",
       "在庫数",
     ]);
     worksheet.addRow([
