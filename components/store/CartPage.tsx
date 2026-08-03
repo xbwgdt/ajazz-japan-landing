@@ -1,25 +1,72 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { useCart } from "./CartProvider";
+import type { CartLine } from "../../lib/commerce/types";
+
+interface CheckoutApiResponse {
+  checkoutUrl?: string;
+  error?: string;
+}
+
+interface CheckoutAttempt {
+  cartKey: string;
+  idempotencyKey: string;
+}
+
+export function checkoutAttempt(
+  lines: CartLine[],
+  previous?: CheckoutAttempt,
+  randomUUID: () => string = () => crypto.randomUUID(),
+): CheckoutAttempt {
+  const cartKey = JSON.stringify([...lines]
+    .sort((left, right) => left.variantId.localeCompare(right.variantId))
+    .map(({ variantId, quantity }) => ({ variantId, quantity })));
+  return previous?.cartKey === cartKey ? previous : { cartKey, idempotencyKey: randomUUID() };
+}
+
+export async function startCheckout(
+  lines: CartLine[],
+  fetcher: typeof fetch = fetch,
+  navigate: (url: string) => void = (url) => window.location.assign(url),
+  idempotencyKey = crypto.randomUUID(),
+) {
+  const response = await fetcher("/api/commerce/checkout", {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({ idempotencyKey, lines }),
+  });
+  const payload = await response.json().catch(() => ({})) as CheckoutApiResponse;
+  if (response.ok && payload.checkoutUrl) {
+    navigate(payload.checkoutUrl);
+    return { redirected: true } as const;
+  }
+  return {
+    redirected: false,
+    resetAttempt: response.status === 409,
+    error: payload.error ?? "決済画面を開始できませんでした。時間をおいて再度お試しください。",
+  } as const;
+}
 
 export function CartPage() {
   const { lines, remove, setQuantity } = useCart();
   const [error, setError] = useState("");
   const [isCheckingOut, setIsCheckingOut] = useState(false);
+  const attemptRef = useRef<CheckoutAttempt | undefined>(undefined);
   const total = lines.reduce((sum, line) => sum + line.priceJpy * line.quantity, 0);
 
   async function checkout() {
     setError("");
     setIsCheckingOut(true);
-    const response = await fetch("/api/commerce/checkout", {
-      method: "POST", headers: { "content-type": "application/json" },
-      body: JSON.stringify({ idempotencyKey: crypto.randomUUID(), lines: lines.map((line) => ({ variantId: line.variantId, quantity: line.quantity })) }),
-    });
-    const payload = await response.json().catch(() => ({}));
-    if (response.ok && payload.url) window.location.assign(payload.url);
-    else { setIsCheckingOut(false); setError(payload.error ?? "決済画面を開始できませんでした。時間をおいて再度お試しください。"); }
+    const checkoutLines = lines.map((line) => ({ variantId: line.variantId, quantity: line.quantity }));
+    attemptRef.current = checkoutAttempt(checkoutLines, attemptRef.current);
+    const result = await startCheckout(checkoutLines, fetch, (url) => window.location.assign(url), attemptRef.current.idempotencyKey);
+    if (!result.redirected) {
+      if (result.resetAttempt) attemptRef.current = undefined;
+      setIsCheckingOut(false);
+      setError(result.error);
+    }
   }
 
   return <main className="storefront store-cart-page">

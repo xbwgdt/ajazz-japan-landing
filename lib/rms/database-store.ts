@@ -39,7 +39,11 @@ export function databaseRmsInventorySyncStore(): RmsInventorySyncStore {
       await ensureCommerceSchema();
       await commerceSql()`
         UPDATE inventory_sync_logs
-        SET completed_at = NOW(), status = ${update.status}, error_message = ${update.errorMessage ?? null}
+        SET completed_at = NOW(),
+            status = ${update.status},
+            updated_count = ${update.updatedCount},
+            failed_count = ${update.failedCount},
+            error_message = ${update.errorMessage ?? null}
         WHERE id = ${logId}
       `;
     },

@@ -15,8 +15,9 @@ export interface ProductCardProps {
 }
 
 export function ProductCard({ slug, name, category, tagline, image, index, variants = [] }: ProductCardProps) {
-  const [previewImage, setPreviewImage] = useState(image);
+  const [selectedVariantIndex, setSelectedVariantIndex] = useState(0);
   const visibleVariants = variants.filter((variant) => variant.imageUrl).slice(0, 4);
+  const previewImage = visibleVariants[selectedVariantIndex]?.imageUrl ?? image;
   const hiddenCount = Math.max(0, variants.filter((variant) => variant.imageUrl).length - visibleVariants.length);
 
   return <article className="store-card">
@@ -36,8 +37,9 @@ export function ProductCard({ slug, name, category, tagline, image, index, varia
         key={`${variant.colorName ?? "color"}-${variantIndex}`}
         type="button"
         aria-label={variant.colorName ?? `カラー ${variantIndex + 1}`}
+        aria-pressed={variantIndex === selectedVariantIndex}
         disabled={variant.availableQuantity <= 0}
-        onClick={() => setPreviewImage(variant.imageUrl ?? image)}
+        onClick={() => setSelectedVariantIndex(variantIndex)}
       ><img src={variant.imageUrl} alt="" /></button>)}
       {hiddenCount ? <span>+{hiddenCount}</span> : null}
     </div> : null}

@@ -14,4 +14,18 @@ describe("order CSV export", () => {
     expect(csv).toContain("利用規約同意日時");
     expect(csv).toContain("2026-07-25T00:01:00.000Z");
   });
+
+  it("neutralizes spreadsheet formulas in every customer-controlled cell", () => {
+    const csv = toOrderCsv([{
+      id: "order_1", status: "paid", customerEmail: "=HYPERLINK(\"https://example.test\")", totalJpy: 19980,
+      createdAt: new Date("2026-07-25T00:00:00.000Z"), trackingNumber: "+cmd",
+      termsAcceptedAt: null,
+      shippingAddress: { name: "@SUM(1+1)", address: { line1: "-2+3" } },
+    }]);
+
+    expect(csv).toContain("'=");
+    expect(csv).toContain("'+cmd");
+    expect(csv).toContain("'@SUM(1+1)");
+    expect(csv).not.toContain(",=HYPERLINK");
+  });
 });

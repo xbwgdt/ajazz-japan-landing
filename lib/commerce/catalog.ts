@@ -117,10 +117,7 @@ export function buildRmsCatalogImport(rows: RmsCatalogRow[]): RmsCatalogImportPr
       existing.variantMap.set(row.rmsSkuNumber, {
         rmsSkuNumber: row.rmsSkuNumber,
         priceJpy: row.salePriceJpy ?? 0,
-        compareAtPriceJpy:
-          row.displayPriceJpy && row.displayPriceJpy > (row.salePriceJpy ?? 0)
-            ? row.displayPriceJpy
-            : undefined,
+        compareAtPriceJpy: undefined,
         stockQuantity: row.stockQuantity ?? 0,
       });
     }
@@ -190,7 +187,7 @@ function consolidateColorListings(products: RmsCatalogImportProduct[]) {
       const sourceVariant = source.variants.find((candidate) => candidate.rmsSkuNumber === variant.rmsSkuNumber);
       return {
         ...variant,
-        compareAtPriceJpy: sourceVariant?.compareAtPriceJpy ?? variant.compareAtPriceJpy,
+        compareAtPriceJpy: undefined,
         colorName: inferColorName(source.rmsManageNumber, variantIndex),
         imageUrl: source.images[0] ?? canonical.images[0],
       };
@@ -275,6 +272,7 @@ export async function upsertRmsCatalog(rows: RmsCatalogRow[]) {
             rms_sku_number,
             price_jpy,
             compare_at_price_jpy,
+            compare_at_price_approved,
             color_name,
             image_url,
             available_quantity
@@ -284,6 +282,7 @@ export async function upsertRmsCatalog(rows: RmsCatalogRow[]) {
             ${variant.rmsSkuNumber},
             ${variant.priceJpy},
             ${variant.compareAtPriceJpy ?? null},
+            FALSE,
             ${variant.colorName ?? null},
             ${variant.imageUrl ?? null},
             ${variant.stockQuantity}
@@ -292,6 +291,7 @@ export async function upsertRmsCatalog(rows: RmsCatalogRow[]) {
           SET
             price_jpy = EXCLUDED.price_jpy,
             compare_at_price_jpy = EXCLUDED.compare_at_price_jpy,
+            compare_at_price_approved = FALSE,
             color_name = EXCLUDED.color_name,
             image_url = EXCLUDED.image_url,
             available_quantity = EXCLUDED.available_quantity,

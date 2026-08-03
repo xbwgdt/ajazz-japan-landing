@@ -22,6 +22,7 @@ export const commerceSchemaSql = `
     rms_sku_number TEXT NOT NULL,
     price_jpy INTEGER NOT NULL,
     compare_at_price_jpy INTEGER,
+    compare_at_price_approved BOOLEAN NOT NULL DEFAULT FALSE,
     color_name TEXT,
     image_url TEXT,
     available_quantity INTEGER NOT NULL DEFAULT 0,
@@ -52,6 +53,9 @@ export const commerceSchemaSql = `
   CREATE TABLE IF NOT EXISTS stock_reservations (
     id UUID PRIMARY KEY,
     idempotency_key TEXT NOT NULL UNIQUE,
+    cart_fingerprint TEXT,
+    expected_total_jpy INTEGER,
+    stripe_checkout_session_id TEXT UNIQUE,
     status TEXT NOT NULL DEFAULT 'active',
     expires_at TIMESTAMPTZ NOT NULL,
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
@@ -103,13 +107,36 @@ export const commerceSchemaSql = `
     stripe_refund_id TEXT UNIQUE,
     amount_jpy INTEGER NOT NULL,
     status TEXT NOT NULL,
+    previous_order_status TEXT,
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
   );
 
-  CREATE TABLE IF NOT EXISTS return_restock_events (
+  CREATE TABLE IF NOT EXISTS inventory_restock_events (
     order_id UUID PRIMARY KEY REFERENCES orders(id) ON DELETE CASCADE,
-    received_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    reason TEXT NOT NULL,
+    stripe_refund_id TEXT,
+    restocked_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
   );
+
+  DO $migration$
+  BEGIN
+    IF to_regclass('public.return_restock_events') IS NOT NULL THEN
+      INSERT INTO inventory_restock_events (order_id, reason, restocked_at)
+      SELECT order_id, 'returned_item', received_at
+      FROM return_restock_events
+      ON CONFLICT (order_id) DO NOTHING;
+    END IF;
+  END
+  $migration$;
+
+  CREATE TABLE IF NOT EXISTS admin_login_attempts (
+    id BIGSERIAL PRIMARY KEY,
+    client_key TEXT NOT NULL,
+    attempted_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+  );
+
+  CREATE INDEX IF NOT EXISTS admin_login_attempts_client_time_idx
+  ON admin_login_attempts (client_key, attempted_at DESC);
 
   CREATE TABLE IF NOT EXISTS fulfillments (
     id BIGSERIAL PRIMARY KEY,
@@ -134,6 +161,9 @@ export const commerceSchemaSql = `
   ADD COLUMN IF NOT EXISTS compare_at_price_jpy INTEGER;
 
   ALTER TABLE product_variants
+  ADD COLUMN IF NOT EXISTS compare_at_price_approved BOOLEAN NOT NULL DEFAULT FALSE;
+
+  ALTER TABLE product_variants
   ADD COLUMN IF NOT EXISTS color_name TEXT;
 
   ALTER TABLE product_variants
@@ -144,6 +174,22 @@ export const commerceSchemaSql = `
 
   ALTER TABLE products
   ADD COLUMN IF NOT EXISTS category TEXT NOT NULL DEFAULT 'other';
+
+  ALTER TABLE stock_reservations
+  ADD COLUMN IF NOT EXISTS cart_fingerprint TEXT;
+
+  ALTER TABLE stock_reservations
+  ADD COLUMN IF NOT EXISTS expected_total_jpy INTEGER;
+
+  ALTER TABLE stock_reservations
+  ADD COLUMN IF NOT EXISTS stripe_checkout_session_id TEXT;
+
+  CREATE UNIQUE INDEX IF NOT EXISTS stock_reservations_checkout_session_idx
+  ON stock_reservations (stripe_checkout_session_id)
+  WHERE stripe_checkout_session_id IS NOT NULL;
+
+  ALTER TABLE refunds
+  ADD COLUMN IF NOT EXISTS previous_order_status TEXT;
 `;
 
 let sqlClient: ReturnType<typeof postgres> | undefined;

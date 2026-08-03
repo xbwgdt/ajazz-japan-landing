@@ -1,6 +1,7 @@
 import { canTransitionOrder, type OrderStatus } from "./types";
 
 export class WebhookSignatureError extends Error {}
+export class CheckoutIntegrityError extends Error {}
 
 export interface CheckoutCompletedEvent {
   id: string;
@@ -11,6 +12,10 @@ export interface CheckoutCompletedEvent {
   shippingAddress?: Record<string, unknown> | null;
   stripePaymentIntentId?: string | null;
   termsAccepted?: boolean;
+  cartFingerprint: string;
+  expectedTotalJpy: number;
+  amountTotalJpy: number;
+  paymentStatus: string;
 }
 
 export interface PaidOrderStore {
@@ -22,6 +27,10 @@ export interface PaidOrderStore {
     shippingAddress?: Record<string, unknown> | null;
     stripePaymentIntentId?: string | null;
     termsAccepted?: boolean;
+    cartFingerprint: string;
+    expectedTotalJpy: number;
+    amountTotalJpy: number;
+    paymentStatus: string;
   }): Promise<{ id: string } | undefined>;
 }
 
@@ -41,7 +50,35 @@ export async function processCheckoutCompleted(
     shippingAddress: event.shippingAddress,
     stripePaymentIntentId: event.stripePaymentIntentId,
     termsAccepted: event.termsAccepted,
+    cartFingerprint: event.cartFingerprint,
+    expectedTotalJpy: event.expectedTotalJpy,
+    amountTotalJpy: event.amountTotalJpy,
+    paymentStatus: event.paymentStatus,
   });
+}
+
+export function assertCheckoutIntegrity(
+  reservation: { cartFingerprint: string; expectedTotalJpy: number; checkoutSessionId: string | null },
+  checkout: {
+    cartFingerprint: string;
+    expectedTotalJpy: number;
+    amountTotalJpy: number;
+    checkoutSessionId: string;
+    paymentStatus: string;
+  },
+  itemSubtotalJpy: number,
+) {
+  if (
+    checkout.paymentStatus !== "paid"
+    || !reservation.checkoutSessionId
+    || checkout.checkoutSessionId !== reservation.checkoutSessionId
+    || checkout.cartFingerprint !== reservation.cartFingerprint
+    || checkout.expectedTotalJpy !== reservation.expectedTotalJpy
+    || checkout.amountTotalJpy !== reservation.expectedTotalJpy
+    || itemSubtotalJpy !== reservation.expectedTotalJpy
+  ) {
+    throw new CheckoutIntegrityError("Stripe checkout does not match the reserved cart");
+  }
 }
 export class OrderTransitionError extends Error {
   constructor(message: string) {

@@ -30,33 +30,31 @@ export function databaseReservationStore(): ReservationStore {
   return {
     async getByIdempotencyKey(idempotencyKey) {
       await ensureCommerceSchema();
-      const [row] = await commerceSql()<Array<{ id: string }>>`
-        SELECT id::text AS id
+      const [row] = await commerceSql()<Array<{
+        id: string;
+        cart_fingerprint: string;
+        expected_total_jpy: number;
+        expires_at: Date;
+        status: string;
+        stripe_checkout_session_id: string | null;
+      }>>`
+        SELECT id::text AS id, cart_fingerprint, expected_total_jpy, expires_at, status, stripe_checkout_session_id
         FROM stock_reservations
         WHERE idempotency_key = ${idempotencyKey}
-          AND status = 'active'
-          AND expires_at > NOW()
       `;
-      return row;
+      return row ? {
+        id: row.id,
+        cartFingerprint: row.cart_fingerprint,
+        expectedTotalJpy: Number(row.expected_total_jpy),
+        expiresAt: new Date(row.expires_at),
+        status: row.status,
+        checkoutSessionId: row.stripe_checkout_session_id ?? undefined,
+      } : undefined;
     },
     async create(input) {
       await ensureCommerceSchema();
       const id = randomUUID();
       await commerceSql().begin(async (sql) => {
-        await sql`
-          WITH expired AS (
-            UPDATE stock_reservations
-            SET status = 'expired'
-            WHERE status = 'active' AND expires_at <= NOW()
-            RETURNING id
-          )
-          UPDATE product_variants pv
-          SET reserved_quantity = GREATEST(0, pv.reserved_quantity - sri.quantity), updated_at = NOW()
-          FROM stock_reservation_items sri
-          WHERE sri.reservation_id IN (SELECT id FROM expired)
-            AND sri.variant_id = pv.id
-        `;
-
         for (const line of [...input.lines].sort((left, right) => left.variantId.localeCompare(right.variantId))) {
           const [variant] = await sql<Array<{ id: string; available_quantity: number; reserved_quantity: number }>>`
             SELECT id::text AS id, available_quantity, reserved_quantity
@@ -75,8 +73,8 @@ export function databaseReservationStore(): ReservationStore {
         }
 
         await sql`
-          INSERT INTO stock_reservations (id, idempotency_key, expires_at)
-          VALUES (${id}, ${input.idempotencyKey}, NOW() + INTERVAL '15 minutes')
+          INSERT INTO stock_reservations (id, idempotency_key, cart_fingerprint, expected_total_jpy, expires_at)
+          VALUES (${id}, ${input.idempotencyKey}, ${input.cartFingerprint}, ${input.expectedTotalJpy}, ${input.expiresAt})
         `;
         for (const line of input.lines) {
           await sql`
@@ -85,7 +83,26 @@ export function databaseReservationStore(): ReservationStore {
           `;
         }
       });
-      return { id };
+      return {
+        id,
+        cartFingerprint: input.cartFingerprint,
+        expectedTotalJpy: input.expectedTotalJpy,
+        expiresAt: input.expiresAt,
+        status: "active",
+      };
+    },
+    async bindCheckoutSession(reservationId, checkoutSessionId) {
+      await ensureCommerceSchema();
+      const [reservation] = await commerceSql()<Array<{ id: string }>>`
+        UPDATE stock_reservations
+        SET stripe_checkout_session_id = ${checkoutSessionId}
+        WHERE id = ${reservationId}
+          AND status = 'active'
+          AND expires_at > NOW()
+          AND (stripe_checkout_session_id IS NULL OR stripe_checkout_session_id = ${checkoutSessionId})
+        RETURNING id::text AS id
+      `;
+      if (!reservation) throw new Error("Reservation is bound to another checkout session");
     },
   };
 }

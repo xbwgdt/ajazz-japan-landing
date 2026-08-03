@@ -15,6 +15,7 @@ build/
 *.pem
 .superpowers/
 .worktrees/
+AjazzJapan_Survey_*
 
 # debug
 npm-debug.log*

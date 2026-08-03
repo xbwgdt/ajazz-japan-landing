@@ -34,7 +34,9 @@ export async function getStorefrontDatabaseProduct(slug: string): Promise<Storef
       SELECT url FROM product_images WHERE product_id = ${product.id} ORDER BY position
     `,
     commerceSql()<Array<{ id: number; rms_sku_number: string; price_jpy: number; compare_at_price_jpy: number | null; color_name: string | null; image_url: string | null; available_quantity: number; reserved_quantity: number }>>`
-      SELECT id, rms_sku_number, price_jpy, compare_at_price_jpy, color_name, image_url, available_quantity, reserved_quantity
+      SELECT id, rms_sku_number, price_jpy,
+        CASE WHEN compare_at_price_approved THEN compare_at_price_jpy ELSE NULL END AS compare_at_price_jpy,
+        color_name, image_url, available_quantity, reserved_quantity
       FROM product_variants
       WHERE product_id = ${product.id}
       ORDER BY id

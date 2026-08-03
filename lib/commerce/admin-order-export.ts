@@ -18,7 +18,8 @@ export function toOrderCsv(orders: AdminOrderSummary[]) {
 }
 
 function escapeCsv(value: string) {
-  return /[",\r\n]/.test(value) ? `"${value.replaceAll('"', '""')}"` : value;
+  const neutralized = /^[=+\-@]/.test(value) ? `'${value}` : value;
+  return /[",\r\n]/.test(neutralized) ? `"${neutralized.replaceAll('"', '""')}"` : neutralized;
 }
 
 function formatShippingAddress(value: Record<string, unknown> | null) {

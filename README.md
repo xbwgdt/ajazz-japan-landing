@@ -47,7 +47,7 @@ RMS_LICENSE_KEY=replace-with-rms-license-key
 
 When Cloudflare proxying is enabled for the Railway domain, set Cloudflare SSL/TLS encryption mode to **Full**. Railway verifies the custom domain with the required CNAME and TXT records before it serves traffic.
 5. In Stripe Dashboard, set the public terms-of-service URL to `https://ajazz.jp/terms`. Checkout requires this URL because customers must accept the terms before payment.
-6. In Stripe Dashboard, add `https://ajazz.jp/api/stripe/webhook` as a webhook endpoint and subscribe to `checkout.session.completed`. Copy the endpoint signing secret to `STRIPE_WEBHOOK_SECRET`.
+6. In Stripe Dashboard, add `https://ajazz.jp/api/stripe/webhook` as a webhook endpoint and subscribe to `checkout.session.completed`, `checkout.session.expired`, `refund.created`, `refund.updated`, and `refund.failed`. Copy the endpoint signing secret to `STRIPE_WEBHOOK_SECRET`.
 7. Import the current RMS catalog after the database is configured:
 
    ```powershell
@@ -56,7 +56,7 @@ When Cloudflare proxying is enabled for the Railway domain, set Cloudflare SSL/T
 
    Run `pnpm import:rms --dry-run "C:\path\to\dl-normal-item.xlsx"` first to review product and SKU totals without writing data.
 
-8. Deploy the Cloudflare Worker described below, then configure protected schedules to request `GET /api/cron/release-reservations` and `GET /api/cron/rms-inventory` with `Authorization: Bearer <CRON_SECRET>`. The first releases abandoned checkout reservations; the second reads current stock from RMS InventoryAPI 2.1.
+8. Deploy the Cloudflare Worker described below, then configure protected schedules to request `GET /api/cron/release-reservations` and `GET /api/cron/rms-inventory` with `Authorization: Bearer <CRON_SECRET>`. Stripe normally releases abandoned checkout reservations through `checkout.session.expired`; the first schedule is a four-day fallback for missed events, and the second reads current stock from RMS InventoryAPI 2.1.
 9. Complete a Stripe test-mode purchase, confirm the webhook creates an order, sign in at `/admin/login`, check the order in `/admin/orders`, and test manual fulfillment and refund handling before switching to live keys.
 
 ## Operational limits before launch
@@ -68,7 +68,7 @@ When Cloudflare proxying is enabled for the Railway domain, set Cloudflare SSL/T
 
 The included Cloudflare Worker handles scheduled operations independently of the Railway web service, using these UTC schedules:
 
-- Every 10 minutes: releases expired checkout reservations.
+- Every 10 minutes: releases checkout reservations only when Stripe expiration events have remained unavailable for four days.
 - Every 15 minutes: synchronizes published SKU stock from RMS.
 
 Deploy it separately after the Railway production deployment is live:

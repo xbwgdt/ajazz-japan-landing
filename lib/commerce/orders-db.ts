@@ -1,6 +1,6 @@
 import { randomUUID } from "node:crypto";
 import { commerceSql, ensureCommerceSchema } from "./db";
-import type { PaidOrderStore } from "./orders";
+import { assertCheckoutIntegrity, type PaidOrderStore } from "./orders";
 
 export function databasePaidOrderStore(): PaidOrderStore {
   return {
@@ -17,12 +17,25 @@ export function databasePaidOrderStore(): PaidOrderStore {
         `;
         if (!claimedEvent) return undefined;
 
-        const [reservation] = await sql<Array<{ id: string }>>`
+        const [existingOrder] = await sql<Array<{ id: string }>>`
           SELECT id::text AS id
+          FROM orders
+          WHERE reservation_id = ${input.reservationId}
+             OR stripe_checkout_session_id = ${input.checkoutSessionId}
+          LIMIT 1
+        `;
+        if (existingOrder) return undefined;
+
+        const [reservation] = await sql<Array<{
+          id: string;
+          cart_fingerprint: string;
+          expected_total_jpy: number;
+          stripe_checkout_session_id: string | null;
+        }>>`
+          SELECT id::text AS id, cart_fingerprint, expected_total_jpy, stripe_checkout_session_id
           FROM stock_reservations
           WHERE id = ${input.reservationId}
             AND status = 'active'
-            AND expires_at > NOW()
           FOR UPDATE
         `;
         if (!reservation) throw new Error("Reservation is no longer active");
@@ -42,6 +55,17 @@ export function databasePaidOrderStore(): PaidOrderStore {
         }
 
         const subtotalJpy = items.reduce((total, item) => total + item.price_jpy * item.quantity, 0);
+        assertCheckoutIntegrity({
+          cartFingerprint: reservation.cart_fingerprint,
+          expectedTotalJpy: Number(reservation.expected_total_jpy),
+          checkoutSessionId: reservation.stripe_checkout_session_id,
+        }, {
+          cartFingerprint: input.cartFingerprint,
+          expectedTotalJpy: input.expectedTotalJpy,
+          amountTotalJpy: input.amountTotalJpy,
+          checkoutSessionId: input.checkoutSessionId,
+          paymentStatus: input.paymentStatus,
+        }, subtotalJpy);
         await sql`
           INSERT INTO orders (
             id, reservation_id, stripe_checkout_session_id, customer_email, shipping_address, terms_accepted_at, subtotal_jpy, total_jpy
@@ -49,7 +73,7 @@ export function databasePaidOrderStore(): PaidOrderStore {
             ${orderId}, ${input.reservationId}, ${input.checkoutSessionId}, ${input.customerEmail ?? null},
             ${input.shippingAddress ? JSON.stringify(input.shippingAddress) : null}::jsonb,
             CASE WHEN ${input.termsAccepted ?? false} THEN NOW() ELSE NULL END,
-            ${subtotalJpy}, ${subtotalJpy}
+            ${subtotalJpy}, ${input.amountTotalJpy}
           )
         `;
         for (const item of items) {
@@ -67,7 +91,7 @@ export function databasePaidOrderStore(): PaidOrderStore {
         }
         await sql`
           INSERT INTO payments (order_id, stripe_payment_intent_id, amount_jpy, status)
-          VALUES (${orderId}, ${input.stripePaymentIntentId ?? null}, ${subtotalJpy}, 'paid')
+          VALUES (${orderId}, ${input.stripePaymentIntentId ?? null}, ${input.amountTotalJpy}, 'paid')
         `;
         await sql`
           UPDATE stock_reservations SET status = 'consumed' WHERE id = ${input.reservationId}

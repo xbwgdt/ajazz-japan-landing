@@ -19,7 +19,7 @@ export interface StorefrontCard {
   image: string;
   category: ProductCategoryKey;
   tagline: string;
-  available: boolean;
+  available?: boolean;
   variants: StorefrontCardSource["variants"];
 }
 
@@ -37,4 +37,11 @@ export function toStorefrontCards(products: StorefrontCardSource[]): StorefrontC
       variants: product.variants,
     };
   });
+}
+
+export function resolveStorefrontCards(
+  databaseCards: StorefrontCard[] | undefined,
+  fallbackCards: StorefrontCard[],
+) {
+  return databaseCards ?? fallbackCards;
 }

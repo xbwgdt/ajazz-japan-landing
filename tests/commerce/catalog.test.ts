@@ -202,7 +202,7 @@ describe("RMS catalog images", () => {
       {
         rmsSkuNumber: "SKU-ORANGE",
         priceJpy: 8980,
-        compareAtPriceJpy: 9980,
+        compareAtPriceJpy: undefined,
         stockQuantity: 2,
         colorName: "オレンジ",
         imageUrl: "https://image.rakuten.co.jp/ajazz/cabinet/aj159/orange.jpg",

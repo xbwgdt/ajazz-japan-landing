@@ -36,6 +36,13 @@ describe("Japanese storefront copy", () => {
     expect(renderToStaticMarkup(<PrivacyPage />)).toContain("プライバシーポリシー");
   });
 
+  it("discloses the Google Analytics collection loaded by the root layout", () => {
+    const html = renderToStaticMarkup(<PrivacyPage />);
+    expect(html).toContain("Google アナリティクス");
+    expect(html).toContain("Cookie");
+    expect(html).toContain("利用状況");
+  });
+
   it("keeps the responsible person in the legal disclosure but not the company profile", () => {
     expect(renderToStaticMarkup(<AboutPage />)).not.toContain("代表取締役社長 謝天");
     expect(renderToStaticMarkup(<LegalPage />)).toContain("代表取締役社長 謝天");

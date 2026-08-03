@@ -46,7 +46,7 @@ describe("RMS inventory synchronization", () => {
       rmsSkuNumber: `SKU-${index}`,
     }));
     const updated: string[] = [];
-    const logUpdates: Array<{ status: string; errorMessage?: string }> = [];
+    const logUpdates: Array<{ status: string; errorMessage?: string; updatedCount: number; failedCount: number }> = [];
 
     const result = await syncRmsInventory(
       {
@@ -77,7 +77,36 @@ describe("RMS inventory synchronization", () => {
     expect(updated).toHaveLength(1000);
     expect(updated).not.toContain("SKU-1000");
     expect(logUpdates).toEqual([
-      { status: "failed", errorMessage: "RMS timed out" },
+      { status: "failed", errorMessage: "RMS timed out", updatedCount: 1000, failedCount: 1 },
     ]);
+  });
+
+  it("treats requested SKUs omitted from a successful RMS response as partial failures", async () => {
+    const updated: string[] = [];
+    const logUpdates: unknown[] = [];
+    const result = await syncRmsInventory({
+      async getInventories() {
+        return [{ rmsManageNumber: "ak820", rmsSkuNumber: "BLACK", quantity: 8 }];
+      },
+    }, {
+      async getActiveVariantKeys() {
+        return [
+          { rmsManageNumber: "ak820", rmsSkuNumber: "BLACK" },
+          { rmsManageNumber: "ak820", rmsSkuNumber: "WHITE" },
+        ];
+      },
+      async setVariantInventory(record) { updated.push(record.rmsSkuNumber); },
+      async createSyncLog() { return 18; },
+      async completeSyncLog(_, update) { logUpdates.push(update); },
+    });
+
+    expect(result).toEqual({ updated: 1, failed: 1 });
+    expect(updated).toEqual(["BLACK"]);
+    expect(logUpdates).toEqual([{
+      status: "failed",
+      updatedCount: 1,
+      failedCount: 1,
+      errorMessage: "RMS response omitted 1 requested SKU(s)",
+    }]);
   });
 });

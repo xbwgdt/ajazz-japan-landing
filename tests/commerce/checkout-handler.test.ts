@@ -3,6 +3,7 @@ import { createCheckoutHandler } from "../../lib/commerce/checkout-handler";
 
 describe("checkout handler", () => {
   it("validates server-side variants, creates one reservation, and returns the hosted checkout URL", async () => {
+    const boundSessions: unknown[] = [];
     const handler = createCheckoutHandler({
       variants: {
         async getVariants() {
@@ -14,12 +15,20 @@ describe("checkout handler", () => {
           return undefined;
         },
         async create() {
-          return { id: "reservation_1" };
+          return {
+            id: "reservation_1",
+            cartFingerprint: "fingerprint",
+            expectedTotalJpy: 19980,
+            expiresAt: new Date("2026-08-03T01:31:00.000Z"),
+          };
+        },
+        async bindCheckoutSession(reservationId, checkoutSessionId) {
+          boundSessions.push({ reservationId, checkoutSessionId });
         },
       },
       gateway: {
         async createSession() {
-          return { url: "https://checkout.stripe.com/pay/example" };
+          return { id: "cs_1", url: "https://checkout.stripe.com/pay/example" };
         },
       },
     });
@@ -39,5 +48,6 @@ describe("checkout handler", () => {
       checkoutUrl: "https://checkout.stripe.com/pay/example",
       reservationId: "reservation_1",
     });
+    expect(boundSessions).toEqual([{ reservationId: "reservation_1", checkoutSessionId: "cs_1" }]);
   });
 });
