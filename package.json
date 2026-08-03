@@ -23,6 +23,7 @@
     "@types/node": "^20",
     "@types/react": "^19.2.17",
     "@types/react-dom": "^19.2.3",
+    "happy-dom": "^20.11.1",
     "tsx": "4.21.0",
     "typescript": "^5",
     "vitest": "3.2.4"

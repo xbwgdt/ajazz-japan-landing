@@ -27,7 +27,7 @@ export function ProductCatalogue({ products }: { products: ProductCatalogueCard[
         value={query}
         onChange={(event) => setQuery(event.target.value)}
       />
-      <div aria-label="製品カテゴリ">
+      <div role="group" aria-label="製品カテゴリ">
         <button type="button" aria-pressed={category === "all"} onClick={() => setCategory("all")}>すべて</button>
         {PRODUCT_CATEGORIES.map((item) => (
           <button
