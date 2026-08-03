@@ -1,8 +1,30 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
+
+const { observedQueries, sqlClientMock } = vi.hoisted(() => {
+  const observedQueries: Array<{ text: string; values: unknown[] }> = [];
+  const transactionSql = vi.fn((strings: TemplateStringsArray, ...values: unknown[]) => {
+    observedQueries.push({ text: strings.join("?"), values });
+    return Promise.resolve([{ id: 42 }]);
+  });
+  const sqlClientMock = {
+    unsafe: vi.fn(async () => undefined),
+    begin: vi.fn(async (callback: (sql: typeof transactionSql) => Promise<unknown>) =>
+      callback(transactionSql),
+    ),
+  };
+  return { observedQueries, sqlClientMock };
+});
+
+vi.mock("../../lib/commerce/db", () => ({
+  commerceSql: () => sqlClientMock,
+  ensureCommerceSchema: vi.fn(async () => undefined),
+}));
+
 import {
   buildRmsCatalogImport,
   normalizeRmsImageUrl,
   parseRmsWorksheetRows,
+  upsertRmsCatalog,
   writeRmsCatalog,
 } from "../../lib/commerce/catalog";
 import { classifyProductCategory } from "../../lib/commerce/product-categories";
@@ -29,6 +51,28 @@ describe("RMS catalog images", () => {
     expect(normalizeRmsImageUrl("/12437413/12478105/1.jpg")).toBe(
       "https://image.rakuten.co.jp/ajazz/cabinet/12437413/12478105/1.jpg",
     );
+  });
+
+  it("persists category through the production RMS product upsert SQL", async () => {
+    observedQueries.length = 0;
+
+    await upsertRmsCatalog([
+      {
+        rmsManageNumber: "ak820-max",
+        name: "AK820 MAX",
+        descriptionHtml: "75% keyboard",
+      },
+    ]);
+
+    const productUpsert = observedQueries.find(({ text }) =>
+      text.includes("INSERT INTO products"),
+    );
+    expect(productUpsert).toBeDefined();
+    expect(productUpsert?.text).toContain(
+      "description_html, category, published",
+    );
+    expect(productUpsert?.text).toContain("category = EXCLUDED.category");
+    expect(productUpsert?.values).toContain("mechanical-keyboard");
   });
 
   it("groups SKU rows under their product and keeps the latest duplicate SKU", () => {
