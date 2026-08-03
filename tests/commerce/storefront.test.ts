@@ -5,19 +5,26 @@ import { toStorefrontCards } from "../../lib/commerce/storefront";
 describe("storefront cards", () => {
   it("uses the lowest variant price and reports sell-out status", () => {
     expect(toStorefrontCards([{
-      slug: "ak820", name: "AK820", image: "https://example.test/ak820.jpg",
+      slug: "ak820", name: "AK820", image: "https://example.test/ak820.jpg", category: "mouse",
       variants: [
         { priceJpy: 19980, availableQuantity: 0, colorName: "ブラック", imageUrl: "https://example.test/black.jpg" },
         { priceJpy: 17980, availableQuantity: 2, colorName: "ホワイト", imageUrl: "https://example.test/white.jpg" },
       ],
     }])).toEqual([{
-      slug: "ak820", name: "AK820", image: "https://example.test/ak820.jpg", category: "AJAZZ HARDWARE",
+      slug: "ak820", name: "AK820", image: "https://example.test/ak820.jpg", category: "mouse",
       tagline: "¥17,980から", available: true,
       variants: [
         { priceJpy: 19980, availableQuantity: 0, colorName: "ブラック", imageUrl: "https://example.test/black.jpg" },
         { priceJpy: 17980, availableQuantity: 2, colorName: "ホワイト", imageUrl: "https://example.test/white.jpg" },
       ],
     }]);
+  });
+
+  it("normalizes an unknown category to other", () => {
+    expect(toStorefrontCards([{
+      slug: "unknown", name: "Unknown", image: "https://example.test/unknown.jpg", category: "unsupported-category",
+      variants: [],
+    }])[0].category).toBe("other");
   });
 });
 

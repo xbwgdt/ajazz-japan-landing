@@ -1,7 +1,9 @@
+import type { ProductCategoryKey } from "../../lib/commerce/product-categories";
+
 export interface StoreProductRecord {
   slug: string;
   name: string;
-  category: string;
+  category: ProductCategoryKey;
   tagline: string;
   image: string;
   descriptionHtml: string;
@@ -20,7 +22,7 @@ export const storefrontProducts: StoreProductRecord[] = [
   {
     slug: "ak820-max-ultra",
     name: "AK820 MAX ULTRA",
-    category: "RAPID TRIGGER",
+    category: "rapid-trigger-keyboard",
     tagline: "75% Magnetic Switch Keyboard",
     image: "/images/ak820maxultra.webp",
     descriptionHtml: "磁気スイッチと高速入力のための75%レイアウト。",
@@ -30,7 +32,7 @@ export const storefrontProducts: StoreProductRecord[] = [
   {
     slug: "ak820-pro",
     name: "AK820 PRO",
-    category: "MECHANICAL",
+    category: "mechanical-keyboard",
     tagline: "Tri-mode 75% Keyboard",
     image: "/images/ak820pro.webp",
     descriptionHtml: "ワークスペースにもゲーム環境にも対応するコンパクトメカニカル。",
@@ -40,7 +42,7 @@ export const storefrontProducts: StoreProductRecord[] = [
   {
     slug: "aj179-apex",
     name: "AJ179 APEX",
-    category: "GAMING MOUSE",
+    category: "mouse",
     tagline: "8,000 Hz Triple-mode Mouse",
     image: "/images/aj179apex.webp",
     descriptionHtml: "8000Hzポーリングレートに対応した軽量ワイヤレスマウス。",
@@ -50,7 +52,7 @@ export const storefrontProducts: StoreProductRecord[] = [
   {
     slug: "akp05-pro",
     name: "AKP05 PRO",
-    category: "STREAM CONTROL",
+    category: "stream-controller",
     tagline: "Programmable Control Pad",
     image: "/images/akp05pro.webp",
     descriptionHtml: "配信とクリエイティブワークのためのプログラマブルコントロール。",

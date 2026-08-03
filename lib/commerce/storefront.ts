@@ -1,7 +1,10 @@
+import { normalizeProductCategory, type ProductCategoryKey } from "./product-categories";
+
 export interface StorefrontCardSource {
   slug: string;
   name: string;
   image: string;
+  category?: string;
   variants: Array<{
     priceJpy: number;
     availableQuantity: number;
@@ -14,7 +17,7 @@ export interface StorefrontCard {
   slug: string;
   name: string;
   image: string;
-  category: string;
+  category: ProductCategoryKey;
   tagline: string;
   available: boolean;
   variants: StorefrontCardSource["variants"];
@@ -28,7 +31,7 @@ export function toStorefrontCards(products: StorefrontCardSource[]): StorefrontC
       slug: product.slug,
       name: product.name,
       image: product.image,
-      category: "AJAZZ HARDWARE",
+      category: normalizeProductCategory(product.category),
       tagline: price ? `¥${price.toLocaleString("ja-JP")}から` : "価格準備中",
       available: product.variants.some((variant) => variant.availableQuantity > 0),
       variants: product.variants,

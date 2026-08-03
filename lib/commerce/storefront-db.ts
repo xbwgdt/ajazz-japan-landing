@@ -59,8 +59,8 @@ export async function getStorefrontDatabaseProduct(slug: string): Promise<Storef
 
 export async function listStorefrontDatabaseCards(): Promise<StorefrontCard[]> {
   await ensureCommerceSchema();
-  const products = await commerceSql()<Array<{ id: number; slug: string; name: string; image: string | null }>>`
-    SELECT p.id, p.slug, p.name, (
+  const products = await commerceSql()<Array<{ id: number; slug: string; name: string; category: string | null; image: string | null }>>`
+    SELECT p.id, p.slug, p.name, p.category, (
       SELECT url FROM product_images WHERE product_id = p.id ORDER BY position LIMIT 1
     ) AS image
     FROM products p
@@ -90,6 +90,7 @@ export async function listStorefrontDatabaseCards(): Promise<StorefrontCard[]> {
     slug: product.slug,
     name: product.name,
     image: product.image ?? "",
+    category: product.category ?? undefined,
     variants: variantsByProduct.get(product.id) ?? [],
   })));
 }

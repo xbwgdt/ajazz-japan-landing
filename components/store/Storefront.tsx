@@ -1,4 +1,5 @@
 import Link from "next/link";
+import type { ProductCategoryKey } from "../../lib/commerce/product-categories";
 import { storefrontProducts } from "./catalogue";
 import { CartLink } from "./CartLink";
 import { ProductCard } from "./ProductCard";
@@ -6,7 +7,7 @@ import { ProductCard } from "./ProductCard";
 interface StorefrontCard {
   slug: string;
   name: string;
-  category: string;
+  category: ProductCategoryKey;
   tagline: string;
   image: string;
   variants?: Array<{ colorName?: string; imageUrl?: string; availableQuantity: number }>;

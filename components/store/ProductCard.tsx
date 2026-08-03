@@ -2,11 +2,12 @@
 
 import Link from "next/link";
 import { useState } from "react";
+import { productCategoryLabel, type ProductCategoryKey } from "../../lib/commerce/product-categories";
 
 export interface ProductCardProps {
   slug: string;
   name: string;
-  category: string;
+  category: ProductCategoryKey;
   tagline: string;
   image: string;
   index: number;
@@ -25,7 +26,7 @@ export function ProductCard({ slug, name, category, tagline, image, index, varia
         <span>{String(index + 1).padStart(2, "0")}</span>
       </div>
       <div className="store-card-meta">
-        <p>{category}</p>
+        <p>{productCategoryLabel(category)}</p>
         <h3>{name}</h3>
         <span>{tagline}</span>
       </div>
