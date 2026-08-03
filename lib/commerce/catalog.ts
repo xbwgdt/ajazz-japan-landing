@@ -1,4 +1,5 @@
 import { commerceSql, ensureCommerceSchema } from "./db";
+import { classifyProductCategory, type ProductCategoryKey } from "./product-categories";
 
 const RAKUTEN_CABINET_BASE_URL = "https://image.rakuten.co.jp/ajazz/cabinet";
 
@@ -22,6 +23,7 @@ export interface RmsCatalogImportProduct {
   slug: string;
   name: string;
   descriptionHtml: string;
+  category: ProductCategoryKey;
   images: string[];
   variants: Array<{
     rmsSkuNumber: string;
@@ -92,6 +94,7 @@ export function buildRmsCatalogImport(rows: RmsCatalogRow[]): RmsCatalogImportPr
       slug: row.rmsManageNumber,
       name: "",
       descriptionHtml: "",
+      category: "other",
       images: [],
       variants: [],
       variantMap: new Map(),
@@ -100,6 +103,11 @@ export function buildRmsCatalogImport(rows: RmsCatalogRow[]): RmsCatalogImportPr
     if (row.name) {
       existing.name = row.name;
       existing.descriptionHtml = row.descriptionHtml ?? "";
+      existing.category = classifyProductCategory({
+        rmsManageNumber: row.rmsManageNumber,
+        name: existing.name,
+        descriptionHtml: existing.descriptionHtml,
+      });
       existing.images = (row.imagePaths ?? [])
         .filter(Boolean)
         .map(normalizeRmsImageUrl);

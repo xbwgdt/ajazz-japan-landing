@@ -5,6 +5,24 @@ import {
   parseRmsWorksheetRows,
   writeRmsCatalog,
 } from "../../lib/commerce/catalog";
+import { classifyProductCategory } from "../../lib/commerce/product-categories";
+
+describe("product category classification", () => {
+  it("classifies representative RMS products by their canonical category", () => {
+    expect(classifyProductCategory({
+      rmsManageNumber: "ak820-max-he",
+      name: "AK820 MAX HE",
+      descriptionHtml: "ラピッドトリガー対応磁気スイッチキーボード",
+    })).toBe("rapid-trigger-keyboard");
+
+    expect(classifyProductCategory({ rmsManageNumber: "aj159-apex", name: "AJ159 APEX", descriptionHtml: "8Kゲーミングマウス" })).toBe("mouse");
+    expect(classifyProductCategory({ rmsManageNumber: "akp05", name: "AKP05", descriptionHtml: "ストリームコントローラー" })).toBe("stream-controller");
+    expect(classifyProductCategory({ rmsManageNumber: "ah3", name: "AJAZZ AH3", descriptionHtml: "ゲーミングヘッドセット" })).toBe("headset");
+    expect(classifyProductCategory({ rmsManageNumber: "ak-membrane", name: "AJAZZ Keyboard", descriptionHtml: "メンブレンキーボード" })).toBe("membrane-keyboard");
+    expect(classifyProductCategory({ rmsManageNumber: "ak820-pro", name: "AK820 PRO", descriptionHtml: "75% keyboard" })).toBe("mechanical-keyboard");
+    expect(classifyProductCategory({ rmsManageNumber: "ac-01", name: "USB Hub", descriptionHtml: "" })).toBe("other");
+  });
+});
 
 describe("RMS catalog images", () => {
   it("prefixes a cabinet image path with the AJAZZ Rakuten CDN", () => {
@@ -47,6 +65,7 @@ describe("RMS catalog images", () => {
         slug: "ak820-max",
         name: "AK820 MAX",
         descriptionHtml: "<p>Rapid trigger keyboard</p>",
+        category: "rapid-trigger-keyboard",
         images: ["https://image.rakuten.co.jp/ajazz/cabinet/12437413/ak820/hero.jpg"],
         variants: [
           {
@@ -61,6 +80,7 @@ describe("RMS catalog images", () => {
         slug: "aj159",
         name: "AJ159",
         descriptionHtml: "",
+        category: "mouse",
         images: ["https://image.rakuten.co.jp/ajazz/cabinet/12437413/aj159/hero.jpg"],
         variants: [],
       },
@@ -119,6 +139,7 @@ describe("RMS catalog images", () => {
 
     expect(catalog).toHaveLength(1);
     expect(catalog[0].rmsManageNumber).toBe("aj159apex");
+    expect(catalog[0].category).toBe("mouse");
     expect(catalog[0].variants).toEqual([
       {
         rmsSkuNumber: "SKU-ORANGE",
