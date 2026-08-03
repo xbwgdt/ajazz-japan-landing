@@ -16,6 +16,21 @@ describe("Japanese storefront copy", () => {
     expect(html).toContain("利用規約");
   });
 
+  it("renders immediate catalogue discovery controls with all categories selected by default", () => {
+    const html = renderToStaticMarkup(<CartProvider><Storefront /></CartProvider>);
+
+    expect(html).toContain("製品を検索");
+    expect(html).toContain("Rapid Trigger Keyboard");
+    expect(html).toContain("Mechanical Keyboard");
+    expect(html).toContain("Membrane Keyboard");
+    expect(html).toContain("Mouse");
+    expect(html).toContain("Stream Controller");
+    expect(html).toContain("Headset");
+    expect(html).toContain("Other");
+    expect(html).toContain("件の製品");
+    expect(html).toContain('aria-pressed="true">すべて</button>');
+  });
+
   it("renders readable legal notices and links to the terms page", () => {
     expect(renderToStaticMarkup(<LegalPage />)).toContain("特定商取引法に基づく表記");
     expect(renderToStaticMarkup(<PrivacyPage />)).toContain("プライバシーポリシー");

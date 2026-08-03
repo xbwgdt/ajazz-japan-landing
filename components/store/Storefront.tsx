@@ -2,7 +2,7 @@ import Link from "next/link";
 import type { ProductCategoryKey } from "../../lib/commerce/product-categories";
 import { storefrontProducts } from "./catalogue";
 import { CartLink } from "./CartLink";
-import { ProductCard } from "./ProductCard";
+import { ProductCatalogue } from "./ProductCatalogue";
 
 interface StorefrontCard {
   slug: string;
@@ -60,11 +60,7 @@ export function Storefront({ products = storefrontProducts }: { products?: Store
           <h2 id="products-title">PLAY WITH<br />PRECISION.</h2>
           <p>日本国内送料無料。ご注文から3営業日以内に発送します。</p>
         </div>
-        <div className="store-product-grid">
-          {products.map((product, index) => (
-            <ProductCard {...product} index={index} key={product.slug} />
-          ))}
-        </div>
+        <ProductCatalogue products={products} />
       </section>
 
       <section className="store-service" aria-label="AJAZZ service">
