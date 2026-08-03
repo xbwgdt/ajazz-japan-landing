@@ -1124,3 +1124,163 @@ body { background: #f7f5f0; color: #181818; }
 .store-order-success { min-height:100vh; }.store-success-content { max-width:850px; margin:0 auto; padding:12vh 5vw; }.store-success-content h1 { margin:0 0 2.5rem; font-size:clamp(3rem,8vw,6.4rem); line-height:.9; }.store-success-content>p { color:#5b5650; line-height:1.8; }.store-success-content>p strong { color:#171719; }.store-success-note { margin:2rem 0 !important; padding-top:1.5rem; border-top:1px solid #d9d4cd; }.store-success-content .store-button { margin-top:1.5rem; }
 .store-about-page { min-height:100vh; }.store-about-hero { min-height:68vh; display:grid; align-content:center; padding:8rem 5vw; background:#171719; color:white; }.store-about-hero h1 { margin:0; max-width:min(100%,1100px); font-size:clamp(3.3rem,8vw,7.2rem); line-height:.84; }.store-about-hero>p:last-child { max-width:520px; margin:2rem 0 0; color:#d3cec9; font-size:.94rem; line-height:1.9; }.store-about-pillars article { display:grid; min-height:520px; grid-template-columns:minmax(0,1.08fr) minmax(300px,.92fr); align-content:center; gap:1.5rem 7vw; padding:7rem 5vw; }.store-about-pillars .store-eyebrow { grid-column:1/-1; }.store-about-pillars h2,.store-about-company h2 { margin:0; font-size:clamp(2.4rem,4.5vw,4.1rem); line-height:1.08; text-wrap:balance; }.store-about-pillars article>div { display:grid; gap:1rem; }.store-about-pillars article>div p { margin:0; font-size:.92rem; line-height:1.95; }.store-about-brand { background:#f7f5f0; }.store-about-brand>div p { color:#5c5751; }.store-about-support { background:var(--aj-red); color:white; }.store-about-support .store-eyebrow { color:#171719; }.store-about-support>div p { color:white; }.store-about-company { padding:7rem 5vw; background:#eeece7; }.store-about-company dl { max-width:900px; margin:3rem 0 0; border-top:1px solid #cfc9c1; }.store-about-company dl div { display:grid; grid-template-columns:220px 1fr; gap:2rem; padding:1.2rem 0; border-bottom:1px solid #cfc9c1; }.store-about-company dt { color:#e73a42; font-size:.8rem; font-weight:800; }.store-about-company dd { margin:0; }.store-about-company a { color:#171719; }@media (max-width:760px){.store-about-hero{min-height:66vh;padding:5rem 1.25rem}.store-about-hero h1{font-size:11vw}.store-about-pillars article{min-height:auto;grid-template-columns:1fr;padding:5rem 1.25rem}.store-about-pillars .store-eyebrow{grid-column:auto}.store-about-pillars h2{font-size:clamp(2.05rem,8.5vw,3rem)}.store-about-company{padding:5rem 1.25rem}.store-about-company dl div{grid-template-columns:1fr;gap:.5rem}}
 .store-business-capability { display:grid; grid-template-columns:minmax(0,1.1fr) minmax(280px,.9fr); gap:1.25rem 6vw; padding:7rem 5vw; background:#171719; color:white; }.store-business-capability .store-eyebrow { grid-column:1/-1; }.store-business-capability h2 { grid-row:2/5; margin:0; max-width:760px; font-size:clamp(2.4rem,5vw,5.2rem); line-height:1.02; }.store-business-capability>p { margin:0; color:#cfcac5; font-size:.9rem; line-height:1.9; }.store-business-capability .store-button { width:max-content; margin-top:1rem; }@media (max-width:760px){.store-business-capability{grid-template-columns:1fr;padding:5rem 1.25rem}.store-business-capability h2{grid-row:auto}.store-business-capability .store-button{width:100%}}
+
+.store-catalogue-controls {
+  display: grid;
+  width: 100%;
+  min-width: 0;
+  grid-template-columns: minmax(0, 1fr) auto auto;
+  grid-template-areas:
+    "label count clear"
+    "search count clear"
+    "categories categories categories";
+  gap: .45rem 1rem;
+  align-items: end;
+  margin: 0 0 2rem;
+  padding: 1.2rem 0 1.35rem;
+  border-top: 1px solid var(--aj-line);
+  border-bottom: 1px solid var(--aj-line);
+}
+
+.store-catalogue-controls label {
+  grid-area: label;
+  color: #5c5751;
+  font-size: .73rem;
+  font-weight: 800;
+  letter-spacing: .1em;
+}
+
+.store-catalogue-controls input {
+  grid-area: search;
+  width: 100%;
+  min-width: 0;
+  height: 48px;
+  border: 1px solid var(--aj-ink);
+  border-radius: 0;
+  padding: 0 .9rem;
+  background: white;
+  color: var(--aj-ink);
+  font: inherit;
+}
+
+.store-catalogue-controls [role="group"] {
+  grid-area: categories;
+  display: flex;
+  width: 100%;
+  min-width: 0;
+  gap: .5rem;
+  overflow-x: auto;
+  overscroll-behavior-inline: contain;
+  padding: .2rem 0;
+  scrollbar-width: thin;
+}
+
+.store-catalogue-controls [role="group"] button {
+  min-height: 44px;
+  flex: 0 0 auto;
+  border: 1px solid var(--aj-ink);
+  border-radius: 0;
+  padding: 0 1rem;
+  background: transparent;
+  color: var(--aj-ink);
+  font: inherit;
+  font-size: .78rem;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.store-catalogue-controls [role="group"] button[aria-pressed="true"] {
+  border-color: var(--aj-red);
+  background: var(--aj-red);
+  color: white;
+}
+
+.store-catalogue-controls > p {
+  grid-area: count;
+  margin: 0;
+  color: #5c5751;
+  font-size: .82rem;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.store-catalogue-controls > button,
+.store-catalogue-controls + div:not(.store-product-grid) button {
+  min-height: 44px;
+  border: 1px solid var(--aj-ink);
+  border-radius: 0;
+  padding: 0 1rem;
+  background: var(--aj-ink);
+  color: white;
+  font: inherit;
+  font-size: .78rem;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.store-catalogue-controls > button {
+  grid-area: clear;
+}
+
+.store-catalogue-controls input:focus-visible {
+  outline: 2px solid var(--aj-red);
+  outline-offset: 3px;
+}
+
+.store-catalogue-controls button:focus-visible {
+  outline: 2px solid var(--aj-red);
+  outline-offset: 3px;
+}
+
+.store-catalogue-controls + div:not(.store-product-grid) {
+  display: grid;
+  width: 100%;
+  min-height: 180px;
+  align-content: center;
+  justify-items: start;
+  gap: 1rem;
+  padding: 2.5rem 0;
+  border-bottom: 1px solid var(--aj-line);
+}
+
+.store-catalogue-controls + div:not(.store-product-grid) p {
+  margin: 0;
+  color: #5c5751;
+  font-size: .92rem;
+}
+
+@media (max-width:760px) {
+  .store-catalogue-controls {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-areas:
+      "label"
+      "search"
+      "count"
+      "categories"
+      "clear";
+    gap: .65rem;
+    padding: 1rem 0 1.2rem;
+  }
+
+  .store-catalogue-controls [role="group"] {
+    min-height: 52px;
+    scroll-padding-inline: .2rem;
+  }
+
+  .store-catalogue-controls [role="group"] button {
+    min-height: 48px;
+  }
+
+  .store-catalogue-controls > p {
+    white-space: normal;
+  }
+
+  .store-catalogue-controls > button {
+    justify-self: start;
+  }
+
+  .store-catalogue-controls + div:not(.store-product-grid) {
+    min-height: 150px;
+    padding: 2rem 0;
+  }
+}
