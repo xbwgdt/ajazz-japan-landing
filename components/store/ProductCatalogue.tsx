@@ -20,13 +20,15 @@ export function ProductCatalogue({ products }: { products: ProductCatalogueCard[
 
   return <>
     <div className="store-catalogue-controls">
-      <label htmlFor="store-product-search">製品を検索</label>
-      <input
-        id="store-product-search"
-        type="search"
-        value={query}
-        onChange={(event) => setQuery(event.target.value)}
-      />
+      <div className="store-catalogue-search">
+        <label htmlFor="store-product-search">製品を検索</label>
+        <input
+          id="store-product-search"
+          type="search"
+          value={query}
+          onChange={(event) => setQuery(event.target.value)}
+        />
+      </div>
       <div role="group" aria-label="製品カテゴリ">
         <button type="button" aria-pressed={category === "all"} onClick={() => setCategory("all")}>すべて</button>
         {PRODUCT_CATEGORIES.map((item) => (

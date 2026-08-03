@@ -47,7 +47,7 @@ describe("ProductCatalogue", () => {
     expect(categoryGroup).not.toBeNull();
 
     const search = container.querySelector<HTMLInputElement>("#store-product-search");
-    const mouse = buttonByText(container, "Mouse");
+    const mouse = buttonByText(container, "マウス");
     expect(search).not.toBeNull();
     expect(mouse).toBeDefined();
 

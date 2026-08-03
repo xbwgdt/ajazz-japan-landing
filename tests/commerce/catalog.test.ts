@@ -27,7 +27,21 @@ import {
   upsertRmsCatalog,
   writeRmsCatalog,
 } from "../../lib/commerce/catalog";
-import { classifyProductCategory } from "../../lib/commerce/product-categories";
+import { classifyProductCategory, normalizeProductCategory, productCategoryLabel } from "../../lib/commerce/product-categories";
+
+describe("product category labels", () => {
+  it("uses the approved Japanese labels while accepting Japanese and legacy English category text", () => {
+    expect(productCategoryLabel("rapid-trigger-keyboard")).toBe("ラピッドトリガーキーボード");
+    expect(productCategoryLabel("mechanical-keyboard")).toBe("メカニカルキーボード");
+    expect(productCategoryLabel("membrane-keyboard")).toBe("メンブレンキーボード");
+    expect(productCategoryLabel("mouse")).toBe("マウス");
+    expect(productCategoryLabel("stream-controller")).toBe("ストリームコントローラー");
+    expect(productCategoryLabel("headset")).toBe("ヘッドセット");
+    expect(productCategoryLabel("other")).toBe("その他");
+    expect(normalizeProductCategory("ラピッドトリガーキーボード")).toBe("rapid-trigger-keyboard");
+    expect(normalizeProductCategory("Rapid Trigger Keyboard")).toBe("rapid-trigger-keyboard");
+  });
+});
 
 describe("product category classification", () => {
   it("classifies representative RMS products by their canonical category", () => {

@@ -10,16 +10,17 @@ export type ProductCategoryKey =
 type ProductCategory = Readonly<{
   key: ProductCategoryKey;
   label: string;
+  aliases: readonly string[];
 }>;
 
 export const PRODUCT_CATEGORIES = [
-  { key: "rapid-trigger-keyboard", label: "Rapid Trigger Keyboard" },
-  { key: "mechanical-keyboard", label: "Mechanical Keyboard" },
-  { key: "membrane-keyboard", label: "Membrane Keyboard" },
-  { key: "mouse", label: "Mouse" },
-  { key: "stream-controller", label: "Stream Controller" },
-  { key: "headset", label: "Headset" },
-  { key: "other", label: "Other" },
+  { key: "rapid-trigger-keyboard", label: "ラピッドトリガーキーボード", aliases: ["Rapid Trigger Keyboard"] },
+  { key: "mechanical-keyboard", label: "メカニカルキーボード", aliases: ["Mechanical Keyboard"] },
+  { key: "membrane-keyboard", label: "メンブレンキーボード", aliases: ["Membrane Keyboard"] },
+  { key: "mouse", label: "マウス", aliases: ["Mouse"] },
+  { key: "stream-controller", label: "ストリームコントローラー", aliases: ["Stream Controller"] },
+  { key: "headset", label: "ヘッドセット", aliases: ["Headset"] },
+  { key: "other", label: "その他", aliases: ["Other"] },
 ] as const satisfies readonly ProductCategory[];
 
 const categoryKeys = new Set<ProductCategoryKey>(PRODUCT_CATEGORIES.map(({ key }) => key));
@@ -32,14 +33,21 @@ function normalizeCategoryText(value: unknown) {
 
 export function normalizeProductCategory(value: unknown): ProductCategoryKey {
   const normalized = normalizeCategoryText(value);
-  const category = PRODUCT_CATEGORIES.find(({ key, label }) =>
-    normalized === normalizeCategoryText(key) || normalized === normalizeCategoryText(label),
+  const category = PRODUCT_CATEGORIES.find(({ key, label, aliases }) =>
+    normalized === normalizeCategoryText(key)
+      || normalized === normalizeCategoryText(label)
+      || aliases.some((alias) => normalized === normalizeCategoryText(alias)),
   );
   return category && categoryKeys.has(category.key) ? category.key : "other";
 }
 
 export function productCategoryLabel(key: ProductCategoryKey) {
-  return PRODUCT_CATEGORIES.find((category) => category.key === key)?.label ?? "Other";
+  return PRODUCT_CATEGORIES.find((category) => category.key === key)?.label ?? "その他";
+}
+
+export function productCategorySearchTerms(key: ProductCategoryKey) {
+  const category = PRODUCT_CATEGORIES.find((item) => item.key === key);
+  return category ? [category.key, category.label, ...category.aliases] : [key];
 }
 
 export function classifyProductCategory(input: {

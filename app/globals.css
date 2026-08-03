@@ -1131,7 +1131,6 @@ body { background: #f7f5f0; color: #181818; }
   min-width: 0;
   grid-template-columns: minmax(0, 1fr) auto auto;
   grid-template-areas:
-    "label count clear"
     "search count clear"
     "categories categories categories";
   gap: .45rem 1rem;
@@ -1142,16 +1141,21 @@ body { background: #f7f5f0; color: #181818; }
   border-bottom: 1px solid var(--aj-line);
 }
 
-.store-catalogue-controls label {
-  grid-area: label;
+.store-catalogue-search {
+  display: grid;
+  min-width: 0;
+  grid-area: search;
+  gap: .45rem;
+}
+
+.store-catalogue-search label {
   color: #5c5751;
   font-size: .73rem;
   font-weight: 800;
   letter-spacing: .1em;
 }
 
-.store-catalogue-controls input {
-  grid-area: search;
+.store-catalogue-search input {
   width: 100%;
   min-width: 0;
   height: 48px;
@@ -1253,7 +1257,6 @@ body { background: #f7f5f0; color: #181818; }
   .store-catalogue-controls {
     grid-template-columns: minmax(0, 1fr);
     grid-template-areas:
-      "label"
       "search"
       "count"
       "categories"

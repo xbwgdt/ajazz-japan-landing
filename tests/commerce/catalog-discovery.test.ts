@@ -23,6 +23,8 @@ describe("filterCatalogueProducts", () => {
     expect(filterCatalogueProducts(products, { query: "AJ159", category: "all" }).map((product) => product.slug)).toEqual(["aj159"]);
     expect(filterCatalogueProducts(products, { query: "", category: "mouse" }).map((product) => product.slug)).toEqual(["aj159"]);
     expect(filterCatalogueProducts(products, { query: "8k", category: "mouse" }).map((product) => product.slug)).toEqual(["aj159"]);
+    expect(filterCatalogueProducts(products, { query: "マウス", category: "all" }).map((product) => product.slug)).toEqual(["aj159"]);
+    expect(filterCatalogueProducts(products, { query: "mechanical keyboard", category: "all" }).map((product) => product.slug)).toEqual(["ak820"]);
     expect(filterCatalogueProducts(products, { query: "headset", category: "mouse" })).toEqual([]);
     expect(filterCatalogueProducts(products, { query: "　", category: "all" })).toEqual(products);
   });

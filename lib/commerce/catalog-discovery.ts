@@ -1,4 +1,4 @@
-import { productCategoryLabel, type ProductCategoryKey } from "./product-categories";
+import { productCategorySearchTerms, type ProductCategoryKey } from "./product-categories";
 
 export interface CatalogueProduct {
   name: string;
@@ -28,8 +28,7 @@ export function filterCatalogueProducts<T extends CatalogueProduct>(
     const searchableText = [
       product.name,
       product.tagline,
-      product.category,
-      productCategoryLabel(product.category),
+      ...productCategorySearchTerms(product.category),
     ].map(normalizeSearchText).join(" ");
 
     return searchableText.includes(normalizedQuery);

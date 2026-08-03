@@ -20,13 +20,13 @@ describe("Japanese storefront copy", () => {
     const html = renderToStaticMarkup(<CartProvider><Storefront /></CartProvider>);
 
     expect(html).toContain("製品を検索");
-    expect(html).toContain("Rapid Trigger Keyboard");
-    expect(html).toContain("Mechanical Keyboard");
-    expect(html).toContain("Membrane Keyboard");
-    expect(html).toContain("Mouse");
-    expect(html).toContain("Stream Controller");
-    expect(html).toContain("Headset");
-    expect(html).toContain("Other");
+    expect(html).toContain("ラピッドトリガーキーボード");
+    expect(html).toContain("メカニカルキーボード");
+    expect(html).toContain("メンブレンキーボード");
+    expect(html).toContain("マウス");
+    expect(html).toContain("ストリームコントローラー");
+    expect(html).toContain("ヘッドセット");
+    expect(html).toContain("その他");
     expect(html).toContain("件の製品");
     expect(html).toContain('aria-pressed="true">すべて</button>');
   });
