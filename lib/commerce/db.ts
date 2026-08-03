@@ -9,6 +9,7 @@ export const commerceSchemaSql = `
     slug TEXT NOT NULL UNIQUE,
     name TEXT NOT NULL,
     description_html TEXT NOT NULL DEFAULT '',
+    category TEXT NOT NULL DEFAULT 'other',
     published BOOLEAN NOT NULL DEFAULT FALSE,
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
@@ -140,6 +141,9 @@ export const commerceSchemaSql = `
 
   ALTER TABLE orders
   ADD COLUMN IF NOT EXISTS terms_accepted_at TIMESTAMPTZ;
+
+  ALTER TABLE products
+  ADD COLUMN IF NOT EXISTS category TEXT NOT NULL DEFAULT 'other';
 `;
 
 let sqlClient: ReturnType<typeof postgres> | undefined;

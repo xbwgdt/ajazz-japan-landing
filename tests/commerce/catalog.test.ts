@@ -179,7 +179,7 @@ describe("RMS catalog images", () => {
       ]),
       {
         async upsertProduct(product) {
-          calls.push(`product:${product.rmsManageNumber}`);
+          calls.push(`product:${product.rmsManageNumber}:${product.category}`);
           return { id: 42 };
         },
         async replaceImages(productId, images) {
@@ -192,7 +192,7 @@ describe("RMS catalog images", () => {
     );
 
     expect(calls).toEqual([
-      "product:ak820-max",
+      "product:ak820-max:mechanical-keyboard",
       "images:42:1",
       "variant:42:AK820-BLACK:4",
     ]);

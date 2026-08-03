@@ -238,12 +238,13 @@ export async function upsertRmsCatalog(rows: RmsCatalogRow[]) {
     await writeRmsCatalog(products, {
       async upsertProduct(product) {
         const [savedProduct] = await sql<{ id: number }[]>`
-          INSERT INTO products (rms_manage_number, slug, name, description_html, published)
+          INSERT INTO products (rms_manage_number, slug, name, description_html, category, published)
           VALUES (
             ${product.rmsManageNumber},
             ${product.slug},
             ${product.name},
             ${product.descriptionHtml},
+            ${product.category},
             TRUE
           )
           ON CONFLICT (rms_manage_number) DO UPDATE
@@ -251,6 +252,7 @@ export async function upsertRmsCatalog(rows: RmsCatalogRow[]) {
             slug = EXCLUDED.slug,
             name = EXCLUDED.name,
             description_html = EXCLUDED.description_html,
+            category = EXCLUDED.category,
             published = TRUE,
             updated_at = NOW()
           RETURNING id
