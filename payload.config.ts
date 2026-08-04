@@ -3,6 +3,9 @@ import { lexicalEditor } from "@payloadcms/richtext-lexical";
 import { buildConfig } from "payload";
 import sharp from "sharp";
 import { Admins } from "./cms/collections/Admins";
+import { AuditEvents } from "./cms/collections/AuditEvents";
+import { Media } from "./cms/collections/Media";
+import { Products } from "./cms/collections/Products";
 
 export default buildConfig({
   admin: {
@@ -19,7 +22,7 @@ export default buildConfig({
       },
     },
   },
-  collections: [Admins],
+  collections: [Admins, Media, Products, AuditEvents],
   db: postgresAdapter({
     pool: {
       connectionString: process.env.DATABASE_URL ?? process.env.POSTGRES_URL,

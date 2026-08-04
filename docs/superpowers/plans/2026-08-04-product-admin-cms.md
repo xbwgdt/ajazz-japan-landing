@@ -321,6 +321,7 @@ git commit -m "feat: unify CMS and order administration"
 - Create: `cms/fields/productSpecifications.ts`
 - Create: `cms/collections/Products.ts`
 - Create: `cms/collections/AuditEvents.ts`
+- Create: `cms/collections/Media.ts` (authenticated metadata-only relationship target; no uploads)
 - Create: `cms/hooks/protectSourceFields.ts`
 - Create: `cms/hooks/writeAuditEvent.ts`
 - Modify: `payload.config.ts`
@@ -436,7 +437,7 @@ git commit -m "feat: model CMS products and audit events"
 
 **Files:**
 - Create: `lib/cms/media-validation.ts`
-- Create: `cms/collections/Media.ts`
+- Modify: `cms/collections/Media.ts` (add and harden R2 uploads and media lifecycle)
 - Create: `cms/hooks/protectMediaReferences.ts`
 - Create: `app/api/cms/media/[id]/retire/route.ts`
 - Create: `app/api/cron/media-cleanup/route.ts`

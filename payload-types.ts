@@ -68,6 +68,9 @@ export interface Config {
   blocks: {};
   collections: {
     admins: Admin;
+    media: Media;
+    products: Product;
+    'audit-events': AuditEvent;
     'payload-kv': PayloadKv;
     'payload-locked-documents': PayloadLockedDocument;
     'payload-preferences': PayloadPreference;
@@ -76,6 +79,9 @@ export interface Config {
   collectionsJoins: {};
   collectionsSelect: {
     admins: AdminsSelect<false> | AdminsSelect<true>;
+    media: MediaSelect<false> | MediaSelect<true>;
+    products: ProductsSelect<false> | ProductsSelect<true>;
+    'audit-events': AuditEventsSelect<false> | AuditEventsSelect<true>;
     'payload-kv': PayloadKvSelect<false> | PayloadKvSelect<true>;
     'payload-locked-documents': PayloadLockedDocumentsSelect<false> | PayloadLockedDocumentsSelect<true>;
     'payload-preferences': PayloadPreferencesSelect<false> | PayloadPreferencesSelect<true>;
@@ -143,6 +149,148 @@ export interface Admin {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "media".
+ */
+export interface Media {
+  id: number;
+  filename: string;
+  alt: string;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "products".
+ */
+export interface Product {
+  id: number;
+  sourceType: 'rms' | 'manual';
+  rmsManageNumber?: string | null;
+  operationalProductId?: string | null;
+  name: string;
+  slug: string;
+  shortStatement?: string | null;
+  description?: {
+    root: {
+      type: string;
+      children: {
+        type: any;
+        version: number;
+        [k: string]: unknown;
+      }[];
+      direction: ('ltr' | 'rtl') | null;
+      format: 'left' | 'start' | 'center' | 'right' | 'end' | 'justify' | '';
+      indent: number;
+      version: number;
+    };
+    [k: string]: unknown;
+  } | null;
+  category:
+    | 'rapid-trigger-keyboard'
+    | 'mechanical-keyboard'
+    | 'membrane-keyboard'
+    | 'mouse'
+    | 'stream-controller'
+    | 'headset'
+    | 'other';
+  lifecycle: 'active' | 'unpublished' | 'archived';
+  featured?: boolean | null;
+  merchandisingOrder?: number | null;
+  primaryImageId?: (number | null) | Media;
+  galleryImageIds?: (number | Media)[] | null;
+  sceneImageIds?: (number | Media)[] | null;
+  variants?:
+    | {
+        operationalVariantId?: string | null;
+        sku: string;
+        rmsSkuNumber?: string | null;
+        colorName: string;
+        colorSwatch?: string | null;
+        thumbnailId?: (number | null) | Media;
+        imageId?: (number | null) | Media;
+        salePriceJpy: number;
+        compareAtPriceJpy?: number | null;
+        comparisonEvidenceType?: ('manufacturer_price' | 'recent_price' | 'market_price') | null;
+        comparisonEvidenceReference?: string | null;
+        comparisonApprovedBy?: (number | null) | Admin;
+        comparisonApprovedAt?: string | null;
+        inventoryMode: 'rms' | 'manual';
+        active?: boolean | null;
+        id?: string | null;
+      }[]
+    | null;
+  specifications?: {
+    keyboardLayout?: string | null;
+    size?: string | null;
+    switchType?: string | null;
+    connectionModes?: ('wired' | '2.4ghz' | 'bluetooth')[] | null;
+    pollingRateHz?: number | null;
+    rapidTriggerSupported?: boolean | null;
+    actuationMinMm?: number | null;
+    actuationMaxMm?: number | null;
+    keycapMaterial?: string | null;
+    mouseSensor?: string | null;
+    maximumDpi?: number | null;
+    weightGrams?: number | null;
+    buttonCount?: number | null;
+    headsetConnection?: ('wired' | '2.4ghz' | 'bluetooth')[] | null;
+    driverSizeMm?: number | null;
+    microphoneType?: string | null;
+    streamControllerKeyCount?: number | null;
+    streamControllerDisplayCount?: number | null;
+    supportedApplications?:
+      | {
+          name: string;
+          id?: string | null;
+        }[]
+      | null;
+    supportedOperatingSystems?: ('windows' | 'macos' | 'linux' | 'android' | 'ios')[] | null;
+  };
+  seoTitle?: string | null;
+  seoDescription?: string | null;
+  seoImageId?: (number | null) | Media;
+  editorialRevision: number;
+  lastPublishedAt?: string | null;
+  lastPublishedBy?: (number | null) | Admin;
+  updatedAt: string;
+  createdAt: string;
+  _status?: ('draft' | 'published') | null;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "audit-events".
+ */
+export interface AuditEvent {
+  id: number;
+  action:
+    | 'login_security'
+    | 'create'
+    | 'edit'
+    | 'publish'
+    | 'unpublish'
+    | 'archive'
+    | 'restore'
+    | 'delete_draft'
+    | 'approve_price'
+    | 'adjust_inventory'
+    | 'retire_media';
+  actor: number | Admin;
+  subjectType: string;
+  subjectId: string;
+  details:
+    | {
+        [k: string]: unknown;
+      }
+    | unknown[]
+    | string
+    | number
+    | boolean
+    | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "payload-kv".
  */
 export interface PayloadKv {
@@ -164,10 +312,23 @@ export interface PayloadKv {
  */
 export interface PayloadLockedDocument {
   id: number;
-  document?: {
-    relationTo: 'admins';
-    value: number | Admin;
-  } | null;
+  document?:
+    | ({
+        relationTo: 'admins';
+        value: number | Admin;
+      } | null)
+    | ({
+        relationTo: 'media';
+        value: number | Media;
+      } | null)
+    | ({
+        relationTo: 'products';
+        value: number | Product;
+      } | null)
+    | ({
+        relationTo: 'audit-events';
+        value: number | AuditEvent;
+      } | null);
   globalSlug?: string | null;
   user: {
     relationTo: 'admins';
@@ -232,6 +393,107 @@ export interface AdminsSelect<T extends boolean = true> {
         createdAt?: T;
         expiresAt?: T;
       };
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "media_select".
+ */
+export interface MediaSelect<T extends boolean = true> {
+  filename?: T;
+  alt?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "products_select".
+ */
+export interface ProductsSelect<T extends boolean = true> {
+  sourceType?: T;
+  rmsManageNumber?: T;
+  operationalProductId?: T;
+  name?: T;
+  slug?: T;
+  shortStatement?: T;
+  description?: T;
+  category?: T;
+  lifecycle?: T;
+  featured?: T;
+  merchandisingOrder?: T;
+  primaryImageId?: T;
+  galleryImageIds?: T;
+  sceneImageIds?: T;
+  variants?:
+    | T
+    | {
+        operationalVariantId?: T;
+        sku?: T;
+        rmsSkuNumber?: T;
+        colorName?: T;
+        colorSwatch?: T;
+        thumbnailId?: T;
+        imageId?: T;
+        salePriceJpy?: T;
+        compareAtPriceJpy?: T;
+        comparisonEvidenceType?: T;
+        comparisonEvidenceReference?: T;
+        comparisonApprovedBy?: T;
+        comparisonApprovedAt?: T;
+        inventoryMode?: T;
+        active?: T;
+        id?: T;
+      };
+  specifications?:
+    | T
+    | {
+        keyboardLayout?: T;
+        size?: T;
+        switchType?: T;
+        connectionModes?: T;
+        pollingRateHz?: T;
+        rapidTriggerSupported?: T;
+        actuationMinMm?: T;
+        actuationMaxMm?: T;
+        keycapMaterial?: T;
+        mouseSensor?: T;
+        maximumDpi?: T;
+        weightGrams?: T;
+        buttonCount?: T;
+        headsetConnection?: T;
+        driverSizeMm?: T;
+        microphoneType?: T;
+        streamControllerKeyCount?: T;
+        streamControllerDisplayCount?: T;
+        supportedApplications?:
+          | T
+          | {
+              name?: T;
+              id?: T;
+            };
+        supportedOperatingSystems?: T;
+      };
+  seoTitle?: T;
+  seoDescription?: T;
+  seoImageId?: T;
+  editorialRevision?: T;
+  lastPublishedAt?: T;
+  lastPublishedBy?: T;
+  updatedAt?: T;
+  createdAt?: T;
+  _status?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "audit-events_select".
+ */
+export interface AuditEventsSelect<T extends boolean = true> {
+  action?: T;
+  actor?: T;
+  subjectType?: T;
+  subjectId?: T;
+  details?: T;
+  updatedAt?: T;
+  createdAt?: T;
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
