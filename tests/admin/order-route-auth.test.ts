@@ -60,4 +60,12 @@ describe("order route Payload authentication", () => {
     expect(response.status).toBe(401);
     await expect(response.json()).resolves.toEqual({ error: "Unauthorized" });
   });
+
+  it("rejects a cross-origin CSV export before authentication", async () => {
+    const { GET } = await import("../../app/api/admin/orders/export.csv/route");
+    const response = await GET(request("/api/admin/orders/export.csv", "GET", "https://attacker.example"));
+
+    expect(response.status).toBe(403);
+    expect(authMocks.requireAuthenticatedAdmin).not.toHaveBeenCalled();
+  });
 });

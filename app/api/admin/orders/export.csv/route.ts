@@ -3,8 +3,12 @@ import { APIError } from "payload";
 import { requireAuthenticatedAdmin } from "../../../../../lib/cms/auth";
 import { listAdminOrders } from "../../../../../lib/commerce/admin-orders";
 import { toOrderCsv } from "../../../../../lib/commerce/admin-order-export";
+import { isSameOrigin } from "../../../../../lib/http-security";
 
 export async function GET(request: Request) {
+  if (!isSameOrigin(request)) {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
   try {
     await requireAuthenticatedAdmin(request.headers);
   } catch (error) {
