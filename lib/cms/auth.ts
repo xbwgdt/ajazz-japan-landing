@@ -14,7 +14,7 @@ export async function authenticateAdmin(
 
   const admin = user as AuthenticatedAdmin;
   if (admin.role !== "administrator") return null;
-  if (admin.collection && admin.collection !== "admins") return null;
+  if (admin.collection !== "admins") return null;
   return admin;
 }
 

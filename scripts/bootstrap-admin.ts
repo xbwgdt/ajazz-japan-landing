@@ -11,6 +11,11 @@ type BootstrapAdminInput = {
 
 type BootstrapEnvironment = Record<string, string | undefined>;
 
+type BootstrapLogger = {
+  error: (message: string) => void;
+  log: (message: string) => void;
+};
+
 function validateBootstrapInput(input: BootstrapAdminInput): BootstrapAdminInput {
   const email = input.email.trim().toLowerCase();
   if (email !== FIRST_ADMIN_EMAIL) {
@@ -66,17 +71,26 @@ export async function runBootstrapAdmin(
   return bootstrapAdmin(payload, credentials);
 }
 
-async function main() {
-  const result = await runBootstrapAdmin();
-  console.log(result === "created"
-    ? "Administrator account created."
-    : "Administrator account already exists.");
+export async function runBootstrapAdminCli(
+  environment: BootstrapEnvironment = process.env,
+  initializePayload: () => Promise<Payload> = () => getPayload({ config: configPromise }),
+  logger: BootstrapLogger = console,
+): Promise<number> {
+  try {
+    const result = await runBootstrapAdmin(environment, initializePayload);
+    logger.log(result === "created"
+      ? "Administrator account created."
+      : "Administrator account already exists.");
+    return 0;
+  } catch {
+    logger.error("Administrator bootstrap failed (ADMIN_BOOTSTRAP_FAILED).");
+    return 1;
+  }
 }
 
 const executedPath = process.argv[1] ? pathToFileURL(process.argv[1]).href : "";
 if (import.meta.url === executedPath) {
-  main().catch((error: unknown) => {
-    console.error(error instanceof Error ? error.message : "Administrator bootstrap failed.");
-    process.exitCode = 1;
+  void runBootstrapAdminCli().then((exitCode) => {
+    process.exitCode = exitCode;
   });
 }

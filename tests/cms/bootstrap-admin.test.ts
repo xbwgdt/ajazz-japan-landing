@@ -1,9 +1,11 @@
 import { describe, expect, it, vi } from "vitest";
-import {
+import * as bootstrapAdminScript from "../../scripts/bootstrap-admin";
+
+const {
   bootstrapAdmin,
   readBootstrapAdminCredentials,
   runBootstrapAdmin,
-} from "../../scripts/bootstrap-admin";
+} = bootstrapAdminScript;
 
 describe("administrator bootstrap", () => {
   it("fails closed when the environment password is missing", () => {
@@ -71,5 +73,40 @@ describe("administrator bootstrap", () => {
     })).rejects.toThrow("BOOTSTRAP_ADMIN_EMAIL must be xiet@a-jazz.com");
     expect(payload.find).not.toHaveBeenCalled();
     expect(payload.create).not.toHaveBeenCalled();
+  });
+
+  it("never logs a downstream error message containing the bootstrap password", async () => {
+    const runBootstrapAdminCli = (bootstrapAdminScript as unknown as {
+      runBootstrapAdminCli?: (
+        environment: Record<string, string | undefined>,
+        initializePayload: () => Promise<never>,
+        logger: { error: (...args: unknown[]) => void; log: (...args: unknown[]) => void },
+      ) => Promise<number>;
+    }).runBootstrapAdminCli;
+    expect(runBootstrapAdminCli).toBeTypeOf("function");
+    if (!runBootstrapAdminCli) return;
+
+    const password = "do-not-log-this-password";
+    const logger = {
+      error: vi.fn(),
+      log: vi.fn(),
+    };
+    const initializePayload = vi.fn().mockRejectedValue(
+      new Error(`database rejected password ${password}`),
+    );
+
+    await expect(runBootstrapAdminCli({
+      BOOTSTRAP_ADMIN_EMAIL: "xiet@a-jazz.com",
+      BOOTSTRAP_ADMIN_PASSWORD: password,
+    }, initializePayload, logger)).resolves.toBe(1);
+
+    const output = [...logger.log.mock.calls, ...logger.error.mock.calls]
+      .flat()
+      .join(" ");
+    expect(output).toContain("ADMIN_BOOTSTRAP_FAILED");
+    expect(output).not.toContain(password);
+    expect(logger.error).toHaveBeenCalledWith(
+      "Administrator bootstrap failed (ADMIN_BOOTSTRAP_FAILED).",
+    );
   });
 });

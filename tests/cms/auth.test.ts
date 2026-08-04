@@ -9,11 +9,28 @@ describe("Payload administrator authentication", () => {
   });
 
   it("returns the authenticated administrator", async () => {
-    const admin = { id: 1, email: "xiet@a-jazz.com", role: "administrator" };
+    const admin = {
+      id: 1,
+      collection: "admins",
+      email: "xiet@a-jazz.com",
+      role: "administrator",
+    };
 
     await expect(requireAuthenticatedAdmin(new Headers(), {
       auth: vi.fn().mockResolvedValue({ user: admin }),
     } as never)).resolves.toEqual(admin);
+  });
+
+  it("rejects an administrator-shaped user without a collection", async () => {
+    const user = {
+      id: 2,
+      email: "xiet@a-jazz.com",
+      role: "administrator",
+    };
+
+    await expect(authenticateAdmin(new Headers(), {
+      auth: vi.fn().mockResolvedValue({ user }),
+    } as never)).resolves.toBeNull();
   });
 
   it("rejects a user authenticated from another collection", async () => {
