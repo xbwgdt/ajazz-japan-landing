@@ -2,6 +2,7 @@
   "name": "ajazz-japan-landing",
   "version": "0.1.0",
   "private": true,
+  "type": "module",
   "packageManager": "pnpm@11.9.0",
   "scripts": {
     "dev": "next dev -p 3007",
@@ -9,14 +10,27 @@
     "start": "node .next/standalone/server.js",
     "lint": "tsc --noEmit",
     "test": "vitest run",
-    "import:rms": "tsx scripts/import-rms-catalog-cli.ts"
+    "import:rms": "tsx scripts/import-rms-catalog-cli.ts",
+    "payload": "payload",
+    "cms:types": "payload generate:types",
+    "cms:importmap": "payload generate:importmap",
+    "cms:migrate": "payload migrate",
+    "cms:migrate:create": "payload migrate:create",
+    "cms:bootstrap-admin": "tsx scripts/bootstrap-admin.ts",
+    "cms:migrate-catalog": "tsx scripts/migrate-catalog-to-cms.ts"
   },
   "dependencies": {
+    "@payloadcms/db-postgres": "^3.87.0",
+    "@payloadcms/next": "^3.87.0",
+    "@payloadcms/richtext-lexical": "^3.87.0",
+    "@payloadcms/storage-s3": "^3.87.0",
     "exceljs": "4.4.0",
     "next": "16.2.10",
+    "payload": "^3.87.0",
     "postgres": "^3.4.9",
     "react": "19.2.7",
     "react-dom": "19.2.7",
+    "sharp": "^0.34.5",
     "stripe": "^22.3.2"
   },
   "devDependencies": {
