@@ -113,9 +113,7 @@ Add these scripts to `package.json`:
   "cms:types": "payload generate:types",
   "cms:importmap": "payload generate:importmap",
   "cms:migrate": "payload migrate",
-  "cms:migrate:create": "payload migrate:create",
-  "cms:bootstrap-admin": "tsx scripts/bootstrap-admin.ts",
-  "cms:migrate-catalog": "tsx scripts/migrate-catalog-to-cms.ts"
+  "cms:migrate:create": "payload migrate:create"
 }
 ```
 
@@ -197,6 +195,7 @@ git commit -m "feat: add isolated Payload CMS foundation"
 - Create: `cms/admin/OrdersView.tsx`
 - Create: `cms/admin/Dashboard.tsx`
 - Create: `scripts/bootstrap-admin.ts`
+- Modify: `package.json`
 - Modify: `payload.config.ts`
 - Move: `app/(payload)/cms/[[...segments]]/*` to `app/(payload)/admin/[[...segments]]/*`
 - Modify: `app/api/admin/orders/[id]/route.ts`
@@ -271,6 +270,9 @@ export async function requireAuthenticatedAdmin(headers: Headers, payload?: Payl
 ```
 
 `scripts/bootstrap-admin.ts` must require `BOOTSTRAP_ADMIN_EMAIL === "xiet@a-jazz.com"`, require a password of at least 16 characters, query by email, create only when absent, and never log the password.
+
+When `scripts/bootstrap-admin.ts` is created in this task, add the
+`cms:bootstrap-admin` package script as `tsx scripts/bootstrap-admin.ts`.
 
 - [ ] **Step 4: Move the Payload admin to `/admin` and register order navigation**
 
@@ -749,6 +751,7 @@ Expected: editorial fields survive reimport, RMS sync remains operational, and m
 - Create: `lib/cms/catalog-migration.ts`
 - Create: `scripts/migrate-catalog-to-cms.ts`
 - Create: `tests/cms/catalog-migration.test.ts`
+- Modify: `package.json`
 - Modify: `README.md`
 
 **Interfaces:**
@@ -787,6 +790,9 @@ Match products by stable operational product ID first and RMS management number 
 - [ ] **Step 4: Implement safe CLI execution**
 
 The CLI defaults to a read-only summary. `--apply` requires `CMS_MIGRATION_CONFIRM=AJAZZ_CATALOG_2026`, processes products in deterministic batches of 25, stores a migration run ID, and can resume. `--reconcile` compares product count, variant count, RMS links, SKU links, sale prices, image counts, and published/unpublished state; it exits non-zero when any mismatch exists.
+
+When `scripts/migrate-catalog-to-cms.ts` is created in this task, add the
+`cms:migrate-catalog` package script as `tsx scripts/migrate-catalog-to-cms.ts`.
 
 - [ ] **Step 5: Document rehearsal and rollback**
 

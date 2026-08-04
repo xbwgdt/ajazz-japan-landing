@@ -20,6 +20,33 @@ const migrationTables = new Set([
   "payload_migrations",
 ]);
 
+const migrationTypeNames = new Set(["enum_admins_role"]);
+
+const migrationIndexNames = new Set([
+  "admins_sessions_order_idx",
+  "admins_sessions_parent_id_idx",
+  "admins_updated_at_idx",
+  "admins_created_at_idx",
+  "admins_email_idx",
+  "payload_kv_key_idx",
+  "payload_locked_documents_global_slug_idx",
+  "payload_locked_documents_updated_at_idx",
+  "payload_locked_documents_created_at_idx",
+  "payload_locked_documents_rels_order_idx",
+  "payload_locked_documents_rels_parent_idx",
+  "payload_locked_documents_rels_path_idx",
+  "payload_locked_documents_rels_admins_id_idx",
+  "payload_preferences_key_idx",
+  "payload_preferences_updated_at_idx",
+  "payload_preferences_created_at_idx",
+  "payload_preferences_rels_order_idx",
+  "payload_preferences_rels_parent_idx",
+  "payload_preferences_rels_path_idx",
+  "payload_preferences_rels_admins_id_idx",
+  "payload_migrations_updated_at_idx",
+  "payload_migrations_created_at_idx",
+]);
+
 function renderSql(query: unknown): string {
   const chunks = (query as SqlQuery).queryChunks;
   if (!Array.isArray(chunks)) {
@@ -58,6 +85,57 @@ async function runMigration(
   return executed.flatMap(statements);
 }
 
+function expectQualifiedMigrationTarget(statement: string): void {
+  if (/^CREATE TYPE\b/i.test(statement)) {
+    const match = statement.match(/^CREATE TYPE "cms"\."([^"]+)" AS ENUM\b/i);
+    expect(match, `CREATE TYPE target must be schema-qualified: ${statement}`).not.toBeNull();
+    if (match) expect(migrationTypeNames.has(match[1])).toBe(true);
+    return;
+  }
+
+  if (/^CREATE TABLE\b/i.test(statement)) {
+    const match = statement.match(/^CREATE TABLE "cms"\."([^"]+)" \(/i);
+    expect(match, `CREATE TABLE target must be schema-qualified: ${statement}`).not.toBeNull();
+    if (match) expect(migrationTables.has(match[1])).toBe(true);
+    return;
+  }
+
+  if (/^ALTER TABLE\b/i.test(statement)) {
+    const match = statement.match(/^ALTER TABLE "cms"\."([^"]+)" ADD CONSTRAINT\b/i);
+    expect(match, `ALTER TABLE target must be schema-qualified: ${statement}`).not.toBeNull();
+    if (match) expect(migrationTables.has(match[1])).toBe(true);
+    return;
+  }
+
+  if (/^CREATE (?:UNIQUE )?INDEX\b/i.test(statement)) {
+    const match = statement.match(
+      /^CREATE (?:UNIQUE )?INDEX "([^"]+)" ON "cms"\."([^"]+)" USING\b/i,
+    );
+    expect(match, `CREATE INDEX target must be schema-qualified: ${statement}`).not.toBeNull();
+    if (match) {
+      expect(migrationIndexNames.has(match[1])).toBe(true);
+      expect(migrationTables.has(match[2])).toBe(true);
+    }
+    return;
+  }
+
+  if (/^DROP TABLE\b/i.test(statement)) {
+    const match = statement.match(/^DROP TABLE "cms"\."([^"]+)"$/i);
+    expect(match, `DROP TABLE target must be schema-qualified: ${statement}`).not.toBeNull();
+    if (match) expect(migrationTables.has(match[1])).toBe(true);
+    return;
+  }
+
+  if (/^DROP TYPE\b/i.test(statement)) {
+    const match = statement.match(/^DROP TYPE "cms"\."([^"]+)"$/i);
+    expect(match, `DROP TYPE target must be schema-qualified: ${statement}`).not.toBeNull();
+    if (match) expect(migrationTypeNames.has(match[1])).toBe(true);
+    return;
+  }
+
+  throw new Error(`Unexpected migration DDL statement: ${statement}`);
+}
+
 describe("Payload configuration", () => {
   it("isolates CMS configuration from the public commerce schema", async () => {
     const config = await configPromise;
@@ -84,20 +162,13 @@ describe("Payload configuration", () => {
   it("limits migration DDL to this migration's CMS objects", async () => {
     const upStatements = await runMigration(upInitialCms);
     const downStatements = await runMigration(downInitialCms);
-    const ddlStatements = [...upStatements, ...downStatements].filter((statement) =>
-      /^(CREATE|ALTER|DROP)\s+(SCHEMA|TYPE|TABLE|INDEX)/i.test(statement),
-    );
 
-    expect(ddlStatements.some((statement) => /\bpublic\b/i.test(statement))).toBe(false);
     expect(downStatements.some((statement) => /^DROP SCHEMA\b/i.test(statement))).toBe(false);
     expect(downStatements.some((statement) => /\bCASCADE\b/i.test(statement))).toBe(false);
+    expect(upStatements.slice(1)).not.toContain(expect.stringMatching(/^CREATE SCHEMA\b/i));
 
-    for (const statement of downStatements.filter((item) => /^DROP TABLE\b/i.test(item))) {
-      const table = statement.match(/^DROP TABLE "cms"\."([^"]+)"$/i)?.[1];
-      expect(table).toBeDefined();
-      expect(migrationTables.has(table as string)).toBe(true);
+    for (const statement of [...upStatements.slice(1), ...downStatements]) {
+      expectQualifiedMigrationTarget(statement);
     }
-
-    expect(downStatements).toContain('DROP TYPE "cms"."enum_admins_role"');
   });
 });
