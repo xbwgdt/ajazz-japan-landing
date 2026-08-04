@@ -2,7 +2,8 @@ import { MigrateUpArgs, MigrateDownArgs, sql } from '@payloadcms/db-postgres'
 
 export async function up({ db, payload, req }: MigrateUpArgs): Promise<void> {
   await db.execute(sql`
-   CREATE TYPE "cms"."enum_admins_role" AS ENUM('administrator');
+   CREATE SCHEMA IF NOT EXISTS "cms";
+  CREATE TYPE "cms"."enum_admins_role" AS ENUM('administrator');
   CREATE TABLE "cms"."admins_sessions" (
 	"_order" integer NOT NULL,
 	"_parent_id" integer NOT NULL,
@@ -101,13 +102,13 @@ export async function up({ db, payload, req }: MigrateUpArgs): Promise<void> {
 
 export async function down({ db, payload, req }: MigrateDownArgs): Promise<void> {
   await db.execute(sql`
-   DROP TABLE "cms"."admins_sessions" CASCADE;
-  DROP TABLE "cms"."admins" CASCADE;
-  DROP TABLE "cms"."payload_kv" CASCADE;
-  DROP TABLE "cms"."payload_locked_documents" CASCADE;
-  DROP TABLE "cms"."payload_locked_documents_rels" CASCADE;
-  DROP TABLE "cms"."payload_preferences" CASCADE;
-  DROP TABLE "cms"."payload_preferences_rels" CASCADE;
-  DROP TABLE "cms"."payload_migrations" CASCADE;
+   DROP TABLE "cms"."admins_sessions";
+  DROP TABLE "cms"."payload_locked_documents_rels";
+  DROP TABLE "cms"."payload_preferences_rels";
+  DROP TABLE "cms"."admins";
+  DROP TABLE "cms"."payload_kv";
+  DROP TABLE "cms"."payload_locked_documents";
+  DROP TABLE "cms"."payload_preferences";
+  DROP TABLE "cms"."payload_migrations";
   DROP TYPE "cms"."enum_admins_role";`)
 }
