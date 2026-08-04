@@ -1,12 +1,18 @@
-import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
+import { APIError } from "payload";
+import { requireAuthenticatedAdmin } from "../../../../../lib/cms/auth";
 import { listAdminOrders } from "../../../../../lib/commerce/admin-orders";
 import { toOrderCsv } from "../../../../../lib/commerce/admin-order-export";
-import { ADMIN_COOKIE, verifyAdminToken } from "../../../../../lib/admin-security";
 
-export async function GET() {
-  const token = (await cookies()).get(ADMIN_COOKIE)?.value;
-  if (!verifyAdminToken(token)) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+export async function GET(request: Request) {
+  try {
+    await requireAuthenticatedAdmin(request.headers);
+  } catch (error) {
+    if (error instanceof APIError && error.status === 401) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+    throw error;
+  }
   const csv = toOrderCsv(await listAdminOrders());
   return new NextResponse(csv, {
     headers: {

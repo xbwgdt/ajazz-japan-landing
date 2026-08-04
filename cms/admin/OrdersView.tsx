@@ -1,14 +1,9 @@
-import { cookies } from "next/headers";
-import { redirect } from "next/navigation";
-import { listAdminOrders } from "../../../lib/commerce/admin-orders";
-import { CommerceDatabaseNotConfiguredError } from "../../../lib/commerce/db";
-import { ADMIN_COOKIE, verifyAdminToken } from "../../../lib/admin-security";
-import { OrderShipmentForm } from "../../../components/store/OrderShipmentForm";
-import { OrderRefundButton } from "../../../components/store/OrderRefundButton";
-import { OrderRestockButton } from "../../../components/store/OrderRestockButton";
-
-export const dynamic = "force-dynamic";
-export const metadata = { title: "注文管理 | AJAZZ JAPAN", robots: { index: false, follow: false } };
+import { APIError, type AdminViewServerProps } from "payload";
+import { OrderRefundButton } from "../../components/store/OrderRefundButton";
+import { OrderRestockButton } from "../../components/store/OrderRestockButton";
+import { OrderShipmentForm } from "../../components/store/OrderShipmentForm";
+import { listAdminOrders } from "../../lib/commerce/admin-orders";
+import { CommerceDatabaseNotConfiguredError } from "../../lib/commerce/db";
 
 const statusLabels: Record<string, string> = {
   paid: "決済済み",
@@ -19,9 +14,10 @@ const statusLabels: Record<string, string> = {
   refunded: "返金済み",
 };
 
-export default async function AdminOrdersPage() {
-  const token = (await cookies()).get(ADMIN_COOKIE)?.value;
-  if (!verifyAdminToken(token)) redirect("/admin/login");
+export async function OrdersView({ initPageResult }: AdminViewServerProps) {
+  if (initPageResult.req.user?.collection !== "admins") {
+    throw new APIError("Unauthorized", 401);
+  }
 
   let unavailable = false;
   const orders = await listAdminOrders().catch((error) => {

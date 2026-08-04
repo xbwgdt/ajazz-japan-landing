@@ -1,16 +1,24 @@
-import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
+import { APIError } from "payload";
+import { requireAuthenticatedAdmin } from "../../../../../lib/cms/auth";
 import { updateAdminOrder } from "../../../../../lib/commerce/admin-order-handler";
 import { databaseOrderStatusStore, findAdminOrderStatus } from "../../../../../lib/commerce/admin-orders";
-import { ADMIN_COOKIE, isSameOrigin, verifyAdminToken } from "../../../../../lib/admin-security";
 import type { OrderStatus } from "../../../../../lib/commerce/types";
+import { isSameOrigin } from "../../../../../lib/http-security";
 
 const statuses = new Set<OrderStatus>(["paid", "awaiting_fulfillment", "shipped", "cancelled", "refund_pending", "refunded"]);
 
 export async function PATCH(request: Request, context: { params: Promise<{ id: string }> }) {
-  const token = (await cookies()).get(ADMIN_COOKIE)?.value;
-  if (!verifyAdminToken(token) || !isSameOrigin(request)) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  if (!isSameOrigin(request)) {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
+  try {
+    await requireAuthenticatedAdmin(request.headers);
+  } catch (error) {
+    if (error instanceof APIError && error.status === 401) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+    throw error;
   }
 
   const body = await request.json().catch(() => undefined) as { status?: unknown; trackingNumber?: unknown } | undefined;

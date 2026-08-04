@@ -3,7 +3,10 @@ import path from "node:path";
 
 export default defineConfig({
   resolve: {
-    alias: { "@": path.resolve(__dirname, ".") },
+    alias: {
+      "@": path.resolve(__dirname, "."),
+      "@payload-config": path.resolve(__dirname, "payload.config.ts"),
+    },
   },
   test: {
     include: ["tests/**/*.test.{ts,tsx}"],

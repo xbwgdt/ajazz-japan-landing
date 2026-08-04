@@ -148,9 +148,13 @@ describe("Payload configuration", () => {
     expect(db.schemaName).toBe("cms");
     expect(db.push).toBe(false);
     expect(db.migrationDir).toBe("cms/migrations");
-    expect(config.routes.admin).toBe("/cms");
+    expect(config.routes.admin).toBe("/admin");
     expect(config.routes.api).toBe("/api/cms");
     expect(config.collections?.map((item) => item.slug)).toContain("admins");
+    expect(config.admin.components?.views?.orders).toMatchObject({
+      path: "/orders",
+    });
+    expect(config.admin.components?.beforeDashboard).toBeTruthy();
   });
 
   it("creates the CMS schema before any CMS object", async () => {

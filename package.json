@@ -15,7 +15,8 @@
     "cms:types": "payload generate:types",
     "cms:importmap": "payload generate:importmap",
     "cms:migrate": "payload migrate",
-    "cms:migrate:create": "payload migrate:create"
+    "cms:migrate:create": "payload migrate:create",
+    "cms:bootstrap-admin": "tsx scripts/bootstrap-admin.ts"
   },
   "dependencies": {
     "@payloadcms/db-postgres": "^3.87.0",
