@@ -34,11 +34,11 @@ export async function getStorefrontDatabaseProduct(slug: string): Promise<Storef
       SELECT url FROM product_images WHERE product_id = ${product.id} ORDER BY position
     `,
     commerceSql()<Array<{ id: number; rms_sku_number: string; price_jpy: number; compare_at_price_jpy: number | null; color_name: string | null; image_url: string | null; available_quantity: number; reserved_quantity: number }>>`
-      SELECT id, rms_sku_number, price_jpy,
+      SELECT id, COALESCE(rms_sku_number, sku) AS rms_sku_number, price_jpy,
         CASE WHEN compare_at_price_approved THEN compare_at_price_jpy ELSE NULL END AS compare_at_price_jpy,
         color_name, image_url, available_quantity, reserved_quantity
       FROM product_variants
-      WHERE product_id = ${product.id}
+      WHERE product_id = ${product.id} AND active = TRUE
       ORDER BY id
     `,
   ]);
@@ -75,6 +75,7 @@ export async function listStorefrontDatabaseCards(): Promise<StorefrontCard[]> {
     SELECT product_id, price_jpy, color_name, image_url, available_quantity, reserved_quantity
     FROM product_variants
     WHERE product_id IN ${commerceSql()(products.map((product) => product.id))}
+      AND active = TRUE
   `;
   const variantsByProduct = new Map<number, Array<{ priceJpy: number; availableQuantity: number; colorName?: string; imageUrl?: string }>>();
   for (const variant of variants) {

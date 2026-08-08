@@ -266,6 +266,8 @@ export interface Product {
   seoImageId?: (number | null) | Media;
   editorialRevision: number;
   lastPublishedAt?: string | null;
+  lastPublishedRevision?: number | null;
+  lastPublicationCorrelationId?: string | null;
   lastPublishedBy?: (number | null) | Admin;
   updatedAt: string;
   createdAt: string;
@@ -507,6 +509,8 @@ export interface ProductsSelect<T extends boolean = true> {
   seoImageId?: T;
   editorialRevision?: T;
   lastPublishedAt?: T;
+  lastPublishedRevision?: T;
+  lastPublicationCorrelationId?: T;
   lastPublishedBy?: T;
   updatedAt?: T;
   createdAt?: T;

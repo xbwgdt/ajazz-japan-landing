@@ -1,0 +1,190 @@
+import { commerceSql, ensureCommerceSchema } from "../commerce/db";
+import type { TransactionSql } from "postgres";
+import {
+  PublicationConflictError,
+  type PublicationStore,
+  type PublicationTransaction,
+  type PublishedProductSnapshot,
+  type PublishedVariant,
+} from "./publication";
+
+function transactionAdapter(sql: TransactionSql): PublicationTransaction {
+  return {
+    async assertSlugAvailable(slug, cmsProductId) {
+      const rows = await sql<Array<{ id: number }>>`
+        SELECT id FROM public.products
+        WHERE slug = ${slug} AND cms_product_id IS DISTINCT FROM ${cmsProductId}
+        LIMIT 1
+      `;
+      if (rows.length) throw new PublicationConflictError();
+    },
+
+    async upsertProduct(snapshot: PublishedProductSnapshot) {
+      const existing = await sql<Array<{ id: number; publication_revision: number }>>`
+        SELECT id, publication_revision
+        FROM public.products
+        WHERE cms_product_id = ${snapshot.cmsProductId}
+           OR rms_manage_number = ${snapshot.rmsManageNumber}
+        ORDER BY cms_product_id = ${snapshot.cmsProductId} DESC
+        LIMIT 1
+        FOR UPDATE
+      `;
+      if (existing[0] && Number(existing[0].publication_revision) >= snapshot.revision) {
+        throw new PublicationConflictError(Number(existing[0].publication_revision));
+      }
+
+      let rows: Array<{ id: number }>;
+      if (existing[0]) {
+        rows = await sql<Array<{ id: number }>>`
+          UPDATE public.products SET
+            cms_product_id = ${snapshot.cmsProductId},
+            source_type = ${snapshot.sourceType},
+            rms_manage_number = ${snapshot.rmsManageNumber},
+            slug = ${snapshot.slug},
+            name = ${snapshot.name},
+            short_statement = ${snapshot.shortStatement},
+            description_html = ${snapshot.descriptionHtml},
+            category = ${snapshot.category},
+            seo_title = ${snapshot.seoTitle},
+            seo_description = ${snapshot.seoDescription},
+            featured = ${snapshot.featured},
+            merchandising_order = ${snapshot.merchandisingOrder},
+            lifecycle = 'active',
+            published = TRUE,
+            published_at = NOW(),
+            unpublished_at = NULL,
+            publication_revision = ${snapshot.revision},
+            last_publication_correlation_id = ${snapshot.correlationId},
+            updated_at = NOW()
+          WHERE id = ${existing[0].id}
+          RETURNING id
+        `;
+      } else {
+        rows = await sql<Array<{ id: number }>>`
+          INSERT INTO public.products (
+            cms_product_id, source_type, rms_manage_number, slug, name, short_statement,
+            description_html, category, seo_title, seo_description, featured,
+            merchandising_order, lifecycle, published, published_at,
+            publication_revision, last_publication_correlation_id
+          ) VALUES (
+            ${snapshot.cmsProductId}, ${snapshot.sourceType}, ${snapshot.rmsManageNumber},
+            ${snapshot.slug}, ${snapshot.name}, ${snapshot.shortStatement},
+            ${snapshot.descriptionHtml}, ${snapshot.category}, ${snapshot.seoTitle},
+            ${snapshot.seoDescription}, ${snapshot.featured}, ${snapshot.merchandisingOrder},
+            'active', TRUE, NOW(), ${snapshot.revision}, ${snapshot.correlationId}
+          ) RETURNING id
+        `;
+      }
+      return { operationalProductId: String(rows[0].id) };
+    },
+
+    async replaceImages(productId, images) {
+      await sql`DELETE FROM public.product_images WHERE product_id = ${productId}`;
+      for (const image of images) {
+        await sql`
+          INSERT INTO public.product_images (product_id, url, position, cms_media_id)
+          VALUES (${productId}, ${image.url}, ${image.position}, ${image.mediaId})
+        `;
+      }
+    },
+
+    async upsertVariants(productId, variants: PublishedVariant[]) {
+      for (const variant of variants) {
+        const existing = await sql<Array<{ id: number }>>`
+          SELECT id FROM public.product_variants
+          WHERE product_id = ${productId}
+            AND (cms_variant_id = ${variant.cmsVariantId}
+              OR rms_sku_number = ${variant.rmsSkuNumber}
+              OR sku = ${variant.sku})
+          ORDER BY cms_variant_id = ${variant.cmsVariantId} DESC
+          LIMIT 1
+          FOR UPDATE
+        `;
+        if (existing[0]) {
+          await sql`
+            UPDATE public.product_variants SET
+              cms_variant_id = ${variant.cmsVariantId}, sku = ${variant.sku},
+              rms_sku_number = ${variant.rmsSkuNumber}, inventory_mode = ${variant.inventoryMode},
+              price_jpy = ${variant.priceJpy}, compare_at_price_jpy = ${variant.compareAtPriceJpy},
+              compare_at_price_approved = ${variant.compareAtPriceJpy !== null},
+              comparison_evidence_type = ${variant.comparisonEvidenceType},
+              comparison_evidence_reference = ${variant.comparisonEvidenceReference},
+              comparison_approved_by = ${variant.comparisonApprovedBy},
+              comparison_approved_at = ${variant.comparisonApprovedAt},
+              color_name = ${variant.colorName}, color_swatch = ${variant.colorSwatch},
+              thumbnail_url = ${variant.thumbnailUrl}, image_url = ${variant.imageUrl},
+              active = ${variant.active}, updated_at = NOW()
+            WHERE id = ${existing[0].id}
+          `;
+        } else {
+          await sql`
+            INSERT INTO public.product_variants (
+              product_id, cms_variant_id, sku, rms_sku_number, inventory_mode,
+              price_jpy, compare_at_price_jpy, compare_at_price_approved,
+              comparison_evidence_type, comparison_evidence_reference,
+              comparison_approved_by, comparison_approved_at, color_name, color_swatch,
+              thumbnail_url, image_url, active
+            ) VALUES (
+              ${productId}, ${variant.cmsVariantId}, ${variant.sku}, ${variant.rmsSkuNumber},
+              ${variant.inventoryMode}, ${variant.priceJpy}, ${variant.compareAtPriceJpy},
+              ${variant.compareAtPriceJpy !== null}, ${variant.comparisonEvidenceType},
+              ${variant.comparisonEvidenceReference}, ${variant.comparisonApprovedBy},
+              ${variant.comparisonApprovedAt}, ${variant.colorName}, ${variant.colorSwatch},
+              ${variant.thumbnailUrl}, ${variant.imageUrl}, ${variant.active}
+            )
+          `;
+        }
+      }
+    },
+
+    async disableMissingVariants(productId, cmsVariantIds) {
+      await sql`
+        UPDATE public.product_variants
+        SET active = FALSE, updated_at = NOW()
+        WHERE product_id = ${productId}
+          AND cms_variant_id IS NOT NULL
+          AND NOT (cms_variant_id = ANY(${cmsVariantIds}))
+      `;
+    },
+
+    async appendPublicationAudit(event) {
+      await sql`
+        INSERT INTO public.publication_audit_events (
+          action, actor_id, actor_email, cms_product_id, operational_product_id,
+          publication_revision, correlation_id
+        ) VALUES (
+          ${event.action}, ${event.actorId}, ${event.actorEmail}, ${event.cmsProductId},
+          ${event.operationalProductId}, ${event.revision}, ${event.correlationId}
+        )
+      `;
+    },
+
+    async setPublished(cmsProductId, expectedRevision, published) {
+      const rows = await sql<Array<{ id: number; publication_revision: number; slug: string }>>`
+        SELECT id, publication_revision, slug FROM public.products
+        WHERE cms_product_id = ${cmsProductId}
+        FOR UPDATE
+      `;
+      if (!rows[0] || Number(rows[0].publication_revision) !== expectedRevision) {
+        throw new PublicationConflictError(rows[0] ? Number(rows[0].publication_revision) : undefined);
+      }
+      const updated = await sql<Array<{ id: number; slug: string }>>`
+        UPDATE public.products
+        SET published = ${published}, lifecycle = ${published ? "active" : "unpublished"},
+            unpublished_at = ${published ? null : new Date()}, updated_at = NOW()
+        WHERE id = ${rows[0].id}
+        RETURNING id, slug
+      `;
+      return { operationalProductId: String(updated[0].id), slug: updated[0].slug };
+    },
+  };
+}
+
+export function createPostgresPublicationStore(): PublicationStore {
+  return {
+    async transaction<T>(work: (tx: PublicationTransaction) => Promise<T>) {
+      await ensureCommerceSchema();
+      return await commerceSql().begin((sql) => work(transactionAdapter(sql))) as T;
+    },
+  };
+}

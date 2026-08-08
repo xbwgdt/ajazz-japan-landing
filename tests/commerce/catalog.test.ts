@@ -86,6 +86,7 @@ describe("RMS catalog images", () => {
       "description_html, category, published",
     );
     expect(productUpsert?.text).toContain("category = EXCLUDED.category");
+    expect(productUpsert?.text).toContain("ON CONFLICT (rms_manage_number) WHERE rms_manage_number IS NOT NULL");
     expect(productUpsert?.values).toContain("mechanical-keyboard");
   });
 

@@ -1,4 +1,6 @@
 import { describe, expect, it } from "vitest";
+import { readFileSync } from "node:fs";
+import { resolve } from "node:path";
 import { CartValidationError, validateCart } from "../../lib/commerce/cart";
 import { createCheckoutSession } from "../../lib/commerce/checkout";
 import { createStripeCheckoutGateway } from "../../lib/commerce/stripe";
@@ -11,6 +13,12 @@ import {
 } from "../../lib/commerce/reservations";
 
 describe("checkout cart validation", () => {
+  it("requires published products and active variants both when pricing and reserving", () => {
+    const source = readFileSync(resolve(process.cwd(), "lib/commerce/checkout-db.ts"), "utf8");
+    expect(source.match(/p\.published = TRUE/g)).toHaveLength(2);
+    expect(source.match(/pv\.active = TRUE/g)).toHaveLength(2);
+  });
+
   it("uses the server-side variant price and applies free domestic shipping", async () => {
     const cart = await validateCart(
       [{ variantId: "42", quantity: 2 }],

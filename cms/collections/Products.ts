@@ -162,6 +162,8 @@ export const Products: CollectionConfig = {
               admin: { readOnly: true },
             },
             { name: "lastPublishedAt", type: "date", admin: { readOnly: true } },
+            { name: "lastPublishedRevision", type: "number", admin: { readOnly: true } },
+            { name: "lastPublicationCorrelationId", type: "text", admin: { readOnly: true } },
             {
               name: "lastPublishedBy",
               type: "relationship",

@@ -5,12 +5,25 @@ import { commerceSchemaSql } from "../../lib/commerce/db";
 
 describe("commerce database schema", () => {
   it("keeps RMS products and variants idempotent across imports", () => {
-    expect(commerceSchemaSql).toContain("UNIQUE (rms_manage_number)");
+    expect(commerceSchemaSql).toContain("ALTER COLUMN rms_manage_number DROP NOT NULL");
+    expect(commerceSchemaSql).toContain("WHERE rms_manage_number IS NOT NULL");
     expect(commerceSchemaSql).toContain("category TEXT NOT NULL DEFAULT 'other'");
     expect(commerceSchemaSql).toContain("ADD COLUMN IF NOT EXISTS category TEXT NOT NULL DEFAULT 'other'");
-    expect(commerceSchemaSql).toContain("UNIQUE (product_id, rms_sku_number)");
-    expect(commerceSchemaSql).toContain("CREATE TABLE IF NOT EXISTS product_images");
+    expect(commerceSchemaSql).toContain("ON public.product_variants (product_id, rms_sku_number) WHERE rms_sku_number IS NOT NULL");
+    expect(commerceSchemaSql).toContain("CREATE TABLE IF NOT EXISTS public.product_images");
     expect(commerceSchemaSql).toContain("CREATE TABLE IF NOT EXISTS inventory_sync_logs");
+  });
+
+  it("adds CMS publication links and append-only operational audit tables", () => {
+    expect(commerceSchemaSql).toContain("cms_product_id TEXT");
+    expect(commerceSchemaSql).toContain("cms_variant_id TEXT");
+    expect(commerceSchemaSql).toContain("publication_revision INTEGER NOT NULL DEFAULT 0");
+    expect(commerceSchemaSql).toContain("CREATE TABLE IF NOT EXISTS public.publication_audit_events");
+    expect(commerceSchemaSql).toContain("CREATE TABLE IF NOT EXISTS public.manual_inventory_adjustments");
+    expect(commerceSchemaSql).toContain("CREATE TRIGGER publication_audit_events_append_only");
+    expect(commerceSchemaSql).toContain("CREATE TRIGGER manual_inventory_adjustments_append_only");
+    expect(commerceSchemaSql).not.toContain("ALTER COLUMN id");
+    expect(commerceSchemaSql).not.toContain("ALTER COLUMN variant_id");
   });
 
   it("persists expiring checkout reservations by idempotency key", () => {

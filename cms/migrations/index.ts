@@ -1,6 +1,7 @@
 import * as migration_20260804_040101_initial_cms from './20260804_040101_initial_cms';
 import * as migration_20260804_061212_product_editorial_model from './20260804_061212_product_editorial_model';
 import * as migration_20260808_154913 from './20260808_154913';
+import * as migration_20260809_022600_task5_publication_metadata from './20260809_022600_task5_publication_metadata';
 
 export const migrations = [
   {
@@ -17,5 +18,10 @@ export const migrations = [
     up: migration_20260808_154913.up,
     down: migration_20260808_154913.down,
     name: '20260808_154913'
+  },
+  {
+    up: migration_20260809_022600_task5_publication_metadata.up,
+    down: migration_20260809_022600_task5_publication_metadata.down,
+    name: '20260809_022600_task5_publication_metadata'
   },
 ];

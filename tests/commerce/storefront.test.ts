@@ -1,5 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { getSellableQuantity } from "../../lib/commerce/storefront-db";
+import { readFileSync } from "node:fs";
+import { resolve } from "node:path";
 import { resolveStorefrontCards, toStorefrontCards } from "../../lib/commerce/storefront";
 
 describe("storefront cards", () => {
@@ -32,6 +34,12 @@ describe("sellable inventory", () => {
   it("excludes active reservations and never returns a negative quantity", () => {
     expect(getSellableQuantity(5, 2)).toBe(3);
     expect(getSellableQuantity(1, 2)).toBe(0);
+  });
+
+  it("queries only active variants while keeping existing numeric IDs", () => {
+    const source = readFileSync(resolve(process.cwd(), "lib/commerce/storefront-db.ts"), "utf8");
+    expect(source).toContain("AND active = TRUE");
+    expect(source).toContain("SELECT id, COALESCE(rms_sku_number, sku) AS rms_sku_number");
   });
 });
 

@@ -152,7 +152,11 @@ export const protectSourceFields: CollectionBeforeChangeHook<SourceProduct> = as
 
   const nextData: Partial<SourceProduct> = {
     ...data,
-    editorialRevision: operation === "create" ? 1 : currentRevision + 1,
+    editorialRevision: operation === "create"
+      ? 1
+      : isTrustedProductPublicationContext(context)
+        ? currentRevision
+        : currentRevision + 1,
   };
 
   if (incomingSourceType === "rms" && Array.isArray(data.variants)) {

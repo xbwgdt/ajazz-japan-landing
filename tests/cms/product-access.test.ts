@@ -134,7 +134,7 @@ describe("protectSourceFields", () => {
     });
   });
 
-  it("allows the publication service context to perform an internal status transition", async () => {
+  it("allows publication metadata updates without creating a new editorial revision", async () => {
     const result = await protectSourceFields({
       context: productPublicationContext,
       data: { _status: "published" },
@@ -142,7 +142,7 @@ describe("protectSourceFields", () => {
       originalDoc: { editorialRevision: 4, sourceType: "manual", variants: [], _status: "draft" },
     } as never);
 
-    expect(result).toMatchObject({ _status: "published", editorialRevision: 5 });
+    expect(result).toMatchObject({ _status: "published", editorialRevision: 4 });
   });
 
   it("rejects changes to RMS product and variant identities", async () => {

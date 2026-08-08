@@ -244,7 +244,7 @@ export async function upsertRmsCatalog(rows: RmsCatalogRow[]) {
             ${product.category},
             TRUE
           )
-          ON CONFLICT (rms_manage_number) DO UPDATE
+          ON CONFLICT (rms_manage_number) WHERE rms_manage_number IS NOT NULL DO UPDATE
           SET
             slug = EXCLUDED.slug,
             name = EXCLUDED.name,
@@ -287,7 +287,7 @@ export async function upsertRmsCatalog(rows: RmsCatalogRow[]) {
             ${variant.imageUrl ?? null},
             ${variant.stockQuantity}
           )
-          ON CONFLICT (product_id, rms_sku_number) DO UPDATE
+          ON CONFLICT (product_id, rms_sku_number) WHERE rms_sku_number IS NOT NULL DO UPDATE
           SET
             price_jpy = EXCLUDED.price_jpy,
             compare_at_price_jpy = EXCLUDED.compare_at_price_jpy,
