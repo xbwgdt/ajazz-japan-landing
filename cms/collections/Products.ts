@@ -9,6 +9,7 @@ import { writeAuditEvent } from "../hooks/writeAuditEvent";
 import { prepareProductVersionRestore } from "../hooks/productVersionRestore";
 import { lockSingleProductOperation } from "../services/productConcurrency";
 import { createPreviewToken } from "../../lib/cms/preview";
+import { restoreProductVersionEndpoint } from "../endpoints/restoreProductVersion";
 
 type RevisionUpdateBody = {
   data?: Record<string, unknown>;
@@ -100,7 +101,10 @@ export const Products: CollectionConfig = {
     read: adminOnly,
     update: adminOnly,
   },
-  endpoints: [{ method: "patch", path: "/:id/editorial", handler: updateProductWithRevision }],
+  endpoints: [
+    { method: "post", path: "/versions/:id", handler: restoreProductVersionEndpoint },
+    { method: "patch", path: "/:id/editorial", handler: updateProductWithRevision },
+  ],
   fields: [
     {
       type: "tabs",

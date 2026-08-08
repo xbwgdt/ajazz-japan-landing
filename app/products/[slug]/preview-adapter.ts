@@ -52,11 +52,13 @@ export function adaptDraftProduct(product: Product): StorefrontDatabaseProduct {
   ].filter((value): value is string => Boolean(value));
 
   const variants = (product.variants ?? [])
-    .filter((variant) => variant.active !== false && Boolean(variant.operationalVariantId))
+    .filter((variant) => variant.active !== false)
     .map((variant, index) => {
       const comparisonApproved = Boolean(variant.comparisonApprovedBy && variant.comparisonApprovedAt);
       return {
-        id: String(variant.operationalVariantId),
+        id: variant.operationalVariantId
+          ? String(variant.operationalVariantId)
+          : `preview:${variant.id || index}`,
         rmsSkuNumber: variant.rmsSkuNumber || variant.sku,
         priceJpy: Number(variant.salePriceJpy),
         compareAtPriceJpy: comparisonApproved

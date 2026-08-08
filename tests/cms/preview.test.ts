@@ -1,4 +1,8 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
+import { createElement } from "react";
+import { renderToStaticMarkup } from "react-dom/server";
+import { CartProvider } from "../../components/store/CartProvider";
+import { ProductDetail } from "../../components/store/ProductDetail";
 import {
   authorizeProductPreview,
   createPreviewToken,
@@ -209,7 +213,7 @@ describe("draft product adapter", () => {
     retiredAt,
   });
 
-  it("uses access-controlled Payload media and only existing operational variants", () => {
+  it("uses access-controlled Payload media and includes new variants with stable preview-only IDs", () => {
     const product = adaptDraftProduct({
       id: 10,
       name: "AK820 draft",
@@ -226,8 +230,19 @@ describe("draft product adapter", () => {
     expect(product).toMatchObject({
       name: "AK820 draft",
       images: ["/api/cms/media/file/hero.webp", "/api/cms/media/file/gallery.webp"],
-      variants: [{ id: "55", rmsSkuNumber: "LIVE", availableQuantity: 0 }],
+      variants: [
+        { id: "preview:cms-new", rmsSkuNumber: "NEW", availableQuantity: 0 },
+        { id: "55", rmsSkuNumber: "LIVE", availableQuantity: 0 },
+      ],
     });
+
+    const html = renderToStaticMarkup(createElement(
+      CartProvider,
+      null,
+      createElement(ProductDetail, { product }),
+    ));
+    expect(html).toContain("SKU NEW");
+    expect(html).toMatch(/<button[^>]*disabled=""[^>]*class="store-add-button"/);
   });
 
   it("rejects retired, unresolved, and direct object-storage media", () => {
@@ -235,6 +250,21 @@ describe("draft product adapter", () => {
     expect(() => adaptDraftProduct({ ...base, primaryImageId: media(1, "/api/cms/media/file/a.webp", "2026-08-09") } as never)).toThrow(/media/i);
     expect(() => adaptDraftProduct({ ...base, primaryImageId: 1 } as never)).toThrow(/media/i);
     expect(() => adaptDraftProduct({ ...base, primaryImageId: media(1, "https://r2.example/a.webp") } as never)).toThrow(/media/i);
+  });
+
+  it("renders a completely new product variant with a deterministic index fallback", () => {
+    const product = adaptDraftProduct({
+      id: 11,
+      name: "New product",
+      slug: "new-product",
+      variants: [{ sku: "NEW-ONLY", colorName: "Blue", salePriceJpy: 3000, active: true, inventoryMode: "manual" }],
+    } as never);
+
+    expect(product.variants).toEqual([expect.objectContaining({
+      id: "preview:0",
+      rmsSkuNumber: "NEW-ONLY",
+      availableQuantity: 0,
+    })]);
   });
 
   it("never loads a Payload draft for a live product request", async () => {

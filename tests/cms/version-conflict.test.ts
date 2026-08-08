@@ -1,10 +1,39 @@
 import { describe, expect, it, vi } from "vitest";
+import { restoreProductVersionEndpoint } from "../../cms/endpoints/restoreProductVersion";
+import { Products } from "../../cms/collections/Products";
 import { prepareProductVersionRestore } from "../../cms/hooks/productVersionRestore";
 import { protectSourceFields } from "../../cms/hooks/protectSourceFields";
 import { writeAuditEvent } from "../../cms/hooks/writeAuditEvent";
 
 describe("product version restore", () => {
-  it("forces restore-as-draft and locks the parent product", async () => {
+  it("registers the controlled restore endpoint before Payload defaults", () => {
+    expect(Products.endpoints?.[0]).toMatchObject({
+      handler: restoreProductVersionEndpoint,
+      method: "post",
+      path: "/versions/:id",
+    });
+  });
+
+  it("rejects direct or local restore calls that are not already draft-only", async () => {
+    const req = { context: {}, user: { id: 7 } };
+
+    await expect(prepareProductVersionRestore({
+      args: { draft: false, id: "version-9", req },
+      operation: "restoreVersion",
+    } as never)).rejects.toMatchObject({
+      status: 400,
+      data: { code: "product_restore_requires_draft" },
+    });
+    await expect(prepareProductVersionRestore({
+      args: { id: "version-9", req },
+      operation: "restoreVersion",
+    } as never)).rejects.toMatchObject({
+      status: 400,
+      data: { code: "product_restore_requires_draft" },
+    });
+  });
+
+  it("locks the parent product for an explicit draft restore", async () => {
     const execute = vi.fn().mockResolvedValue(undefined);
     const req = {
       context: {},
@@ -17,13 +46,64 @@ describe("product version restore", () => {
       transactionID: Promise.resolve("tx"),
       user: { id: 7 },
     };
-    const args = { collection: { slug: "products" }, draft: false, id: "version-9", req };
+    const args = { collection: { slug: "products" }, draft: true, id: "version-9", req };
 
     const result = await prepareProductVersionRestore({ args, operation: "restoreVersion" } as never);
 
-    expect(result).toMatchObject({ draft: true });
+    expect(result).toBe(args);
     expect(execute).toHaveBeenCalledTimes(1);
     expect(req.context).toMatchObject({ productRestore: { productId: "42" } });
+  });
+
+  it("intercepts the built-in UI path and always invokes restore with draft true", async () => {
+    const restore = vi.fn().mockResolvedValue({ id: 42, _status: "draft", editorialRevision: 9 });
+    const req = {
+      headers: new Headers({ host: "ajazz.jp", origin: "https://ajazz.jp" }),
+      method: "POST",
+      payload: { collections: { products: { config: { slug: "products" } } } },
+      query: { draft: "false" },
+      routeParams: { id: "version-9" },
+      t: vi.fn(() => "Version restored successfully."),
+      url: "https://ajazz.jp/api/cms/products/versions/version-9?draft=false",
+      user: { id: 7 },
+    };
+
+    const response = await restoreProductVersionEndpoint(req as never, { restore: restore as never });
+
+    expect(response.status).toBe(200);
+    expect(await response.json()).toMatchObject({
+      id: 42,
+      _status: "draft",
+      message: "Version restored successfully.",
+    });
+    expect(restore).toHaveBeenCalledWith(expect.objectContaining({
+      collection: expect.objectContaining({ config: { slug: "products" } }),
+      draft: true,
+      id: "version-9",
+      overrideAccess: false,
+      req,
+    }));
+  });
+
+  it("rejects unauthenticated and cross-origin restore requests", async () => {
+    const base = {
+      headers: new Headers({ host: "ajazz.jp", origin: "https://ajazz.jp" }),
+      method: "POST",
+      payload: { collections: { products: { config: { slug: "products" } } } },
+      routeParams: { id: "version-9" },
+      t: vi.fn(),
+      url: "https://ajazz.jp/api/cms/products/versions/version-9",
+    };
+    const restore = vi.fn();
+
+    await expect(restoreProductVersionEndpoint(base as never, { restore: restore as never }))
+      .rejects.toMatchObject({ status: 401 });
+    await expect(restoreProductVersionEndpoint({
+      ...base,
+      headers: new Headers({ host: "ajazz.jp", origin: "https://evil.example" }),
+      user: { id: 7 },
+    } as never, { restore: restore as never })).rejects.toMatchObject({ status: 403 });
+    expect(restore).not.toHaveBeenCalled();
   });
 
   it("increments the current revision, remains draft, and preserves source identity", async () => {

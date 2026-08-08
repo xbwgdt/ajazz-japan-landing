@@ -1,4 +1,4 @@
-export function isSameOrigin(request: Request) {
+export function isSameOrigin(request: Pick<Request, "headers" | "url">) {
   const origin = request.headers.get("origin");
   if (!origin) return true;
   const host = request.headers.get("x-forwarded-host") ?? request.headers.get("host");

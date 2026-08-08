@@ -4,6 +4,11 @@ import { lockProduct } from "../services/productConcurrency";
 export const prepareProductVersionRestore: CollectionBeforeOperationHook = async ({ args, operation }) => {
   if (operation !== "restoreVersion") return args;
   if (!args.req.user) throw new APIError("Unauthorized", 401);
+  if (args.draft !== true) {
+    throw new APIError("Product versions can only be restored as drafts", 400, {
+      code: "product_restore_requires_draft",
+    });
+  }
 
   const versions = await args.req.payload.db.findVersions({
     collection: "products",
@@ -20,5 +25,5 @@ export const prepareProductVersionRestore: CollectionBeforeOperationHook = async
 
   await lockProduct(args.req, parent);
   args.req.context.productRestore = { productId: String(parent) };
-  return { ...args, draft: true };
+  return args;
 };
