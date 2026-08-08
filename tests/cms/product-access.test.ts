@@ -65,10 +65,38 @@ describe("protectSourceFields", () => {
       context: {},
       data: { _status: "published", sourceType: "manual", variants: [] },
       operation: "create",
+      originalDoc: {},
     } as never)).rejects.toMatchObject({
       data: { code: "product_status_transition_requires_publication_service" },
       status: 403,
     });
+  });
+
+  it("allows Payload to create a draft with its empty original document", async () => {
+    const result = await protectSourceFields({
+      context: {},
+      data: { _status: "draft", sourceType: "manual", variants: [] },
+      operation: "create",
+      originalDoc: {},
+    } as never);
+
+    expect(result).toMatchObject({ _status: "draft", editorialRevision: 1 });
+  });
+
+  it("allows a draft save over a published document", async () => {
+    const result = await protectSourceFields({
+      context: {},
+      data: { _status: "draft", name: "Draft revision" },
+      operation: "update",
+      originalDoc: {
+        _status: "published",
+        editorialRevision: 4,
+        sourceType: "manual",
+        variants: [],
+      },
+    } as never);
+
+    expect(result).toMatchObject({ _status: "draft", editorialRevision: 5 });
   });
 
   it("rejects an ordinary update request that changes product status", async () => {

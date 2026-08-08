@@ -1,5 +1,7 @@
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it, vi } from "vitest";
+import { Dashboard } from "../../cms/admin/Dashboard";
+import { OrdersView } from "../../cms/admin/OrdersView";
 
 vi.mock("../../lib/commerce/admin-orders", () => ({
   listAdminOrders: vi.fn().mockResolvedValue([{
@@ -16,7 +18,6 @@ vi.mock("../../lib/commerce/admin-orders", () => ({
 
 describe("Payload administrator views", () => {
   it("links the Payload dashboard to order management", async () => {
-    const { Dashboard } = await import("../../cms/admin/Dashboard");
     const html = renderToStaticMarkup(<Dashboard />);
 
     expect(html).toContain('href="/admin/orders"');
@@ -24,7 +25,6 @@ describe("Payload administrator views", () => {
   });
 
   it("renders the existing order operations inside the custom view", async () => {
-    const { OrdersView } = await import("../../cms/admin/OrdersView");
     const view = await OrdersView({
       initPageResult: {
         req: { user: { collection: "admins" } },

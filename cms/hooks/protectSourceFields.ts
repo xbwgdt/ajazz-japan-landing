@@ -58,12 +58,8 @@ function isTrustedProductPublicationContext(context: unknown): boolean {
   );
 }
 
-function statusTransitionRequested(
-  data: Partial<SourceProduct>,
-  originalDoc: SourceProduct | undefined,
-): boolean {
-  if (data._status === undefined) return false;
-  return originalDoc ? data._status !== originalDoc._status : data._status === "published";
+function publicationRequested(data: Partial<SourceProduct>): boolean {
+  return data._status === "published";
 }
 
 function variantIdentityChanged(
@@ -107,11 +103,11 @@ export const protectSourceFields: CollectionBeforeChangeHook<SourceProduct> = as
   const originalIsRms = originalDoc?.sourceType === "rms";
   const incomingSourceType = data.sourceType ?? originalDoc?.sourceType;
 
-  if (statusTransitionRequested(data, originalDoc) && !isTrustedProductPublicationContext(context)) {
+  if (publicationRequested(data) && !isTrustedProductPublicationContext(context)) {
     throw statusTransitionError();
   }
 
-  if (originalDoc && !allowSourceConversion) {
+  if (operation === "update" && originalDoc && !allowSourceConversion) {
     if (changed(data.sourceType, originalDoc.sourceType)) throw sourceIdentityError();
     if (originalIsRms && (
       changed(data.rmsManageNumber, originalDoc.rmsManageNumber)

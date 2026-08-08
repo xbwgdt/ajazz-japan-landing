@@ -126,9 +126,9 @@ Payload's timestamp indexes including `audit_events_created_at_idx`.
 
 ### Fix
 
-- `cms/hooks/protectSourceFields.ts` now rejects every `_status` transition unless a
-  private symbol-based `productPublicationContext` is supplied by server code reserved
-  for Task 5. Draft saves that do not transition status retain existing behavior.
+- `cms/hooks/protectSourceFields.ts` rejects direct publication unless a private
+  symbol-based `productPublicationContext` is supplied by server code reserved for
+  Task 5. Payload's initial draft status and draft saves remain permitted.
 - `cms/collections/Products.ts` now denies `delete` access for every actor and accepts
   only plain-object `data` in `updateProductWithRevision`.
 - `tests/cms/product-access.test.ts` covers blocked native publish attempts, the sole
@@ -143,3 +143,35 @@ Payload's timestamp indexes including `audit_events_created_at_idx`.
 - `pnpm vitest run` -> 41 files passed, 148 tests passed.
 - `pnpm build` -> Next.js compiled, TypeScript completed, and 16 static pages generated.
 - `pnpm lint` -> `tsc --noEmit`, exit 0.
+
+## Task 3 Draft-Path Re-Review Fix (2026-08-08)
+
+### RED
+
+- A realistic Payload create hook call with `originalDoc: {}` and `_status: "draft"`
+  failed with `product_status_transition_requires_publication_service`.
+- The first complete suite run exposed a pre-existing test-infrastructure timeout in
+  `tests/cms/admin-views.test.tsx`: a large dynamic import took about 16.6 seconds
+  inside Vitest's default 5-second test window.
+
+### Fix
+
+- Publication protection now rejects only `_status: "published"` without the trusted
+  server context. Initial draft creation and draft saves over a published CMS document
+  are allowed; Task 5 remains responsible for actual operational publication.
+- Source immutability comparison now applies only to update operations, matching
+  Payload's empty `originalDoc` create behavior.
+- The administrator-view test statically imports its components so module loading
+  occurs during collection rather than inside the timed assertion body. No timeout was
+  increased and the assertions are unchanged.
+
+### GREEN
+
+- Focused Task 3 tests -> 3 files passed, 32 tests passed.
+- Administrator-view regression -> 1 file passed, 2 tests passed; the formerly timed
+  test completed in about 1 second.
+- Full suite -> 41 files passed, 150 tests passed.
+- Direct Next.js production build -> exit 0; compile, TypeScript, and 16 static pages
+  completed.
+- Direct `tsc --noEmit` -> exit 0.
+- `git diff --check` -> exit 0 (line-ending notices only).
