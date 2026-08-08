@@ -1,15 +1,11 @@
 import { sql } from "@payloadcms/db-postgres";
-import type { Payload, PayloadRequest } from "payload";
+import type { PayloadRequest } from "payload";
 
 const MEDIA_LOCK_NAMESPACE = 1_094_538_978;
 
 type TransactionDatabase = {
   execute: (query: unknown) => Promise<unknown>;
 };
-
-export function enableTransactionalDocumentUpdates(payload: Payload): void {
-  payload.db.bulkOperationsSingleTransaction = true;
-}
 
 export function normalizeMediaIds(mediaIds: Array<number | string>): number[] {
   return [...new Set(mediaIds.map((value) => Number(value)))]

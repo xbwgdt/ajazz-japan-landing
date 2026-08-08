@@ -1,4 +1,4 @@
-import type { CollectionConfig, PayloadRequest } from "payload";
+import { APIError, type CollectionBeforeOperationHook, type CollectionConfig, type PayloadRequest } from "payload";
 import { PRODUCT_CATEGORIES } from "../../lib/commerce/product-categories";
 import { adminOnly } from "../access/admin";
 import { productSpecifications } from "../fields/productSpecifications";
@@ -21,6 +21,15 @@ function isPlainObject(value: unknown): value is Record<string, unknown> {
 function jsonError(status: number, body: Record<string, unknown>): Response {
   return Response.json(body, { status });
 }
+
+export const rejectBulkProductUpdates: CollectionBeforeOperationHook = ({ args, operation }) => {
+  if (operation === "update" && (!("id" in args) || args.id === undefined)) {
+    throw new APIError("Bulk product updates are disabled.", 400, {
+      code: "product_bulk_update_forbidden",
+    });
+  }
+  return args;
+};
 
 export async function updateProductWithRevision(req: PayloadRequest): Promise<Response> {
   if (!req.user) return jsonError(401, { code: "unauthorized" });
@@ -72,6 +81,7 @@ export const Products: CollectionConfig = {
     defaultColumns: ["name", "category", "sourceType", "lifecycle", "updatedAt"],
     useAsTitle: "name",
   },
+  disableBulkEdit: true,
   access: {
     create: adminOnly,
     delete: () => false,
@@ -164,6 +174,7 @@ export const Products: CollectionConfig = {
     },
   ],
   hooks: {
+    beforeOperation: [rejectBulkProductUpdates],
     beforeChange: [protectSourceFields, rejectRetiredMediaReferences],
     afterChange: [writeAuditEvent],
   },

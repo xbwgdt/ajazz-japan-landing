@@ -1,17 +1,10 @@
 import { describe, expect, it, vi } from "vitest";
 import {
-  enableTransactionalDocumentUpdates,
   lockMediaRows,
   normalizeMediaIds,
 } from "../../cms/services/mediaConcurrency";
 
 describe("media concurrency guard", () => {
-  it("enables transaction coverage for Payload update and delete hooks", () => {
-    const payload = { db: { bulkOperationsSingleTransaction: false } };
-    enableTransactionalDocumentUpdates(payload as never);
-    expect(payload.db.bulkOperationsSingleTransaction).toBe(true);
-  });
-
   it("locks unique media rows in deterministic order inside the active transaction", async () => {
     const execute = vi.fn().mockResolvedValue(undefined);
     const req = {

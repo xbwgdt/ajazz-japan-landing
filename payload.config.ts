@@ -8,7 +8,6 @@ import { AuditEvents } from "./cms/collections/AuditEvents";
 import { Media } from "./cms/collections/Media";
 import { Products } from "./cms/collections/Products";
 import { createR2StorageOptions } from "./lib/cms/r2-storage";
-import { enableTransactionalDocumentUpdates } from "./cms/services/mediaConcurrency";
 
 export default buildConfig({
   admin: {
@@ -38,7 +37,6 @@ export default buildConfig({
   plugins: [
     s3Storage(createR2StorageOptions(process.env)),
   ],
-  onInit: enableTransactionalDocumentUpdates,
   routes: { admin: "/admin", api: "/api/cms" },
   secret: process.env.PAYLOAD_SECRET ?? "",
   sharp,
