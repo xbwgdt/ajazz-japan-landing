@@ -137,6 +137,15 @@ export const protectSourceFields: CollectionBeforeChangeHook<SourceProduct> = as
   const originalIsRms = originalDoc?.sourceType === "rms";
   const incomingSourceType = data.sourceType ?? originalDoc?.sourceType;
 
+  if (
+    operation === "create"
+    && !allowSourceConversion
+    && !trustedPublication
+    && data.operationalProductId != null
+  ) {
+    throw operationalProductLinkageError();
+  }
+
   if (publicationRequested(data) && !isTrustedProductPublicationContext(context)) {
     throw statusTransitionError();
   }

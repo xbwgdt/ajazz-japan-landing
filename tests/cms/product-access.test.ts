@@ -188,6 +188,35 @@ describe("protectSourceFields", () => {
     });
   });
 
+  it("rejects a client-supplied operational linkage on product creation", async () => {
+    await expect(protectSourceFields({
+      context: {},
+      data: {
+        operationalProductId: "42",
+        sourceType: "manual",
+        variants: [],
+      },
+      operation: "create",
+    } as never)).rejects.toMatchObject({
+      data: { code: "operational_product_linkage_immutable" },
+      status: 400,
+    });
+  });
+
+  it("allows a trusted server import to create an explicit operational linkage", async () => {
+    const result = await protectSourceFields({
+      context: { allowSourceConversion: true },
+      data: {
+        operationalProductId: "42",
+        sourceType: "manual",
+        variants: [],
+      },
+      operation: "create",
+    } as never);
+
+    expect(result).toMatchObject({ editorialRevision: 1, operationalProductId: "42" });
+  });
+
   it("allows trusted publication to link a manual product operational ID", async () => {
     const result = await protectSourceFields({
       context: productPublicationContext,
