@@ -141,4 +141,43 @@ describe("validateProductDraft", () => {
 
     expect(issues).toEqual([]);
   });
+
+  it("requires a comparison price to exceed the sale price", () => {
+    const issues = validateProductDraft({
+      ...validManualProduct,
+      variants: [{
+        ...validManualProduct.variants[0],
+        compareAtPriceJpy: 1000,
+        comparisonEvidenceType: "manufacturer_price",
+        comparisonEvidenceReference: "Manufacturer price list 2026-08",
+        comparisonApprovedBy: "admin-1",
+        comparisonApprovedAt: "2026-08-04T00:00:00.000Z",
+      }],
+    } as never);
+
+    expect(issues).toContainEqual(expect.objectContaining({
+      path: "variants.0.compareAtPriceJpy",
+      code: "comparison_price_not_higher",
+    }));
+  });
+
+  it("rejects comparison-price approvals dated in the future", () => {
+    const future = new Date(Date.now() + 86_400_000).toISOString();
+    const issues = validateProductDraft({
+      ...validManualProduct,
+      variants: [{
+        ...validManualProduct.variants[0],
+        compareAtPriceJpy: 1500,
+        comparisonEvidenceType: "manufacturer_price",
+        comparisonEvidenceReference: "Manufacturer price list 2026-08",
+        comparisonApprovedBy: "admin-1",
+        comparisonApprovedAt: future,
+      }],
+    } as never);
+
+    expect(issues).toContainEqual(expect.objectContaining({
+      path: "variants.0.comparisonApprovedAt",
+      code: "comparison_approval_in_future",
+    }));
+  });
 });

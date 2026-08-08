@@ -144,15 +144,28 @@ export function validateProductDraft(input: EditorialProductInput): ValidationIs
       if (!validYenPrice(variant.compareAtPriceJpy)) {
         addIssue(issues, `${path}.compareAtPriceJpy`, "invalid_yen_price", "Comparison price must be a positive integer in yen.");
       }
+      if (
+        validYenPrice(variant.compareAtPriceJpy)
+        && validYenPrice(variant.salePriceJpy)
+        && variant.compareAtPriceJpy <= variant.salePriceJpy
+      ) {
+        addIssue(issues, `${path}.compareAtPriceJpy`, "comparison_price_not_higher", "Comparison price must be higher than the sale price.");
+      }
+      const approvedAt = hasText(variant.comparisonApprovedAt)
+        ? Date.parse(variant.comparisonApprovedAt)
+        : Number.NaN;
       const validApproval = Boolean(
         variant.comparisonEvidenceType
           && hasText(variant.comparisonEvidenceReference)
           && hasText(variant.comparisonApprovedBy)
           && hasText(variant.comparisonApprovedAt)
-          && !Number.isNaN(Date.parse(variant.comparisonApprovedAt)),
+          && !Number.isNaN(approvedAt),
       );
       if (!validApproval) {
         addIssue(issues, `${path}.compareAtPriceJpy`, "comparison_price_unapproved", "Comparison prices require complete evidence and approval.");
+      }
+      if (!Number.isNaN(approvedAt) && approvedAt > Date.now()) {
+        addIssue(issues, `${path}.comparisonApprovedAt`, "comparison_approval_in_future", "Comparison price approval cannot be dated in the future.");
       }
     }
   });

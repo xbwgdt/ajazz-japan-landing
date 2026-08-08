@@ -27,6 +27,7 @@ export type PublishedVariant = {
   comparisonEvidenceType: ComparisonEvidenceType | null;
   imageUrl: string | null;
   inventoryMode: InventoryMode;
+  operationalVariantId: string | null;
   priceJpy: number;
   rmsSkuNumber: string | null;
   sku: string;
@@ -63,15 +64,16 @@ export type PublicationAuditInput = {
 export interface PublicationTransaction {
   appendPublicationAudit(event: PublicationAuditInput): Promise<void>;
   assertSlugAvailable(slug: string, cmsProductId: string): Promise<void>;
-  disableMissingVariants(productId: string, cmsVariantIds: string[]): Promise<void>;
+  disableMissingVariants(productId: string, operationalVariantIds: string[]): Promise<void>;
   replaceImages(productId: string, images: PublishedImage[]): Promise<void>;
   setPublished(
     cmsProductId: string,
     expectedRevision: number,
     published: boolean,
+    correlationId: string,
   ): Promise<{ operationalProductId: string; slug: string }>;
   upsertProduct(snapshot: PublishedProductSnapshot): Promise<{ operationalProductId: string }>;
-  upsertVariants(productId: string, variants: PublishedVariant[]): Promise<void>;
+  upsertVariants(productId: string, variants: PublishedVariant[]): Promise<string[]>;
 }
 
 export interface PublicationStore {
@@ -191,6 +193,7 @@ export async function publishProduct(
     comparisonEvidenceType: variant.comparisonEvidenceType ?? null,
     imageUrl: variant.imageUrl?.trim() || null,
     inventoryMode: variant.inventoryMode,
+    operationalVariantId: variant.operationalVariantId?.trim() || null,
     priceJpy: variant.salePriceJpy,
     rmsSkuNumber: variant.rmsSkuNumber?.trim() || null,
     sku: variant.sku.trim(),
@@ -201,8 +204,8 @@ export async function publishProduct(
     await tx.assertSlugAvailable(snapshot.slug, snapshot.cmsProductId);
     const { operationalProductId } = await tx.upsertProduct(snapshot);
     await tx.replaceImages(operationalProductId, input.draft.images);
-    await tx.upsertVariants(operationalProductId, variants);
-    await tx.disableMissingVariants(operationalProductId, variants.map(({ cmsVariantId }) => cmsVariantId));
+    const operationalVariantIds = await tx.upsertVariants(operationalProductId, variants);
+    await tx.disableMissingVariants(operationalProductId, operationalVariantIds);
     await tx.appendPublicationAudit({
       action: "publish",
       actorEmail: input.actor.email,
@@ -227,7 +230,7 @@ export async function unpublishProduct(
 ): Promise<void> {
   assertCurrentRevision(input);
   await store.transaction(async (tx) => {
-    const product = await tx.setPublished(input.cmsProductId, input.expectedRevision, false);
+    const product = await tx.setPublished(input.cmsProductId, input.expectedRevision, false, input.correlationId);
     await tx.appendPublicationAudit({
       action: "unpublish",
       actorEmail: input.actor.email,

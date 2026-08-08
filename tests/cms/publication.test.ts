@@ -72,9 +72,10 @@ function fakePublicationStore(options: { failAtVariant?: number } = {}) {
           draft.liveProduct.published = true;
           return { operationalProductId: "42" };
         },
-        async upsertVariants() {
+        async upsertVariants(_productId, variants) {
           variantWrites += 1;
           if (variantWrites === options.failAtVariant) throw new Error("variant write failed");
+          return variants.map((_variant, index) => String(100 + index));
         },
       };
       const result = await work(tx);
@@ -141,7 +142,7 @@ describe("atomic product publication", () => {
       operationalProductId: "42",
       slug: "ak820-web-edition",
     });
-    expect(state.disabledVariants).toEqual(["variant-1"]);
+    expect(state.disabledVariants).toEqual(["100"]);
     expect(state.auditEvents).toEqual([
       expect.objectContaining({ action: "publish", revision: 3 }),
     ]);
@@ -165,13 +166,13 @@ describe("atomic product publication", () => {
         ...tx,
         async upsertVariants(productId, variants) {
           written.push(variants.map(({ cmsVariantId }) => cmsVariantId));
-          await tx.upsertVariants(productId, variants);
+          return tx.upsertVariants(productId, variants);
         },
       })),
     };
     await publishProduct(input, observingStore);
     expect(written).toEqual([["variant-1"]]);
-    expect(state.disabledVariants).toEqual(["variant-1"]);
+    expect(state.disabledVariants).toEqual(["100"]);
   });
 
   it("unpublishes with the expected revision and records the same correlation ID", async () => {
@@ -187,5 +188,29 @@ describe("atomic product publication", () => {
     expect(state.auditEvents).toEqual([
       expect.objectContaining({ action: "unpublish", correlationId: "22222222-2222-4222-8222-222222222222" }),
     ]);
+  });
+
+  it("allows unpublication after newer draft edits", async () => {
+    const calls: number[] = [];
+    const { store } = fakePublicationStore();
+    const observingStore: PublicationStore = {
+      transaction: (work) => store.transaction((tx) => work({
+        ...tx,
+        async setPublished(cmsProductId, revision, published) {
+          calls.push(revision);
+          return tx.setPublished(cmsProductId, revision, published, "observed-correlation");
+        },
+      })),
+    };
+
+    await unpublishProduct({
+      actor: { id: "admin-1", email: "xiet@a-jazz.com" },
+      cmsProductId: "product-1",
+      correlationId: "33333333-3333-4333-8333-333333333333",
+      currentRevision: 5,
+      expectedRevision: 5,
+    }, observingStore);
+
+    expect(calls).toEqual([5]);
   });
 });

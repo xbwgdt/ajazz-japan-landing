@@ -9,10 +9,15 @@
 
 ## Implementation
 
-- Added a framework-independent publication orchestrator with strict pre-transaction validation, stale-revision rejection, approved comparison-price enforcement, resolved-media requirements, atomic image/variant replacement, missing-variant disabling, and authoritative commerce audit insertion.
-- Added a PostgreSQL publication store using one `commerceSql().begin(...)` block. Existing operational product and variant rows are locked and updated in place so their numeric IDs remain stable.
+- Added a framework-independent publication orchestrator with strict validation before commerce writes, stale-revision rejection, approved comparison-price enforcement, resolved-media requirements, atomic image/variant replacement, missing-variant disabling, and authoritative commerce audit insertion.
+- The publication service now opens one Payload transaction, takes a product-scoped PostgreSQL advisory lock on that transaction, reads the locked draft, writes commerce state through the same transaction connection, then updates CMS metadata and writes the CMS audit before commit. Single-product edit hooks take the same lock.
+- Existing operational product and variant rows are locked and updated in place. `operationalVariantId` is the highest-priority product-scoped match, so numeric IDs survive SKU changes.
 - Added same-origin administrator-only publish and unpublish routes requiring `{ expectedRevision: number }`. Missing origins, malformed JSON, invalid revisions, unauthenticated requests, validation failures, and stale revisions receive explicit status codes.
-- Payload publication metadata is updated only after the commerce transaction commits. The CMS and commerce audit records share the same correlation ID, and home/product paths are revalidated afterward.
+- Payload publication metadata and both CMS/commerce audit records commit atomically with the live snapshot and share the same correlation ID. Cache paths are revalidated only after commit.
+- Same-revision publication replay is allowed, while only a newer live revision is rejected. This makes a retry after a committed response-loss/crash safe; CMS-side failures roll the complete transaction back.
+- Unpublication accepts a current CMS revision newer than the last publication, advances the public publication revision, and rejects only newer public state.
+- Missing-variant retirement is based on the numeric IDs returned by upsert, so legacy rows with `NULL cms_variant_id` are also disabled.
+- Product rich text uses the official Lexical-to-HTML converter and preserves headings, lists, and links.
 - Added nullable CMS links, manual-product source fields, merchandising/SEO/publication fields, partial non-null RMS uniqueness, append-only publication/inventory audit tables, and active variant fields.
 - Updated RMS catalog conflict targets to infer the new partial indexes. Both product and variant RMS upserts remain idempotent.
 - Updated storefront and checkout queries so inactive variants cannot render, price, or reserve stock after unpublication.
@@ -29,12 +34,16 @@ Additional RED runs proved:
 - append-only audit triggers were initially absent;
 - publication routes initially accepted missing `Origin` and mapped malformed JSON to 500.
 
-The final focused run passed 10 files and 62 tests, including Task 1-4 revision and bulk-update safeguards:
+The initial Task 5 run passed 10 files and 62 tests. After review remediation, the final focused run passed 14 files and 89 tests, including concurrency, replay recovery, rich-text structure, route errors, Task 1-4 revision and bulk-update safeguards, storefront, and checkout behavior:
 
 ```text
 tests/cms/publication.test.ts
 tests/cms/publication-store.test.ts
 tests/cms/publication-routes.test.ts
+tests/cms/publication-transaction.test.ts
+tests/cms/publication-draft.test.ts
+tests/cms/product-schema.test.ts
+tests/cms/product-concurrency.test.ts
 tests/cms/product-access.test.ts
 tests/cms/product-bulk-update.test.ts
 tests/commerce/db.test.ts
@@ -43,14 +52,14 @@ tests/commerce/storefront.test.ts
 tests/commerce/checkout.test.ts
 tests/commerce/checkout-handler.test.ts
 
-Test Files  10 passed (10)
-Tests       62 passed (62)
+Test Files  14 passed (14)
+Tests       89 passed (89)
 ```
 
 ## Build and Static Verification
 
-- Direct Node Next build: passed with Next.js 16.2.10; publish and unpublish routes were included in the production route table.
-- Direct Node `tsc --noEmit`: passed.
+- Final direct Node Next build: passed with Next.js 16.2.10 in 257.5 seconds; 17/17 static pages generated and publish/unpublish routes were included in the production route table.
+- Direct Node `tsc --noEmit`: passed after the build.
 - `git diff --check`: passed; only Git line-ending notices were emitted.
 - Task 5 migration snapshot JSON parses successfully.
 
@@ -64,6 +73,6 @@ Tests       62 passed (62)
 ## Remaining Concerns
 
 - PostgreSQL behavior is covered with transaction-boundary mocks and SQL assertions, not a real disposable PostgreSQL instance. Constraint names, partial-index inference, triggers, and rollback must be rehearsed against a restored disposable database before production.
-- Commerce commit is authoritative. A later Payload metadata or cache-revalidation failure cannot roll back the already committed live snapshot; the shared correlation ID exists so operations can detect and reconcile that state.
+- A process failure after the database commit but before the HTTP response can cause a same-revision replay and an additional append-only audit event. The live snapshot remains idempotent and the correlation IDs make both attempts observable.
 - Media resolution was tested without live R2. Production R2 and Payload media delivery remain gated on the later acceptance run.
 - No production delivery is allowed until the separate credential-rotation and Git-history gate is completed.

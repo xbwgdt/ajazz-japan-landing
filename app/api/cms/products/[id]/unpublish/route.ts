@@ -9,10 +9,14 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
   const payload = await getPayload({ config: configPromise });
   try {
     const admin = await requireAuthenticatedAdmin(request.headers, payload);
-    const body = await request.json() as { expectedRevision?: unknown };
-    if (!Number.isInteger(body.expectedRevision)) return Response.json({ code: "expected_revision_required" }, { status: 400 });
+    const body = await request.json() as unknown;
+    if (!body || typeof body !== "object" || Array.isArray(body)) {
+      return Response.json({ code: "invalid_json_body" }, { status: 400 });
+    }
+    const expectedRevision = (body as Record<string, unknown>).expectedRevision;
+    if (!Number.isInteger(expectedRevision)) return Response.json({ code: "expected_revision_required" }, { status: 400 });
     const { id } = await params;
-    const result = await executePublicationAction({ action: "unpublish", admin, expectedRevision: body.expectedRevision as number, payload, productId: id });
+    const result = await executePublicationAction({ action: "unpublish", admin, expectedRevision: expectedRevision as number, payload, productId: id });
     return Response.json(result);
   } catch (error) {
     if (error instanceof SyntaxError) return Response.json({ code: "invalid_json" }, { status: 400 });

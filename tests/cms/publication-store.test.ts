@@ -1,64 +1,119 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-
-const { queries, sqlClient } = vi.hoisted(() => {
-  const queries: string[] = [];
-  const txSql = vi.fn((strings: TemplateStringsArray) => {
-    const text = strings.join("?");
-    queries.push(text);
-    if (text.includes("INSERT INTO public.products")) return Promise.resolve([{ id: 42 }]);
-    if (text.includes("UPDATE public.products") && text.includes("published = FALSE")) {
-      return Promise.resolve([{ id: 42, slug: "ak820" }]);
-    }
-    return Promise.resolve([]);
-  });
-  const sqlClient = {
-    begin: vi.fn(async (work: (sql: typeof txSql) => Promise<unknown>) => work(txSql)),
-  };
-  return { queries, sqlClient };
-});
-
-vi.mock("../../lib/commerce/db", () => ({
-  commerceSql: () => sqlClient,
-  ensureCommerceSchema: vi.fn(async () => undefined),
-}));
-
+import { PublicationConflictError } from "../../lib/cms/publication";
 import { createPostgresPublicationStore } from "../../lib/cms/publication-store";
 
+function sqlText(value: unknown): string {
+  if (typeof value === "string") return value;
+  if (Array.isArray(value)) return value.map(sqlText).join("");
+  if (!value || typeof value !== "object") return "?";
+  const record = value as { queryChunks?: unknown[]; value?: unknown };
+  if (record.queryChunks) return record.queryChunks.map(sqlText).join("");
+  if (record.value !== undefined) return sqlText(record.value);
+  return "?";
+}
+
+function sqlValues(value: unknown): unknown[] {
+  if (Array.isArray(value)) return value.flatMap(sqlValues);
+  if (!value || typeof value !== "object") return [value];
+  const record = value as { queryChunks?: unknown[]; value?: unknown };
+  if (record.queryChunks) return record.queryChunks.flatMap(sqlValues);
+  if (record.value !== undefined) return sqlValues(record.value);
+  return [];
+}
+
+function fixture() {
+  const queries: unknown[] = [];
+  const execute = vi.fn(async (statement: unknown) => {
+    queries.push(statement);
+    const text = sqlText(statement);
+    if (text.includes("SELECT id, publication_revision") && text.includes("FROM public.products")) {
+      return [{ id: 42, publication_revision: 3 }];
+    }
+    if (text.includes("SELECT id, publication_revision, slug")) {
+      return [{ id: 42, publication_revision: 3, slug: "ak820" }];
+    }
+    if (text.includes("SELECT id FROM public.product_variants")) return [{ id: 99 }];
+    if (text.includes("RETURNING id, slug")) return [{ id: 42, slug: "ak820" }];
+    if (text.includes("RETURNING id")) return [{ id: text.includes("product_variants") ? 99 : 42 }];
+    return [];
+  });
+  const req = {
+    payload: { db: { sessions: { "tx-1": { db: { execute } } } } },
+    transactionID: "tx-1",
+  };
+  return { execute, queries, req, store: createPostgresPublicationStore(req as never) };
+}
+
+const snapshot = {
+  cmsProductId: "product-1", sourceType: "manual", rmsManageNumber: null,
+  slug: "ak820", name: "AK820", descriptionHtml: "", category: "mechanical-keyboard",
+  featured: false, merchandisingOrder: 0, revision: 3, correlationId: "correlation-1",
+  shortStatement: null, seoTitle: null, seoDescription: null,
+} as const;
+
+const variant = {
+  cmsVariantId: "variant-1", operationalVariantId: "99", sku: "RENAMED-SKU",
+  rmsSkuNumber: null, inventoryMode: "manual", priceJpy: 1000,
+  compareAtPriceJpy: null, colorName: "Black", colorSwatch: null,
+  thumbnailUrl: null, imageUrl: null, active: true, comparisonEvidenceType: null,
+  comparisonEvidenceReference: null, comparisonApprovedBy: null, comparisonApprovedAt: null,
+} as const;
+
 describe("PostgreSQL publication store", () => {
-  beforeEach(() => {
-    queries.length = 0;
-    vi.clearAllMocks();
-  });
+  beforeEach(() => vi.clearAllMocks());
 
-  it("uses one database begin block and preserves numeric product and variant IDs", async () => {
-    const store = createPostgresPublicationStore();
-    await store.transaction(async (tx) => {
-      const product = await tx.upsertProduct({
-        cmsProductId: "product-1", sourceType: "manual", rmsManageNumber: null,
-        slug: "ak820", name: "AK820", descriptionHtml: "", category: "mechanical-keyboard",
-        featured: false, merchandisingOrder: 0, revision: 2, correlationId: "correlation-1",
-        shortStatement: null, seoTitle: null, seoDescription: null,
-      });
-      await tx.upsertVariants(product.operationalProductId, [{
-        cmsVariantId: "variant-1", sku: "WEB-1", rmsSkuNumber: null, inventoryMode: "manual",
-        priceJpy: 1000, compareAtPriceJpy: null, colorName: "Black", colorSwatch: null,
-        thumbnailUrl: null, imageUrl: null, active: true, comparisonEvidenceType: null,
-        comparisonEvidenceReference: null, comparisonApprovedBy: null, comparisonApprovedAt: null,
-      }]);
+  it("reuses the active Payload transaction and permits same-revision recovery", async () => {
+    const { store, queries } = fixture();
+    await expect(store.transaction((tx) => tx.upsertProduct(snapshot))).resolves.toEqual({
+      operationalProductId: "42",
     });
-    expect(sqlClient.begin).toHaveBeenCalledTimes(1);
-    expect(queries.join("\n")).toContain("INSERT INTO public.products");
-    expect(queries.join("\n")).toContain("INSERT INTO public.product_variants");
-    expect(queries.join("\n")).not.toContain("DELETE FROM public.product_variants");
+    expect(queries.map(sqlText).join("\n")).toContain("UPDATE public.products SET");
   });
 
-  it("writes the publication audit through the transaction SQL handle", async () => {
-    const store = createPostgresPublicationStore();
+  it("rejects only a newer live publication revision", async () => {
+    const { req } = fixture();
+    const execute = vi.fn(async (statement: unknown) => sqlText(statement).includes("SELECT id, publication_revision")
+      ? [{ id: 42, publication_revision: 4 }]
+      : []);
+    req.payload.db.sessions["tx-1"].db.execute = execute;
+    const store = createPostgresPublicationStore(req as never);
+    await expect(store.transaction((tx) => tx.upsertProduct(snapshot)))
+      .rejects.toBeInstanceOf(PublicationConflictError);
+  });
+
+  it("matches operationalVariantId first within the product and preserves its numeric row ID", async () => {
+    const { store, queries } = fixture();
+    const ids = await store.transaction((tx) => tx.upsertVariants("42", [variant]));
+    expect(ids).toEqual(["99"]);
+    const select = queries.find((query) => sqlText(query).includes("SELECT id FROM public.product_variants"));
+    expect(sqlText(select)).toContain("product_id =");
+    expect(sqlText(select)).toContain("id =");
+    expect(sqlValues(select)).toEqual(expect.arrayContaining([42, 99, "RENAMED-SKU"]));
+  });
+
+  it("disables every missing row including legacy rows with null cms_variant_id", async () => {
+    const { store, queries } = fixture();
+    await store.transaction((tx) => tx.disableMissingVariants("42", ["99"]));
+    const update = queries.find((query) => sqlText(query).includes("SET active = FALSE"));
+    expect(sqlText(update)).toContain("id NOT IN (");
+    expect(sqlText(update)).not.toContain("cms_variant_id IS NOT NULL");
+  });
+
+  it("allows a newer CMS revision to unpublish and advances the public revision", async () => {
+    const { store, queries } = fixture();
+    await expect(store.transaction((tx) => tx.setPublished("product-1", 5, false, "correlation-2")))
+      .resolves.toMatchObject({ operationalProductId: "42" });
+    const update = queries.find((query) => sqlText(query).includes("UPDATE public.products") && sqlText(query).includes("publication_revision"));
+    expect(sqlValues(update)).toEqual(expect.arrayContaining([5, "correlation-2"]));
+  });
+
+  it("writes publication audit through the same transaction database", async () => {
+    const { store, queries } = fixture();
     await store.transaction((tx) => tx.appendPublicationAudit({
       action: "publish", actorId: "admin-1", actorEmail: "xiet@a-jazz.com",
-      cmsProductId: "product-1", correlationId: "correlation-1", revision: 2,
+      cmsProductId: "product-1", correlationId: "correlation-1", revision: 3,
       operationalProductId: "42",
     }));
-    expect(queries.some((query) => query.includes("INSERT INTO public.publication_audit_events"))).toBe(true);
+    expect(queries.some((query) => sqlText(query).includes("INSERT INTO public.publication_audit_events"))).toBe(true);
   });
 });

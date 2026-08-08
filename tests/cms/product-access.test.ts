@@ -2,6 +2,7 @@ import type { Field } from "payload";
 import { describe, expect, it, vi } from "vitest";
 import { Media } from "../../cms/collections/Media";
 import { Products, updateProductWithRevision } from "../../cms/collections/Products";
+import { lockSingleProductOperation } from "../../cms/services/productConcurrency";
 import { productSpecifications } from "../../cms/fields/productSpecifications";
 import {
   productDraftSaveContext,
@@ -60,6 +61,19 @@ describe("Products collection", () => {
       (field) => "name" in field && field.name === "supportedOperatingSystems",
     );
     expect(operatingSystems).toMatchObject({ dbName: "supported_os" });
+  });
+
+  it("takes the product publication lock for every single-product edit", async () => {
+    const execute = vi.fn().mockResolvedValue([]);
+    const req = {
+      payload: { db: { sessions: { "tx-1": { db: { execute } } } } },
+      transactionID: "tx-1",
+    };
+    const args = { id: 7, req };
+
+    await lockSingleProductOperation({ args, operation: "update" } as never);
+
+    expect(execute).toHaveBeenCalledTimes(1);
   });
 });
 

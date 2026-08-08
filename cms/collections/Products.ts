@@ -6,6 +6,7 @@ import { productVariants } from "../fields/productVariants";
 import { productDraftSaveContext, protectSourceFields } from "../hooks/protectSourceFields";
 import { rejectRetiredMediaReferences } from "../hooks/rejectRetiredMediaReferences";
 import { writeAuditEvent } from "../hooks/writeAuditEvent";
+import { lockSingleProductOperation } from "../services/productConcurrency";
 
 type RevisionUpdateBody = {
   data?: Record<string, unknown>;
@@ -176,7 +177,7 @@ export const Products: CollectionConfig = {
     },
   ],
   hooks: {
-    beforeOperation: [rejectBulkProductUpdates],
+    beforeOperation: [rejectBulkProductUpdates, lockSingleProductOperation],
     beforeChange: [protectSourceFields, rejectRetiredMediaReferences],
     afterChange: [writeAuditEvent],
   },

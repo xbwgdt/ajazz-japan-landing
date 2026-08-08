@@ -1,7 +1,10 @@
 import { randomUUID } from "node:crypto";
-import type { Payload } from "payload";
+import { convertLexicalToHTML } from "@payloadcms/richtext-lexical/html";
+import { APIError, type Payload, type PayloadRequest } from "payload";
 import { revalidatePath } from "next/cache";
 import { productPublicationContext } from "../../cms/hooks/protectSourceFields";
+import { lockProduct } from "../../cms/services/productConcurrency";
+import { runPayloadTransaction } from "../../cms/services/payloadTransaction";
 import type { Admin } from "../../payload-types";
 import {
   PublicationConflictError,
@@ -21,27 +24,18 @@ function relationId(value: Relation): string | undefined {
   return undefined;
 }
 
-function htmlEscape(value: string) {
-  return value.replaceAll("&", "&amp;").replaceAll("<", "&lt;").replaceAll(">", "&gt;").replaceAll('"', "&quot;");
-}
-
-function lexicalText(value: unknown): string {
-  if (typeof value === "string") return value;
-  if (Array.isArray(value)) return value.map(lexicalText).join(" ");
-  if (!value || typeof value !== "object") return "";
-  const record = value as Record<string, unknown>;
-  return [record.text, record.children, record.root].map(lexicalText).filter(Boolean).join(" ");
-}
-
 function descriptionHtml(value: unknown): string {
-  const text = lexicalText(value).replace(/\s+/g, " ").trim();
-  return text ? `<p>${htmlEscape(text)}</p>` : "";
+  if (!value || typeof value !== "object" || !("root" in value)) return "";
+  return convertLexicalToHTML({
+    data: value as Parameters<typeof convertLexicalToHTML>[0]["data"],
+    disableContainer: true,
+  });
 }
 
-async function loadMedia(payload: Payload, ids: string[]) {
+async function loadMedia(payload: Payload, ids: string[], req?: PayloadRequest) {
   const unique = [...new Set(ids)];
   const entries = await Promise.all(unique.map(async (id) => {
-    const media = await payload.findByID({ collection: "media", depth: 0, id, overrideAccess: true });
+    const media = await payload.findByID({ collection: "media", depth: 0, id, overrideAccess: true, req });
     const record = media as unknown as Record<string, unknown>;
     if (record.retiredAt || typeof record.url !== "string" || !record.url.trim()) {
       throw new PublicationValidationError([{
@@ -55,7 +49,7 @@ async function loadMedia(payload: Payload, ids: string[]) {
   return new Map(entries);
 }
 
-export async function buildPublicationDraft(payload: Payload, product: PayloadProduct): Promise<PublicationDraft> {
+export async function buildPublicationDraft(payload: Payload, product: PayloadProduct, req?: PayloadRequest): Promise<PublicationDraft> {
   const variants = Array.isArray(product.variants) ? product.variants as Array<Record<string, unknown>> : [];
   const primary = relationId(product.primaryImageId as Relation);
   const gallery = Array.isArray(product.galleryImageIds) ? product.galleryImageIds.map((value) => relationId(value as Relation)).filter(Boolean) as string[] : [];
@@ -65,13 +59,14 @@ export async function buildPublicationDraft(payload: Payload, product: PayloadPr
     relationId(variant.imageId as Relation),
   ].filter(Boolean) as string[]);
   const orderedImages = [primary, ...gallery, ...scenes].filter(Boolean) as string[];
-  const media = await loadMedia(payload, [...orderedImages, ...variantMedia]);
+  const media = await loadMedia(payload, [...orderedImages, ...variantMedia], req);
 
   const duplicateSlug = await payload.find({
     collection: "products",
     depth: 0,
     limit: 1,
     overrideAccess: true,
+    req,
     where: { and: [{ slug: { equals: product.slug } }, { id: { not_equals: product.id } }] },
   });
 
@@ -126,59 +121,67 @@ export async function executePublicationAction(input: {
   payload: Payload;
   productId: string;
 }) {
-  const product = await input.payload.findByID({
-    collection: "products",
-    depth: 0,
-    draft: true,
-    id: input.productId,
-    overrideAccess: true,
-  }) as unknown as PayloadProduct;
-  const currentRevision = Number(product.editorialRevision ?? 0);
-  const correlationId = randomUUID();
-  const actor = { id: String(input.admin.id), email: input.admin.email };
-  const store = createPostgresPublicationStore();
+  const result = await runPayloadTransaction(input.payload, async (req) => {
+    await lockProduct(req, input.productId);
+    const product = await input.payload.findByID({
+      collection: "products",
+      depth: 0,
+      draft: true,
+      id: input.productId,
+      overrideAccess: true,
+      req,
+    }) as unknown as PayloadProduct;
+    const currentRevision = Number(product.editorialRevision ?? 0);
+    const correlationId = randomUUID();
+    const actor = { id: String(input.admin.id), email: input.admin.email };
+    const store = createPostgresPublicationStore(req);
 
-  let slug = String(product.slug ?? "");
-  let operationalProductId = typeof product.operationalProductId === "string" ? product.operationalProductId : undefined;
-  if (input.action === "publish") {
-    const draft = await buildPublicationDraft(input.payload, product);
-    const result = await publishProduct({ actor, cmsProductId: String(product.id), correlationId, currentRevision, draft, expectedRevision: input.expectedRevision }, store);
-    slug = result.slug;
-    operationalProductId = result.operationalProductId;
-  } else {
-    await unpublishProduct({ actor, cmsProductId: String(product.id), correlationId, currentRevision, expectedRevision: input.expectedRevision }, store);
-  }
+    let slug = String(product.slug ?? "");
+    let operationalProductId = typeof product.operationalProductId === "string" ? product.operationalProductId : undefined;
+    if (input.action === "publish") {
+      const draft = await buildPublicationDraft(input.payload, product, req);
+      const published = await publishProduct({ actor, cmsProductId: String(product.id), correlationId, currentRevision, draft, expectedRevision: input.expectedRevision }, store);
+      slug = published.slug;
+      operationalProductId = published.operationalProductId;
+    } else {
+      await unpublishProduct({ actor, cmsProductId: String(product.id), correlationId, currentRevision, expectedRevision: input.expectedRevision }, store);
+    }
 
-  await input.payload.update({
-    collection: "products",
-    context: { expectedRevision: input.expectedRevision, ...productPublicationContext },
-    data: {
-      _status: input.action === "publish" ? "published" : "draft",
-      ...(operationalProductId ? { operationalProductId } : {}),
-      lastPublicationCorrelationId: correlationId,
-      ...(input.action === "publish" ? { lastPublishedAt: new Date().toISOString() } : {}),
-      lastPublishedBy: input.admin.id,
-      lastPublishedRevision: input.expectedRevision,
-      lifecycle: input.action === "publish" ? "active" : "unpublished",
-    },
-    draft: input.action !== "publish",
-    id: product.id,
-    overrideAccess: true,
+    await input.payload.update({
+      collection: "products",
+      context: { expectedRevision: input.expectedRevision, ...productPublicationContext },
+      data: {
+        _status: input.action === "publish" ? "published" : "draft",
+        ...(operationalProductId ? { operationalProductId } : {}),
+        lastPublicationCorrelationId: correlationId,
+        ...(input.action === "publish" ? { lastPublishedAt: new Date().toISOString() } : {}),
+        lastPublishedBy: input.admin.id,
+        lastPublishedRevision: input.expectedRevision,
+        lifecycle: input.action === "publish" ? "active" : "unpublished",
+      },
+      draft: input.action !== "publish",
+      id: product.id,
+      overrideAccess: true,
+      req,
+    });
+    await input.payload.create({
+      collection: "audit-events",
+      data: {
+        action: input.action,
+        actor: input.admin.id,
+        subjectType: "product",
+        subjectId: String(product.id),
+        details: { correlationId, revision: input.expectedRevision },
+      },
+      overrideAccess: true,
+      req,
+    });
+    return { correlationId, operationalProductId, slug };
   });
-  await input.payload.create({
-    collection: "audit-events",
-    data: {
-      action: input.action,
-      actor: input.admin.id,
-      subjectType: "product",
-      subjectId: String(product.id),
-      details: { correlationId, revision: input.expectedRevision },
-    },
-    overrideAccess: true,
-  });
+
   revalidatePath("/");
-  revalidatePath(`/products/${slug}`);
-  return { correlationId, operationalProductId, slug };
+  revalidatePath(`/products/${result.slug}`);
+  return result;
 }
 
 export function publicationErrorResponse(error: unknown): Response {
@@ -187,6 +190,13 @@ export function publicationErrorResponse(error: unknown): Response {
   }
   if (error instanceof PublicationConflictError) {
     return Response.json({ code: error.code, currentRevision: error.currentRevision }, { status: 409 });
+  }
+  if (error instanceof APIError && error.status >= 400 && error.status < 500) {
+    const data = error.data && typeof error.data === "object" ? error.data as Record<string, unknown> : {};
+    const code = typeof data.code === "string"
+      ? data.code
+      : error.status === 404 ? "product_not_found" : "publication_request_failed";
+    return Response.json({ ...data, code }, { status: error.status });
   }
   return Response.json({ code: "publication_failed" }, { status: 500 });
 }

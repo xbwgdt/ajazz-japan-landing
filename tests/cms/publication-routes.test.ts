@@ -69,6 +69,24 @@ describe("product publication routes", () => {
     expect(response.status).toBe(400);
   });
 
+  it.each([null, [], "revision"])("rejects non-object JSON bodies", async (body) => {
+    const response = await publish(request(body), { params: Promise.resolve({ id: "1" }) });
+    expect(response.status).toBe(400);
+    expect(executeMock).not.toHaveBeenCalled();
+  });
+
+  it("preserves actionable Payload API error statuses", async () => {
+    executeMock.mockRejectedValueOnce(new APIError("Missing", 404, { code: "product_not_found" }));
+    const missing = await publish(request({ expectedRevision: 3 }), { params: Promise.resolve({ id: "404" }) });
+    expect(missing.status).toBe(404);
+    await expect(missing.json()).resolves.toMatchObject({ code: "product_not_found" });
+
+    executeMock.mockRejectedValueOnce(new APIError("Conflict", 409, { code: "stale_editorial_revision" }));
+    const conflict = await publish(request({ expectedRevision: 3 }), { params: Promise.resolve({ id: "1" }) });
+    expect(conflict.status).toBe(409);
+    await expect(conflict.json()).resolves.toMatchObject({ code: "stale_editorial_revision" });
+  });
+
   it("dispatches publish and unpublish through the guarded service", async () => {
     const publishResponse = await publish(request({ expectedRevision: 3 }), { params: Promise.resolve({ id: "1" }) });
     const unpublishResponse = await unpublish(request({ expectedRevision: 3 }), { params: Promise.resolve({ id: "1" }) });
