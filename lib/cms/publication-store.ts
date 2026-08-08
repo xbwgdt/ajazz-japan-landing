@@ -36,25 +36,48 @@ function transactionAdapter(database: TransactionDatabase): PublicationTransacti
   const query = async <T>(statement: unknown) => resultRows<T>(await database.execute(statement));
 
   return {
-    async assertSlugAvailable(slug, cmsProductId) {
+    async assertSlugAvailable(slug, cmsProductId, operationalProductId) {
+      const linkedProductId = positiveInteger(operationalProductId);
       const rows = await query<{ id: number }>(sql`
         SELECT id FROM public.products
         WHERE slug = ${slug} AND cms_product_id IS DISTINCT FROM ${cmsProductId}
+          AND (${linkedProductId} IS NULL OR id <> ${linkedProductId})
         LIMIT 1
       `);
       if (rows.length) throw new PublicationConflictError();
     },
 
     async upsertProduct(snapshot: PublishedProductSnapshot) {
-      const existing = await query<{ id: number; publication_revision: number }>(sql`
-        SELECT id, publication_revision
+      const linkedProductId = positiveInteger(snapshot.operationalProductId);
+      const existing = await query<{
+        cms_product_id: string | null;
+        id: number;
+        publication_revision: number;
+        rms_manage_number: string | null;
+      }>(sql`
+        SELECT id, cms_product_id, rms_manage_number, publication_revision
         FROM public.products
-        WHERE cms_product_id = ${snapshot.cmsProductId}
-           OR rms_manage_number = ${snapshot.rmsManageNumber}
-        ORDER BY (cms_product_id = ${snapshot.cmsProductId}) DESC
+        WHERE (${linkedProductId} IS NOT NULL AND id = ${linkedProductId})
+           OR cms_product_id = ${snapshot.cmsProductId}
+           OR (${snapshot.rmsManageNumber} IS NOT NULL AND rms_manage_number = ${snapshot.rmsManageNumber})
+        ORDER BY
+          (${linkedProductId} IS NOT NULL AND id = ${linkedProductId}) DESC,
+          (cms_product_id = ${snapshot.cmsProductId}) DESC,
+          (rms_manage_number = ${snapshot.rmsManageNumber}) DESC
         LIMIT 1
         FOR UPDATE
       `);
+      if (
+        existing[0]
+        && linkedProductId !== null
+        && Number(existing[0].id) === linkedProductId
+        && (
+          (existing[0].cms_product_id != null && existing[0].cms_product_id !== snapshot.cmsProductId)
+          || (existing[0].rms_manage_number != null && existing[0].rms_manage_number !== snapshot.rmsManageNumber)
+        )
+      ) {
+        throw new PublicationConflictError(Number(existing[0].publication_revision));
+      }
       if (existing[0] && Number(existing[0].publication_revision) > snapshot.revision) {
         throw new PublicationConflictError(Number(existing[0].publication_revision));
       }

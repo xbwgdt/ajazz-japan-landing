@@ -159,6 +159,67 @@ describe("protectSourceFields", () => {
     expect(result).toMatchObject({ _status: "published", editorialRevision: 4 });
   });
 
+  it("allows trusted publication to link an RMS product operational ID", async () => {
+    const result = await protectSourceFields({
+      context: productPublicationContext,
+      data: { _status: "published", operationalProductId: "42" },
+      operation: "update",
+      originalDoc: {
+        _status: "draft",
+        editorialRevision: 4,
+        operationalProductId: null,
+        rmsManageNumber: "ak820",
+        sourceType: "rms",
+        variants: [{ operationalVariantId: "99", rmsSkuNumber: "AK820-B", sku: "AK820-B" }],
+      },
+    } as never);
+
+    expect(result).toMatchObject({
+      operationalProductId: "42",
+      editorialRevision: 4,
+    });
+  });
+
+  it("does not let trusted publication change an RMS management number", async () => {
+    await expect(protectSourceFields({
+      context: productPublicationContext,
+      data: { _status: "published", operationalProductId: "42", rmsManageNumber: "other" },
+      operation: "update",
+      originalDoc: {
+        _status: "draft",
+        editorialRevision: 4,
+        operationalProductId: null,
+        rmsManageNumber: "ak820",
+        sourceType: "rms",
+        variants: [],
+      },
+    } as never)).rejects.toMatchObject({
+      data: { code: "rms_source_identity_immutable" },
+    });
+  });
+
+  it("does not let trusted publication change RMS variant identities", async () => {
+    await expect(protectSourceFields({
+      context: productPublicationContext,
+      data: {
+        _status: "published",
+        operationalProductId: "42",
+        variants: [{ operationalVariantId: "100", rmsSkuNumber: "AK820-B", sku: "AK820-B" }],
+      },
+      operation: "update",
+      originalDoc: {
+        _status: "draft",
+        editorialRevision: 4,
+        operationalProductId: null,
+        rmsManageNumber: "ak820",
+        sourceType: "rms",
+        variants: [{ operationalVariantId: "99", rmsSkuNumber: "AK820-B", sku: "AK820-B" }],
+      },
+    } as never)).rejects.toMatchObject({
+      data: { code: "rms_source_identity_immutable" },
+    });
+  });
+
   it("rejects changes to RMS product and variant identities", async () => {
     await expect(protectSourceFields({
       context: {},

@@ -40,6 +40,7 @@ describe("publication transaction lifecycle", () => {
   });
 
   it("locks before reading and commits commerce, CMS metadata, and CMS audit together", async () => {
+    const admin = { id: 1, email: "xiet@a-jazz.com" };
     const payload = {
       create: vi.fn(async () => { mocks.events.push("cms-audit"); return { id: 1 }; }),
       find: vi.fn().mockResolvedValue({ docs: [] }),
@@ -57,7 +58,7 @@ describe("publication transaction lifecycle", () => {
 
     await executePublicationAction({
       action: "publish",
-      admin: { id: 1, email: "xiet@a-jazz.com" } as never,
+      admin: admin as never,
       expectedRevision: 3,
       payload: payload as never,
       productId: "7",
@@ -69,6 +70,12 @@ describe("publication transaction lifecycle", () => {
     expect(payload.findByID).toHaveBeenCalledWith(expect.objectContaining({ req: expect.any(Object) }));
     expect(payload.update).toHaveBeenCalledWith(expect.objectContaining({ req: expect.any(Object) }));
     expect(payload.create).toHaveBeenCalledWith(expect.objectContaining({ req: expect.any(Object) }));
+    expect(mocks.runPayloadTransaction).toHaveBeenCalledWith(
+      payload,
+      expect.any(Function),
+      undefined,
+      { user: admin },
+    );
   });
 
   it("rolls back commerce when CMS audit fails", async () => {

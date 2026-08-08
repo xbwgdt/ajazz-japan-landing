@@ -148,6 +148,27 @@ describe("atomic product publication", () => {
     ]);
   });
 
+  it("carries the existing operational product ID into the public snapshot", async () => {
+    const base = validInput();
+    const snapshots: Array<{ operationalProductId: string | null }> = [];
+    const { store } = fakePublicationStore();
+    const observingStore: PublicationStore = {
+      transaction: (work) => store.transaction((tx) => work({
+        ...tx,
+        async upsertProduct(snapshot) {
+          snapshots.push({ operationalProductId: snapshot.operationalProductId });
+          return tx.upsertProduct(snapshot);
+        },
+      })),
+    };
+
+    await publishProduct(validInput({
+      draft: { ...base.draft, operationalProductId: "42" },
+    }), observingStore);
+
+    expect(snapshots).toEqual([{ operationalProductId: "42" }]);
+  });
+
   it("does not insert inactive CMS variants and disables them in the live snapshot", async () => {
     const base = validInput();
     const input = validInput({

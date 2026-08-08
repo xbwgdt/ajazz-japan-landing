@@ -177,7 +177,7 @@ export async function executePublicationAction(input: {
       req,
     });
     return { correlationId, operationalProductId, slug };
-  });
+  }, undefined, { user: input.admin });
 
   revalidatePath("/");
   revalidatePath(`/products/${result.slug}`);

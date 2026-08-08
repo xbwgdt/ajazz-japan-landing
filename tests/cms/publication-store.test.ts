@@ -26,7 +26,7 @@ function fixture() {
   const execute = vi.fn(async (statement: unknown) => {
     queries.push(statement);
     const text = sqlText(statement);
-    if (text.includes("SELECT id, publication_revision") && text.includes("FROM public.products")) {
+    if (text.includes("SELECT id, cms_product_id") && text.includes("FROM public.products")) {
       return [{ id: 42, publication_revision: 3 }];
     }
     if (text.includes("SELECT id, publication_revision, slug")) {
@@ -46,6 +46,7 @@ function fixture() {
 
 const snapshot = {
   cmsProductId: "product-1", sourceType: "manual", rmsManageNumber: null,
+  operationalProductId: "42",
   slug: "ak820", name: "AK820", descriptionHtml: "", category: "mechanical-keyboard",
   featured: false, merchandisingOrder: 0, revision: 3, correlationId: "correlation-1",
   shortStatement: null, seoTitle: null, seoDescription: null,
@@ -70,9 +71,55 @@ describe("PostgreSQL publication store", () => {
     expect(queries.map(sqlText).join("\n")).toContain("UPDATE public.products SET");
   });
 
+  it("prioritizes the linked numeric product ID and updates that same row", async () => {
+    const { store, queries } = fixture();
+
+    await store.transaction((tx) => tx.upsertProduct(snapshot));
+
+    const select = queries.find((query) => sqlText(query).includes("SELECT id, cms_product_id"));
+    const update = queries.find((query) => sqlText(query).includes("UPDATE public.products SET"));
+    expect(sqlText(select)).toContain("id =");
+    expect(sqlText(select)).toContain("ORDER BY");
+    expect(sqlValues(select)).toEqual(expect.arrayContaining([42, "product-1"]));
+    expect(sqlValues(update)).toContain(42);
+  });
+
+  it("does not treat the linked public row's own slug as a conflict", async () => {
+    const { store, queries } = fixture();
+
+    await store.transaction((tx) => tx.assertSlugAvailable("ak820", "product-1", "42"));
+
+    const select = queries.find((query) => sqlText(query).includes("WHERE slug ="));
+    expect(sqlText(select)).toContain("id <>");
+    expect(sqlValues(select)).toEqual(expect.arrayContaining(["ak820", "product-1", 42]));
+  });
+
+  it("rejects a linked numeric ID owned by another CMS product without updating it", async () => {
+    const { req, queries } = fixture();
+    const execute = vi.fn(async (statement: unknown) => {
+      queries.push(statement);
+      const text = sqlText(statement);
+      if (text.includes("SELECT id, cms_product_id") && text.includes("FROM public.products")) {
+        return [{
+          id: 42,
+          cms_product_id: "other-product",
+          publication_revision: 1,
+          rms_manage_number: null,
+        }];
+      }
+      return [];
+    });
+    req.payload.db.sessions["tx-1"].db.execute = execute;
+    const store = createPostgresPublicationStore(req as never);
+
+    await expect(store.transaction((tx) => tx.upsertProduct(snapshot)))
+      .rejects.toBeInstanceOf(PublicationConflictError);
+    expect(queries.some((query) => sqlText(query).includes("UPDATE public.products SET"))).toBe(false);
+  });
+
   it("rejects only a newer live publication revision", async () => {
     const { req } = fixture();
-    const execute = vi.fn(async (statement: unknown) => sqlText(statement).includes("SELECT id, publication_revision")
+    const execute = vi.fn(async (statement: unknown) => sqlText(statement).includes("SELECT id, cms_product_id")
       ? [{ id: 42, publication_revision: 4 }]
       : []);
     req.payload.db.sessions["tx-1"].db.execute = execute;

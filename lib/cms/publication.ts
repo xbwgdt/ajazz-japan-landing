@@ -42,6 +42,7 @@ export type PublishedProductSnapshot = {
   featured: boolean;
   merchandisingOrder: number;
   name: string;
+  operationalProductId: string | null;
   revision: number;
   rmsManageNumber: string | null;
   seoDescription: string | null;
@@ -63,7 +64,7 @@ export type PublicationAuditInput = {
 
 export interface PublicationTransaction {
   appendPublicationAudit(event: PublicationAuditInput): Promise<void>;
-  assertSlugAvailable(slug: string, cmsProductId: string): Promise<void>;
+  assertSlugAvailable(slug: string, cmsProductId: string, operationalProductId: string | null): Promise<void>;
   disableMissingVariants(productId: string, operationalVariantIds: string[]): Promise<void>;
   replaceImages(productId: string, images: PublishedImage[]): Promise<void>;
   setPublished(
@@ -173,6 +174,7 @@ export async function publishProduct(
     featured: input.draft.featured ?? false,
     merchandisingOrder: input.draft.merchandisingOrder ?? 0,
     name: input.draft.name,
+    operationalProductId: input.draft.operationalProductId?.trim() || null,
     revision: input.expectedRevision,
     rmsManageNumber: input.draft.rmsManageNumber?.trim() || null,
     seoDescription: input.draft.seoDescription?.trim() || null,
@@ -201,7 +203,7 @@ export async function publishProduct(
   }));
 
   return store.transaction(async (tx) => {
-    await tx.assertSlugAvailable(snapshot.slug, snapshot.cmsProductId);
+    await tx.assertSlugAvailable(snapshot.slug, snapshot.cmsProductId, snapshot.operationalProductId);
     const { operationalProductId } = await tx.upsertProduct(snapshot);
     await tx.replaceImages(operationalProductId, input.draft.images);
     const operationalVariantIds = await tx.upsertVariants(operationalProductId, variants);

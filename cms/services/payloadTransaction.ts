@@ -25,8 +25,9 @@ export async function runPayloadTransaction<T>(
   payload: Payload,
   work: (req: PayloadRequest) => Promise<T>,
   api: PayloadTransactionAPI = transactionAPI,
+  requestOptions: Parameters<typeof createLocalReq>[0] = {},
 ): Promise<T> {
-  const req = await api.createLocalReq({}, payload);
+  const req = await api.createLocalReq(requestOptions, payload);
   const ownsTransaction = await api.initTransaction(req);
   if (!ownsTransaction) throw new Error("Payload database transactions are unavailable");
 

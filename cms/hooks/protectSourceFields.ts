@@ -125,6 +125,7 @@ export const protectSourceFields: CollectionBeforeChangeHook<SourceProduct> = as
   }
 
   const allowSourceConversion = context.allowSourceConversion === true;
+  const trustedPublication = isTrustedProductPublicationContext(context);
   const originalIsRms = originalDoc?.sourceType === "rms";
   const incomingSourceType = data.sourceType ?? originalDoc?.sourceType;
 
@@ -143,7 +144,7 @@ export const protectSourceFields: CollectionBeforeChangeHook<SourceProduct> = as
     if (changed(data.sourceType, originalDoc.sourceType)) throw sourceIdentityError();
     if (originalIsRms && (
       changed(data.rmsManageNumber, originalDoc.rmsManageNumber)
-      || changed(data.operationalProductId, originalDoc.operationalProductId)
+      || (!trustedPublication && changed(data.operationalProductId, originalDoc.operationalProductId))
       || variantIdentityChanged(data.variants, originalDoc.variants)
     )) {
       throw sourceIdentityError();
@@ -154,7 +155,7 @@ export const protectSourceFields: CollectionBeforeChangeHook<SourceProduct> = as
     ...data,
     editorialRevision: operation === "create"
       ? 1
-      : isTrustedProductPublicationContext(context)
+      : trustedPublication
         ? currentRevision
         : currentRevision + 1,
   };
