@@ -6,7 +6,9 @@ import { productVariants } from "../fields/productVariants";
 import { productDraftSaveContext, protectSourceFields } from "../hooks/protectSourceFields";
 import { rejectRetiredMediaReferences } from "../hooks/rejectRetiredMediaReferences";
 import { writeAuditEvent } from "../hooks/writeAuditEvent";
+import { prepareProductVersionRestore } from "../hooks/productVersionRestore";
 import { lockSingleProductOperation } from "../services/productConcurrency";
+import { createPreviewToken } from "../../lib/cms/preview";
 
 type RevisionUpdateBody = {
   data?: Record<string, unknown>;
@@ -80,6 +82,15 @@ export const Products: CollectionConfig = {
   slug: "products",
   admin: {
     defaultColumns: ["name", "category", "sourceType", "lifecycle", "updatedAt"],
+    preview: (doc) => {
+      const id = doc.id;
+      const revision = Number(doc.editorialRevision);
+      const slug = typeof doc.slug === "string" ? doc.slug : "";
+      if ((typeof id !== "string" && typeof id !== "number") || !Number.isSafeInteger(revision) || !slug) return null;
+      const now = Math.floor(Date.now() / 1_000);
+      const token = createPreviewToken({ productId: id, revision, expiresAt: now + 600 }, { now });
+      return `/api/cms/preview?token=${encodeURIComponent(token)}&slug=${encodeURIComponent(slug)}`;
+    },
     useAsTitle: "name",
   },
   disableBulkEdit: true,
@@ -182,7 +193,7 @@ export const Products: CollectionConfig = {
     },
   ],
   hooks: {
-    beforeOperation: [rejectBulkProductUpdates, lockSingleProductOperation],
+    beforeOperation: [rejectBulkProductUpdates, prepareProductVersionRestore, lockSingleProductOperation],
     beforeChange: [protectSourceFields, rejectRetiredMediaReferences],
     afterChange: [writeAuditEvent],
   },

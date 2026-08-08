@@ -1,6 +1,7 @@
 import { APIError, type CollectionBeforeChangeHook } from "payload";
 
 type SourceVariant = {
+  id?: string | null;
   operationalVariantId?: string | null;
   sku?: string | null;
   rmsSkuNumber?: string | null;
@@ -114,6 +115,41 @@ function variantIdentityChanged(
   });
 }
 
+function restoredVariantsWithCurrentIdentity(
+  restored: SourceVariant[],
+  current: SourceVariant[],
+  rmsProduct: boolean,
+): SourceVariant[] {
+  const restoredFor = (variant: SourceVariant) => restored.find((candidate) => (
+    (candidate.id && candidate.id === variant.id)
+    || (candidate.operationalVariantId && candidate.operationalVariantId === variant.operationalVariantId)
+    || (candidate.rmsSkuNumber && candidate.rmsSkuNumber === variant.rmsSkuNumber)
+    || candidate.sku === variant.sku
+  ));
+  const preserve = (editorial: SourceVariant, identity: SourceVariant): SourceVariant => ({
+    ...editorial,
+    id: identity.id,
+    operationalVariantId: identity.operationalVariantId,
+    rmsSkuNumber: identity.rmsSkuNumber,
+    sku: identity.sku,
+    inventoryMode: identity.inventoryMode,
+  });
+
+  if (rmsProduct) {
+    return current.map((identity) => preserve(restoredFor(identity) ?? identity, identity));
+  }
+  return restored.map((variant) => {
+    const identity = current.find((candidate) => restoredFor(candidate) === variant);
+    if (identity) return preserve(variant, identity);
+    return {
+      ...variant,
+      operationalVariantId: undefined,
+      rmsSkuNumber: undefined,
+      inventoryMode: "manual",
+    };
+  });
+}
+
 export const protectSourceFields: CollectionBeforeChangeHook<SourceProduct> = async ({
   context,
   data,
@@ -122,6 +158,7 @@ export const protectSourceFields: CollectionBeforeChangeHook<SourceProduct> = as
   req,
 }) => {
   const currentRevision = Number(originalDoc?.editorialRevision ?? 0);
+  const restoringVersion = req?.context?.isRestoringVersion === true;
   const expectedRevision = context.expectedRevision;
 
   if (
@@ -136,6 +173,24 @@ export const protectSourceFields: CollectionBeforeChangeHook<SourceProduct> = as
   const trustedPublication = isTrustedProductPublicationContext(context);
   const originalIsRms = originalDoc?.sourceType === "rms";
   const incomingSourceType = data.sourceType ?? originalDoc?.sourceType;
+
+  if (restoringVersion && operation === "update" && originalDoc) {
+    const restoredVariants = Array.isArray(data.variants) ? data.variants : [];
+    const variants = restoredVariantsWithCurrentIdentity(
+      restoredVariants,
+      originalDoc.variants ?? [],
+      originalDoc.sourceType === "rms",
+    );
+    return {
+      ...data,
+      _status: "draft",
+      editorialRevision: currentRevision + 1,
+      operationalProductId: originalDoc.operationalProductId,
+      rmsManageNumber: originalDoc.rmsManageNumber,
+      sourceType: originalDoc.sourceType,
+      variants,
+    };
+  }
 
   if (
     operation === "create"

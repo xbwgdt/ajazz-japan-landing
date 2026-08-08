@@ -18,7 +18,9 @@ export const writeAuditEvent: CollectionAfterChangeHook<AuditedProduct> = async 
   await req.payload.create({
     collection: "audit-events",
     data: {
-      action: operation === "create" ? "create" : "edit",
+      action: req.context?.isRestoringVersion === true
+        ? "restore"
+        : operation === "create" ? "create" : "edit",
       actor: req.user.id,
       subjectType: "product",
       subjectId: String(doc.id),
