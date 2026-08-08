@@ -3,7 +3,7 @@ import { describe, expect, it, vi } from "vitest";
 import { Media } from "../../cms/collections/Media";
 import { Products, updateProductWithRevision } from "../../cms/collections/Products";
 import { productSpecifications } from "../../cms/fields/productSpecifications";
-import { protectSourceFields } from "../../cms/hooks/protectSourceFields";
+import { productPublicationContext, protectSourceFields } from "../../cms/hooks/protectSourceFields";
 
 function namedTabs(fields: Field[]): string[] {
   const tabs = fields.find((field) => field.type === "tabs");
@@ -34,11 +34,18 @@ describe("Products collection", () => {
     });
   });
 
-  it("requires an authenticated administrator for every operation", async () => {
-    for (const access of Object.values(Products.access ?? {})) {
+  it("requires an authenticated administrator for create, read, and update", async () => {
+    for (const operation of ["create", "read", "update"] as const) {
+      const access = Products.access?.[operation];
       expect(await access?.({ req: { user: null } } as never)).toBe(false);
       expect(await access?.({ req: { user: { id: 1 } } } as never)).toBe(true);
     }
+  });
+
+  it("disables direct product deletion until lifecycle services exist", async () => {
+    const access = Products.access?.delete;
+    expect(await access?.({ req: { user: null } } as never)).toBe(false);
+    expect(await access?.({ req: { user: { id: 1 } } } as never)).toBe(false);
   });
 
   it("uses a bounded database name for versioned specification enums", () => {
@@ -53,6 +60,40 @@ describe("Products collection", () => {
 });
 
 describe("protectSourceFields", () => {
+  it("rejects an ordinary create request that sets published status", async () => {
+    await expect(protectSourceFields({
+      context: {},
+      data: { _status: "published", sourceType: "manual", variants: [] },
+      operation: "create",
+    } as never)).rejects.toMatchObject({
+      data: { code: "product_status_transition_requires_publication_service" },
+      status: 403,
+    });
+  });
+
+  it("rejects an ordinary update request that changes product status", async () => {
+    await expect(protectSourceFields({
+      context: {},
+      data: { _status: "published" },
+      operation: "update",
+      originalDoc: { editorialRevision: 4, sourceType: "manual", variants: [], _status: "draft" },
+    } as never)).rejects.toMatchObject({
+      data: { code: "product_status_transition_requires_publication_service" },
+      status: 403,
+    });
+  });
+
+  it("allows the publication service context to perform an internal status transition", async () => {
+    const result = await protectSourceFields({
+      context: productPublicationContext,
+      data: { _status: "published" },
+      operation: "update",
+      originalDoc: { editorialRevision: 4, sourceType: "manual", variants: [], _status: "draft" },
+    } as never);
+
+    expect(result).toMatchObject({ _status: "published", editorialRevision: 5 });
+  });
+
   it("rejects changes to RMS product and variant identities", async () => {
     await expect(protectSourceFields({
       context: {},
@@ -129,6 +170,27 @@ describe("protectSourceFields", () => {
 });
 
 describe("optimistic product updates", () => {
+  it.each([
+    ["array", []],
+    ["non-plain object", new Date()],
+  ])("rejects %s data without reading or updating the product", async (_label, data) => {
+    const findByID = vi.fn();
+    const update = vi.fn();
+    const req = {
+      json: vi.fn().mockResolvedValue({ data, expectedRevision: 3 }),
+      payload: { findByID, update },
+      routeParams: { id: "1" },
+      user: { id: 1 },
+    };
+
+    const response = await updateProductWithRevision(req as never);
+
+    expect(response.status).toBe(400);
+    await expect(response.json()).resolves.toEqual({ code: "invalid_editorial_data" });
+    expect(findByID).not.toHaveBeenCalled();
+    expect(update).not.toHaveBeenCalled();
+  });
+
   it("returns 409 without updating when the expected revision is stale", async () => {
     const update = vi.fn();
     const req = Object.assign(new Request("https://ajazz.jp/api/cms/products/1/editorial", {

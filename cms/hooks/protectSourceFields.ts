@@ -9,12 +9,18 @@ type SourceVariant = {
 
 type SourceProduct = {
   id: number | string;
+  _status?: string | null;
   editorialRevision?: number | null;
   operationalProductId?: string | null;
   rmsManageNumber?: string | null;
   sourceType?: string | null;
   variants?: SourceVariant[] | null;
 };
+
+const productStatusTransitionMarker = Symbol("productStatusTransition");
+
+// Task 5 will use this server-only context for publication and unpublication writes.
+export const productPublicationContext = Object.freeze({ [productStatusTransitionMarker]: true });
 
 function sourceIdentityError(): APIError {
   return new APIError(
@@ -32,8 +38,32 @@ function staleRevisionError(currentRevision: number): APIError {
   );
 }
 
+function statusTransitionError(): APIError {
+  return new APIError(
+    "Product status changes require the publication service.",
+    403,
+    { code: "product_status_transition_requires_publication_service" },
+  );
+}
+
 function changed(incoming: unknown, original: unknown): boolean {
   return incoming !== undefined && incoming !== original;
+}
+
+function isTrustedProductPublicationContext(context: unknown): boolean {
+  return Boolean(
+    context
+    && typeof context === "object"
+    && (context as Record<PropertyKey, unknown>)[productStatusTransitionMarker] === true,
+  );
+}
+
+function statusTransitionRequested(
+  data: Partial<SourceProduct>,
+  originalDoc: SourceProduct | undefined,
+): boolean {
+  if (data._status === undefined) return false;
+  return originalDoc ? data._status !== originalDoc._status : data._status === "published";
 }
 
 function variantIdentityChanged(
@@ -76,6 +106,10 @@ export const protectSourceFields: CollectionBeforeChangeHook<SourceProduct> = as
   const allowSourceConversion = context.allowSourceConversion === true;
   const originalIsRms = originalDoc?.sourceType === "rms";
   const incomingSourceType = data.sourceType ?? originalDoc?.sourceType;
+
+  if (statusTransitionRequested(data, originalDoc) && !isTrustedProductPublicationContext(context)) {
+    throw statusTransitionError();
+  }
 
   if (originalDoc && !allowSourceConversion) {
     if (changed(data.sourceType, originalDoc.sourceType)) throw sourceIdentityError();

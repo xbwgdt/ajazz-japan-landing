@@ -11,6 +11,12 @@ type RevisionUpdateBody = {
   expectedRevision?: number;
 };
 
+function isPlainObject(value: unknown): value is Record<string, unknown> {
+  if (!value || typeof value !== "object" || Array.isArray(value)) return false;
+  const prototype = Object.getPrototypeOf(value);
+  return prototype === Object.prototype || prototype === null;
+}
+
 function jsonError(status: number, body: Record<string, unknown>): Response {
   return Response.json(body, { status });
 }
@@ -29,9 +35,10 @@ export async function updateProductWithRevision(req: PayloadRequest): Promise<Re
   } catch {
     return jsonError(400, { code: "invalid_json" });
   }
-  if (!Number.isInteger(body?.expectedRevision) || !body?.data || typeof body.data !== "object") {
+  if (!Number.isInteger(body?.expectedRevision)) {
     return jsonError(400, { code: "expected_revision_required" });
   }
+  if (!isPlainObject(body.data)) return jsonError(400, { code: "invalid_editorial_data" });
 
   const current = await req.payload.findByID({
     collection: "products",
@@ -66,7 +73,7 @@ export const Products: CollectionConfig = {
   },
   access: {
     create: adminOnly,
-    delete: adminOnly,
+    delete: () => false,
     read: adminOnly,
     update: adminOnly,
   },
