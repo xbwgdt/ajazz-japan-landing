@@ -79,6 +79,36 @@ describe("media retirement route authentication", () => {
       references: [{ path: "primaryImageId", source: "product", sourceId: "10" }],
     });
   });
+
+  it("maps an invalid media ID to 400 without invoking retirement", async () => {
+    const payload = { id: "payload" };
+    authMocks.requireAuthenticatedAdmin.mockResolvedValue({ id: 3 });
+    payloadMocks.getPayload.mockResolvedValue(payload);
+
+    const { POST } = await import("../../app/api/cms/media/[id]/retire/route");
+    const response = await POST(request("/api/cms/media/not-an-id/retire"), {
+      params: Promise.resolve({ id: "not-an-id" }),
+    });
+
+    expect(response.status).toBe(400);
+    await expect(response.json()).resolves.toEqual({ code: "invalid_media_id" });
+    expect(lifecycleMocks.retireMedia).not.toHaveBeenCalled();
+  });
+
+  it("maps a missing Payload media record to 404", async () => {
+    const payload = { id: "payload" };
+    authMocks.requireAuthenticatedAdmin.mockResolvedValue({ id: 3 });
+    payloadMocks.getPayload.mockResolvedValue(payload);
+    lifecycleMocks.retireMedia.mockRejectedValue(new APIError("Not Found", 404));
+
+    const { POST } = await import("../../app/api/cms/media/[id]/retire/route");
+    const response = await POST(request("/api/cms/media/404/retire"), {
+      params: Promise.resolve({ id: "404" }),
+    });
+
+    expect(response.status).toBe(404);
+    await expect(response.json()).resolves.toEqual({ code: "media_not_found" });
+  });
 });
 
 describe("media cleanup route authentication", () => {
@@ -120,6 +150,25 @@ describe("media cleanup route authentication", () => {
         deleteObject: lifecycleMocks.deleteR2MediaObject,
         payload,
       });
+    } finally {
+      if (previous === undefined) delete process.env.CRON_SECRET;
+      else process.env.CRON_SECRET = previous;
+    }
+  });
+
+  it("returns 503 with the cleanup summary when any item fails", async () => {
+    const previous = process.env.CRON_SECRET;
+    process.env.CRON_SECRET = "cron-secret";
+    payloadMocks.getPayload.mockResolvedValue({ id: "payload" });
+    lifecycleMocks.cleanupRetiredMedia.mockResolvedValue({ deleted: 1, failed: 2, referenced: 3 });
+    try {
+      const { GET } = await import("../../app/api/cron/media-cleanup/route");
+      const response = await GET(new Request("https://ajazz.jp/api/cron/media-cleanup", {
+        headers: { authorization: "Bearer cron-secret" },
+      }));
+
+      expect(response.status).toBe(503);
+      await expect(response.json()).resolves.toEqual({ deleted: 1, failed: 2, referenced: 3 });
     } finally {
       if (previous === undefined) delete process.env.CRON_SECRET;
       else process.env.CRON_SECRET = previous;

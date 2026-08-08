@@ -262,11 +262,24 @@
           "primaryKey": false,
           "notNull": false
         },
+        "deletion_started_at": {
+          "name": "deletion_started_at",
+          "type": "timestamp(3) with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
         "retired_by_id": {
           "name": "retired_by_id",
           "type": "integer",
           "primaryKey": false,
           "notNull": false
+        },
+        "prefix": {
+          "name": "prefix",
+          "type": "varchar",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'products'"
         },
         "updated_at": {
           "name": "updated_at",
@@ -298,7 +311,7 @@
           "name": "filename",
           "type": "varchar",
           "primaryKey": false,
-          "notNull": false
+          "notNull": true
         },
         "mime_type": {
           "name": "mime_type",
@@ -373,6 +386,21 @@
           "columns": [
             {
               "expression": "delete_after",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "media_deletion_started_at_idx": {
+          "name": "media_deletion_started_at_idx",
+          "columns": [
+            {
+              "expression": "deletion_started_at",
               "isExpression": false,
               "asc": true,
               "nulls": "last"
@@ -3965,6 +3993,6 @@
     "tables": {},
     "columns": {}
   },
-  "id": "fb68aa86-ffea-45fc-b075-ac348596073b",
+  "id": "95b01a7f-7bc6-4d02-b034-05ff324c30a0",
   "prevId": "00000000-0000-0000-0000-000000000000"
 }

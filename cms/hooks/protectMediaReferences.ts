@@ -1,5 +1,7 @@
 import { DeleteObjectCommand, S3Client } from "@aws-sdk/client-s3";
-import type { Payload } from "payload";
+import type { Payload, PayloadRequest } from "payload";
+import { createMediaObjectKey } from "../../lib/cms/media-validation";
+import { runPayloadTransaction } from "../services/payloadTransaction";
 
 const PRODUCT_MEDIA_PATHS = [
   "primaryImageId",
@@ -10,7 +12,6 @@ const PRODUCT_MEDIA_PATHS = [
   "variants.imageId",
 ] as const;
 const MEDIA_FIELD_PATTERN = /(?:image|media)ids?$/i;
-const OPAQUE_MEDIA_KEY = /^products\/[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}\.(?:jpg|png|webp)$/;
 
 export interface MediaReference {
   label?: string;
@@ -75,25 +76,26 @@ function mediaWhere(mediaId: string | number, version = false) {
 export async function findMediaReferences(
   payload: Payload,
   mediaId: string | number,
+  req?: PayloadRequest,
 ): Promise<MediaReference[]> {
   const id = String(mediaId);
-  const [products, versions] = await Promise.all([
-    payload.find({
-      collection: "products",
-      depth: 0,
-      draft: true,
-      overrideAccess: true,
-      pagination: false,
-      where: mediaWhere(mediaId) as never,
-    }),
-    payload.findVersions({
-      collection: "products",
-      depth: 0,
-      overrideAccess: true,
-      pagination: false,
-      where: mediaWhere(mediaId, true) as never,
-    }),
-  ]);
+  const products = await payload.find({
+    collection: "products",
+    depth: 0,
+    draft: true,
+    overrideAccess: true,
+    pagination: false,
+    req,
+    where: mediaWhere(mediaId) as never,
+  });
+  const versions = await payload.findVersions({
+    collection: "products",
+    depth: 0,
+    overrideAccess: true,
+    pagination: false,
+    req,
+    where: mediaWhere(mediaId, true) as never,
+  });
 
   const references: MediaReference[] = [];
   for (const product of products.docs as unknown as JsonRecord[]) {
@@ -123,6 +125,7 @@ export async function findMediaReferences(
     const settings = await payload.findGlobal({
       depth: 0,
       overrideAccess: true,
+      req,
       slug: "site-settings" as never,
     });
     for (const path of collectReferencePaths(settings, id)) {
@@ -155,33 +158,42 @@ export async function retireMedia({
 }) {
   const normalizedMediaId = numericPayloadId(mediaId, "Media ID");
   const normalizedActorId = numericPayloadId(actorId, "Actor ID");
-  const references = await findMediaReferences(payload, normalizedMediaId);
-  if (references.length > 0) throw new MediaReferencedError(references);
-
   const retiredAt = now.toISOString();
   const deleteAfter = new Date(now.getTime() + 24 * 60 * 60 * 1000).toISOString();
-  const media = await payload.update({
-    collection: "media",
-    data: { deleteAfter, retiredAt, retiredBy: normalizedActorId },
-    id: normalizedMediaId,
-    overrideAccess: true,
+  return runPayloadTransaction(payload, async (req) => {
+    const media = await payload.update({
+      collection: "media",
+      data: { deleteAfter, deletionStartedAt: null, retiredAt, retiredBy: normalizedActorId },
+      id: normalizedMediaId,
+      overrideAccess: true,
+      req,
+    });
+    const references = await findMediaReferences(payload, normalizedMediaId, req);
+    if (references.length > 0) throw new MediaReferencedError(references);
+
+    await payload.create({
+      collection: "audit-events",
+      data: {
+        action: "retire_media",
+        actor: normalizedActorId,
+        subjectId: String(normalizedMediaId),
+        subjectType: "media",
+        details: { deleteAfter, phase: "retired" },
+      },
+      overrideAccess: true,
+      req,
+    });
+    return media;
   });
-  await payload.create({
-    collection: "audit-events",
-    data: {
-      action: "retire_media",
-      actor: normalizedActorId,
-      subjectId: String(normalizedMediaId),
-      subjectType: "media",
-      details: { deleteAfter, phase: "retired" },
-    },
-    overrideAccess: true,
-  });
-  return media;
 }
 
-export async function deleteR2MediaObject(filename: string): Promise<void> {
-  if (!OPAQUE_MEDIA_KEY.test(filename)) throw new Error("Refusing to delete a non-opaque media key");
+export async function deleteR2MediaObject(objectKey: string): Promise<void> {
+  const separator = objectKey.indexOf("/");
+  const prefix = objectKey.slice(0, separator);
+  const filename = objectKey.slice(separator + 1);
+  if (createMediaObjectKey(prefix, filename) !== objectKey) {
+    throw new Error("Refusing to delete a non-opaque media key");
+  }
   const bucket = process.env.R2_BUCKET;
   const endpoint = process.env.R2_ENDPOINT;
   const accessKeyId = process.env.R2_ACCESS_KEY_ID;
@@ -197,7 +209,7 @@ export async function deleteR2MediaObject(filename: string): Promise<void> {
     region: "auto",
   });
   try {
-    await client.send(new DeleteObjectCommand({ Bucket: bucket, Key: filename }));
+    await client.send(new DeleteObjectCommand({ Bucket: bucket, Key: objectKey }));
   } finally {
     client.destroy();
   }
@@ -208,7 +220,7 @@ export async function cleanupRetiredMedia({
   now = new Date(),
   payload,
 }: {
-  deleteObject: (filename: string) => Promise<void>;
+  deleteObject: (objectKey: string) => Promise<void>;
   now?: Date;
   payload: Payload;
 }): Promise<{ deleted: number; failed: number; referenced: number }> {
@@ -227,31 +239,87 @@ export async function cleanupRetiredMedia({
   const result = { deleted: 0, failed: 0, referenced: 0 };
 
   for (const media of due.docs) {
-    const references = await findMediaReferences(payload, media.id);
-    if (references.length > 0) {
-      result.referenced += 1;
+    const actorId = relationId(media.retiredBy);
+    if (!actorId || !media.filename || !media.prefix) {
+      result.failed += 1;
       continue;
     }
 
-    const actorId = relationId(media.retiredBy);
-    if (!actorId || !media.filename) {
+    let objectKey: string;
+    try {
+      objectKey = createMediaObjectKey(media.prefix, media.filename);
+    } catch {
+      result.failed += 1;
+      continue;
+    }
+    const normalizedActorId = numericPayloadId(actorId, "Retirement actor ID");
+
+    try {
+      await runPayloadTransaction(payload, async (req) => {
+        const references = await findMediaReferences(payload, media.id, req);
+        if (references.length > 0) throw new MediaReferencedError(references);
+        if (media.deletionStartedAt) return;
+
+        const deletionStartedAt = now.toISOString();
+        const started = await payload.update({
+          collection: "media",
+          data: { deletionStartedAt },
+          overrideAccess: true,
+          req,
+          where: {
+            and: [
+              { id: { equals: media.id } },
+              { deletionStartedAt: { exists: false } },
+            ],
+          },
+        });
+        if (started.docs.length === 0) return;
+        await payload.create({
+          collection: "audit-events",
+          data: {
+            action: "retire_media",
+            actor: normalizedActorId,
+            subjectId: String(media.id),
+            subjectType: "media",
+            details: { objectKey, phase: "deletion_started" },
+          },
+          overrideAccess: true,
+          req,
+        });
+      });
+    } catch (error) {
+      if (error instanceof MediaReferencedError) result.referenced += 1;
+      else result.failed += 1;
+      continue;
+    }
+
+    try {
+      await deleteObject(objectKey);
+    } catch {
       result.failed += 1;
       continue;
     }
 
     try {
-      await deleteObject(media.filename);
-      await payload.delete({ collection: "media", id: media.id, overrideAccess: true });
-      await payload.create({
-        collection: "audit-events",
-        data: {
-          action: "retire_media",
-          actor: numericPayloadId(actorId, "Retirement actor ID"),
-          subjectId: String(media.id),
-          subjectType: "media",
-          details: { filename: media.filename, phase: "deleted" },
-        },
-        overrideAccess: true,
+      await runPayloadTransaction(payload, async (req) => {
+        await payload.delete({
+          collection: "media",
+          id: media.id,
+          overrideAccess: true,
+          req,
+        });
+        await payload.create({
+          collection: "audit-events",
+          data: {
+            action: "retire_media",
+            actor: normalizedActorId,
+            subjectId: String(media.id),
+            subjectType: "media",
+            details: { objectKey, phase: "deleted" },
+          },
+          overrideAccess: true,
+          req,
+        });
       });
       result.deleted += 1;
     } catch {

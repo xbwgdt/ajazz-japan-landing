@@ -3,12 +3,13 @@ import { MigrateUpArgs, MigrateDownArgs, sql } from '@payloadcms/db-postgres'
 export async function up({ db, payload, req }: MigrateUpArgs): Promise<void> {
   await db.execute(sql`
    CREATE TYPE "cms"."enum_media_purpose" AS ENUM('product', 'seo', 'editorial');
-  ALTER TABLE "cms"."media" ALTER COLUMN "filename" DROP NOT NULL;
   ALTER TABLE "cms"."media" ADD COLUMN "purpose" "cms"."enum_media_purpose";
   ALTER TABLE "cms"."media" ADD COLUMN "content_hash" varchar;
   ALTER TABLE "cms"."media" ADD COLUMN "retired_at" timestamp(3) with time zone;
   ALTER TABLE "cms"."media" ADD COLUMN "delete_after" timestamp(3) with time zone;
+  ALTER TABLE "cms"."media" ADD COLUMN "deletion_started_at" timestamp(3) with time zone;
   ALTER TABLE "cms"."media" ADD COLUMN "retired_by_id" integer;
+  ALTER TABLE "cms"."media" ADD COLUMN "prefix" varchar DEFAULT 'products' NOT NULL;
   ALTER TABLE "cms"."media" ADD COLUMN "url" varchar;
   ALTER TABLE "cms"."media" ADD COLUMN "thumbnail_u_r_l" varchar;
   ALTER TABLE "cms"."media" ADD COLUMN "mime_type" varchar;
@@ -27,6 +28,7 @@ export async function up({ db, payload, req }: MigrateUpArgs): Promise<void> {
   CREATE INDEX "media_content_hash_idx" ON "cms"."media" USING btree ("content_hash");
   CREATE INDEX "media_retired_at_idx" ON "cms"."media" USING btree ("retired_at");
   CREATE INDEX "media_delete_after_idx" ON "cms"."media" USING btree ("delete_after");
+  CREATE INDEX "media_deletion_started_at_idx" ON "cms"."media" USING btree ("deletion_started_at");
   CREATE INDEX "media_retired_by_idx" ON "cms"."media" USING btree ("retired_by_id");`)
 }
 
@@ -37,13 +39,15 @@ export async function down({ db, payload, req }: MigrateDownArgs): Promise<void>
   DROP INDEX "cms"."media_content_hash_idx";
   DROP INDEX "cms"."media_retired_at_idx";
   DROP INDEX "cms"."media_delete_after_idx";
+  DROP INDEX "cms"."media_deletion_started_at_idx";
   DROP INDEX "cms"."media_retired_by_idx";
-  ALTER TABLE "cms"."media" ALTER COLUMN "filename" SET NOT NULL;
   ALTER TABLE "cms"."media" DROP COLUMN "purpose";
   ALTER TABLE "cms"."media" DROP COLUMN "content_hash";
   ALTER TABLE "cms"."media" DROP COLUMN "retired_at";
   ALTER TABLE "cms"."media" DROP COLUMN "delete_after";
+  ALTER TABLE "cms"."media" DROP COLUMN "deletion_started_at";
   ALTER TABLE "cms"."media" DROP COLUMN "retired_by_id";
+  ALTER TABLE "cms"."media" DROP COLUMN "prefix";
   ALTER TABLE "cms"."media" DROP COLUMN "url";
   ALTER TABLE "cms"."media" DROP COLUMN "thumbnail_u_r_l";
   ALTER TABLE "cms"."media" DROP COLUMN "mime_type";

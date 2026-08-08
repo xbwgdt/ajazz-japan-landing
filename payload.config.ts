@@ -7,6 +7,7 @@ import { Admins } from "./cms/collections/Admins";
 import { AuditEvents } from "./cms/collections/AuditEvents";
 import { Media } from "./cms/collections/Media";
 import { Products } from "./cms/collections/Products";
+import { createR2StorageOptions } from "./lib/cms/r2-storage";
 
 export default buildConfig({
   admin: {
@@ -34,27 +35,7 @@ export default buildConfig({
   }),
   editor: lexicalEditor(),
   plugins: [
-    s3Storage({
-      bucket: process.env.R2_BUCKET ?? "",
-      collections: {
-        media: {
-          disablePayloadAccessControl: true,
-          generateFileURL: ({ filename }) => (
-            `${(process.env.R2_PUBLIC_URL ?? "").replace(/\/$/, "")}/${filename}`
-          ),
-        },
-      },
-      config: {
-        credentials: {
-          accessKeyId: process.env.R2_ACCESS_KEY_ID ?? "",
-          secretAccessKey: process.env.R2_SECRET_ACCESS_KEY ?? "",
-        },
-        endpoint: process.env.R2_ENDPOINT,
-        forcePathStyle: true,
-        region: "auto",
-      },
-      enabled: Boolean(process.env.R2_BUCKET),
-    }),
+    s3Storage(createR2StorageOptions(process.env)),
   ],
   routes: { admin: "/admin", api: "/api/cms" },
   secret: process.env.PAYLOAD_SECRET ?? "",

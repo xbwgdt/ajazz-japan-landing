@@ -1,5 +1,5 @@
 import { createHash, randomUUID } from "node:crypto";
-import { readFile } from "node:fs/promises";
+import { readFile, stat } from "node:fs/promises";
 import sharp from "sharp";
 
 const MAX_IMAGE_BYTES = 12 * 1024 * 1024;
@@ -29,6 +29,15 @@ export interface ValidatedImage extends DetectedImageType {
   width: number;
 }
 
+interface ImageFileSystem {
+  readFile(path: string): Promise<Buffer>;
+  stat(path: string): Promise<{ size: number }>;
+}
+
+const defaultImageFileSystem: ImageFileSystem = { readFile, stat };
+const OPAQUE_MEDIA_FILENAME = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}\.(?:jpg|png|webp)$/;
+const MEDIA_PREFIX = /^products$/;
+
 function startsWith(buffer: Buffer, signature: readonly number[]): boolean {
   return signature.every((byte, index) => buffer[index] === byte);
 }
@@ -54,22 +63,27 @@ export function detectImageType(buffer: Buffer, declaredMime: string): DetectedI
   return detected;
 }
 
-export function createMediaObjectKey(
-  originalName: string,
-  verifiedExtension?: ImageExtension,
-): string {
-  const browserExtension = originalName.split(".").pop()?.toLowerCase();
-  const extension = verifiedExtension
-    ?? (browserExtension === "jpeg" ? "jpg" : browserExtension) as ImageExtension;
-  const safeExtension: ImageExtension = ["jpg", "png", "webp"].includes(extension)
-    ? extension
-    : "jpg";
-  return `products/${randomUUID()}.${safeExtension}`;
+export function createMediaFilename(verifiedExtension: ImageExtension): string {
+  return `${randomUUID()}.${verifiedExtension}`;
 }
 
-export async function validateUploadedImage(file: UploadedImageFile): Promise<ValidatedImage> {
+export function createMediaObjectKey(prefix: string, filename: string): string {
+  if (!MEDIA_PREFIX.test(prefix) || !OPAQUE_MEDIA_FILENAME.test(filename)) {
+    throw new Error("Refusing to use a non-opaque media object key");
+  }
+  return `${prefix}/${filename}`;
+}
+
+export async function validateUploadedImage(
+  file: UploadedImageFile,
+  fileSystem: ImageFileSystem = defaultImageFileSystem,
+): Promise<ValidatedImage> {
   if (file.size > MAX_IMAGE_BYTES) throw new Error("Image exceeds 12 MiB");
-  const data = file.tempFilePath ? await readFile(file.tempFilePath) : file.data;
+  if (file.tempFilePath) {
+    const metadata = await fileSystem.stat(file.tempFilePath);
+    if (metadata.size > MAX_IMAGE_BYTES) throw new Error("Image exceeds 12 MiB");
+  }
+  const data = file.tempFilePath ? await fileSystem.readFile(file.tempFilePath) : file.data;
   const size = data.length;
   if (size > MAX_IMAGE_BYTES) throw new Error("Image exceeds 12 MiB");
 

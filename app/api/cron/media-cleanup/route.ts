@@ -13,5 +13,5 @@ export async function GET(request: Request) {
   }
   const payload = await getPayload({ config: configPromise });
   const result = await cleanupRetiredMedia({ deleteObject: deleteR2MediaObject, payload });
-  return NextResponse.json(result);
+  return NextResponse.json(result, { status: result.failed > 0 ? 503 : 200 });
 }

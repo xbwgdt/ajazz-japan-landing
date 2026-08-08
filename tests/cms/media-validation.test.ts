@@ -1,7 +1,8 @@
 import { createHash } from "node:crypto";
 import sharp from "sharp";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import {
+  createMediaFilename,
   createMediaObjectKey,
   detectImageType,
   validateUploadedImage,
@@ -25,10 +26,13 @@ async function imageFile(
 }
 
 describe("media validation", () => {
-  it("ignores the browser filename and creates an opaque key", () => {
-    expect(createMediaObjectKey("../../蝠・刀<script>.jpg")).toMatch(
-      /^products\/[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}\.jpg$/,
+  it("stores an opaque verified filename separately from the collection prefix", () => {
+    const filename = createMediaFilename("jpg");
+    expect(filename).toMatch(
+      /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}\.jpg$/,
     );
+    expect(createMediaObjectKey("products", filename)).toBe(`products/${filename}`);
+    expect(filename).not.toContain("products/");
   });
 
   it("rejects MIME spoofing", () => {
@@ -66,13 +70,21 @@ describe("media validation", () => {
   });
 
   it("rejects an oversized temp file before reading it", async () => {
+    const fileSystem = {
+      readFile: vi.fn(),
+      stat: vi.fn().mockResolvedValue({ size: 12 * 1024 * 1024 + 1 }),
+    };
+
     await expect(validateUploadedImage({
       data: Buffer.alloc(0),
       mimetype: "image/png",
       name: "large.png",
-      size: 12 * 1024 * 1024 + 1,
+      size: 0,
       tempFilePath: "Z:\\does-not-exist\\large.png",
-    })).rejects.toThrow("Image exceeds 12 MiB");
+    }, fileSystem)).rejects.toThrow("Image exceeds 12 MiB");
+
+    expect(fileSystem.stat).toHaveBeenCalledWith("Z:\\does-not-exist\\large.png");
+    expect(fileSystem.readFile).not.toHaveBeenCalled();
   });
 
   it.each([

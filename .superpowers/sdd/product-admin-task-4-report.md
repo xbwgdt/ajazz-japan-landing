@@ -54,3 +54,70 @@ the worktree and reran all focused verification above.
 - Site-settings references are checked conditionally because Task 9 has not created the
   global yet.
 - Full repository tests are deferred until review findings are resolved.
+
+## Review Fix: Hardened R2 Media Lifecycle
+
+The findings against `d66f186` were fixed without accessing a live database or R2
+bucket and without changing the existing cron schedules.
+
+### Finding Disposition
+
+- Removed `disablePayloadAccessControl` and direct `R2_PUBLIC_URL` generation. R2
+  objects remain private and Payload's S3 static handler now enforces the Media read
+  rule, which excludes retired media for authenticated and unauthenticated readers.
+- Added `alwaysInsertFields: true` and collection prefix `products`. Upload validation
+  stores only `<uuid>.<verified-extension>` in `filename`; the server-owned required
+  `prefix` field stores `products`, and deletion reconstructs and validates the full key.
+- R2 remains disabled when all four runtime variables are absent. Supplying only some
+  of bucket, endpoint, access key, and secret throws a value-free configuration error.
+- Media updates reject every replacement file with 400 while metadata-only updates
+  remain allowed. Temp-file validation calls `stat` before `readFile`.
+- Retirement metadata, the post-update reference recheck, and the retirement audit use
+  one Payload local-request transaction. Reference or audit failure rolls back the state.
+- Cleanup conditionally persists `deletionStartedAt` and its start audit in one
+  transaction before R2 deletion. The conditional update prevents duplicate start
+  audits when cleanup workers race.
+- After idempotent R2 deletion, Payload record deletion and the completion audit use a
+  second transaction. Finalization failure rolls back the record so a later run repeats
+  `DeleteObject` safely. Tests model the S3 plugin's duplicate after-delete call using
+  the same `products/<uuid>.<extension>` key before completion audit.
+- Product writes now reject retired IDs across primary, gallery, scene, SEO, variant
+  thumbnail, and variant image fields, including retained values on partial updates.
+  The reusable service documents the Task 9 site-settings hook integration point.
+- Retirement routes return 400 for invalid IDs and 404 for Payload not-found errors.
+  Cleanup returns 503 with its summary JSON whenever `failed > 0`.
+- Regenerated the Task 4 migration, Payload types, and import map from the Task 3 base.
+  `filename` remains required in both directions; `prefix` is required with the
+  `products` default; legacy metadata rows are backfilled before required constraints.
+
+### TDD Evidence
+
+- Initial RED: 9 focused files ran; 14 behavior tests failed, 41 existing tests passed,
+  and the three new service modules were absent. The temp-file test was corrected before
+  implementation after Vitest reported an ESM export-spy limitation.
+- Prefix RED: the required server-owned prefix assertion failed before the field was
+  added. The migration-path assertion also failed while regeneration was in progress.
+- Race/clear RED: 3 tests failed and 10 passed before explicit relationship clearing and
+  conditional deletion-start persistence were implemented.
+- Final GREEN, direct Node Vitest entry point: 9 files passed, 66 tests passed. This
+  includes all focused Task 4 tests, Task 3 `product-access`, and existing cron tests.
+
+### Final Verification
+
+- Direct Node Next.js 16.2.10 production build: exit 0; compile, TypeScript, and all 17
+  static pages completed.
+- Direct Node `tsc --noEmit`: exit 0.
+- Migration/type/import-map generation used
+  `postgresql://codex:codex@127.0.0.1:1/ajazz_task4_no_db` with R2 variables removed;
+  no migration command was run. Import-map generation reported no new imports.
+- Migration static scan: 49 explicit `cms` references, zero `public` references, zero
+  unqualified DDL targets, required filename preserved, and required prefix present.
+- Runtime scan found no direct-public R2 delivery configuration and the changed files
+  contained no credential-like values.
+- `git diff --check`: exit 0; only existing line-ending conversion notices were emitted.
+
+### Remaining Boundaries
+
+- No live database migration or R2 operation was run. Object deletion and transaction
+  ordering are covered with injected fakes, including failure and retry paths.
+- The controller will run the full repository suite after re-review as requested.

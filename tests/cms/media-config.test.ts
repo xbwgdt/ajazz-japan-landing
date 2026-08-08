@@ -13,11 +13,56 @@ describe("Media collection", () => {
     expect(Media.access?.delete?.({ req: { user: { id: 1 } } } as never)).toBe(false);
   });
 
-  it("allows public reads only for records that are not retired", () => {
+  it("makes retired media inaccessible to every reader immediately", () => {
     expect(Media.access?.read?.({ req: { user: null } } as never)).toEqual({
       retiredAt: { exists: false },
     });
-    expect(Media.access?.read?.({ req: { user: { id: 1 } } } as never)).toBe(true);
+    expect(Media.access?.read?.({ req: { user: { id: 1 } } } as never)).toEqual({
+      retiredAt: { exists: false },
+    });
+  });
+
+  it("rejects file replacement while allowing metadata-only updates", async () => {
+    const hook = Media.hooks?.beforeOperation?.[0];
+    const req = {
+      context: {},
+      file: {
+        data: Buffer.from("replacement"),
+        mimetype: "image/jpeg",
+        name: "replacement.jpg",
+        size: 11,
+      },
+      user: { id: 1 },
+    };
+
+    await expect(hook?.({
+      args: {},
+      collection: Media,
+      context: {},
+      operation: "update",
+      overrideAccess: true,
+      req,
+    } as never)).rejects.toMatchObject({ status: 400 });
+
+    await expect(hook?.({
+      args: { data: { alt: "Updated alt" } },
+      collection: Media,
+      context: {},
+      operation: "update",
+      overrideAccess: true,
+      req: { ...req, file: undefined },
+    } as never)).resolves.toEqual({ data: { alt: "Updated alt" } });
+  });
+
+  it("owns the required products prefix on the server", () => {
+    const prefix = Media.fields.find((field) => "name" in field && field.name === "prefix");
+    expect(prefix).toMatchObject({
+      access: expect.objectContaining({ create: expect.any(Function), update: expect.any(Function) }),
+      defaultValue: "products",
+      name: "prefix",
+      required: true,
+      type: "text",
+    });
   });
 
   it("does not decode an unauthenticated upload before collection access runs", async () => {
@@ -44,7 +89,7 @@ describe("Media collection", () => {
   it("keeps the generated media lifecycle migration inside the CMS schema", () => {
     const migration = readFileSync(resolve(
       process.cwd(),
-      "cms/migrations/20260808_145911_secure_r2_media_lifecycle.ts",
+      "cms/migrations/20260808_154913.ts",
     ), "utf8");
 
     expect(migration).not.toMatch(/"public"/i);
@@ -53,10 +98,13 @@ describe("Media collection", () => {
     );
     const createdIndexes = migration.match(/CREATE INDEX\s+"[^"]+"\s+ON\s+"cms"\."[^"]+"/gi) ?? [];
     const droppedIndexes = migration.match(/DROP INDEX\s+"cms"\."[^"]+"/gi) ?? [];
-    expect(createdIndexes).toHaveLength(4);
-    expect(droppedIndexes).toHaveLength(4);
+    expect(createdIndexes).toHaveLength(5);
+    expect(droppedIndexes).toHaveLength(5);
     expect(migration).toContain('UPDATE "cms"."media"');
     expect(migration).toContain('ALTER COLUMN "purpose" SET NOT NULL');
     expect(migration).toContain('ALTER COLUMN "content_hash" SET NOT NULL');
+    expect(migration).toContain('ADD COLUMN "prefix" varchar DEFAULT \'products\' NOT NULL');
+    expect(migration).not.toContain('ALTER COLUMN "filename" DROP NOT NULL');
+    expect(migration).not.toContain('ALTER COLUMN "filename" SET NOT NULL');
   });
 });

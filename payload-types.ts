@@ -158,12 +158,14 @@ export interface Media {
   contentHash: string;
   retiredAt?: string | null;
   deleteAfter?: string | null;
+  deletionStartedAt?: string | null;
   retiredBy?: (number | null) | Admin;
+  prefix: string;
   updatedAt: string;
   createdAt: string;
   url?: string | null;
   thumbnailURL?: string | null;
-  filename?: string | null;
+  filename: string;
   mimeType?: string | null;
   filesize?: number | null;
   width?: number | null;
@@ -417,7 +419,9 @@ export interface MediaSelect<T extends boolean = true> {
   contentHash?: T;
   retiredAt?: T;
   deleteAfter?: T;
+  deletionStartedAt?: T;
   retiredBy?: T;
+  prefix?: T;
   updatedAt?: T;
   createdAt?: T;
   url?: T;

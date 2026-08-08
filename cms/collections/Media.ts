@@ -1,6 +1,6 @@
-import type { CollectionConfig } from "payload";
+import { APIError, type CollectionConfig } from "payload";
 import {
-  createMediaObjectKey,
+  createMediaFilename,
   validateUploadedImage,
   type ValidatedImage,
 } from "../../lib/cms/media-validation";
@@ -19,13 +19,18 @@ const validateMediaUpload: MediaBeforeOperationHook = async ({
   overrideAccess,
   req,
 }) => {
-  if ((operation !== "create" && operation !== "update") || !req.file) return args;
+  if (operation === "update" && req.file) {
+    throw new APIError("Media files cannot be replaced after upload.", 400, {
+      code: "media_file_replacement_forbidden",
+    });
+  }
+  if (operation !== "create" || !req.file) return args;
   if (!overrideAccess && !req.user) return args;
   const validated = await validateUploadedImage(req.file);
   req.file = {
     ...req.file,
     mimetype: validated.mimeType,
-    name: createMediaObjectKey(req.file.name, validated.extension),
+    name: createMediaFilename(validated.extension),
     size: validated.size,
   };
   req.context.validatedMedia = validated;
@@ -49,10 +54,19 @@ export const Media: CollectionConfig = {
   access: {
     create: adminOnly,
     delete: () => false,
-    read: ({ req }) => req.user ? true : { retiredAt: { exists: false } },
+    read: () => ({ retiredAt: { exists: false } }),
     update: adminOnly,
   },
   fields: [
+    { name: "filename", type: "text", required: true, unique: true, index: true },
+    {
+      name: "prefix",
+      type: "text",
+      required: true,
+      defaultValue: "products",
+      admin: { hidden: true, readOnly: true },
+      access: { create: () => false, update: () => false },
+    },
     { name: "alt", type: "text", required: true },
     {
       name: "purpose",
@@ -81,6 +95,13 @@ export const Media: CollectionConfig = {
     },
     {
       name: "deleteAfter",
+      type: "date",
+      index: true,
+      admin: { readOnly: true },
+      access: { create: () => false, update: () => false },
+    },
+    {
+      name: "deletionStartedAt",
       type: "date",
       index: true,
       admin: { readOnly: true },

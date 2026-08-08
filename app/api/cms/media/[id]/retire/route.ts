@@ -26,7 +26,11 @@ export async function POST(
 
   try {
     const { id } = await params;
-    const media = await retireMedia({ actorId: admin.id, mediaId: id, payload });
+    const mediaId = Number(id);
+    if (!Number.isSafeInteger(mediaId) || mediaId <= 0) {
+      return NextResponse.json({ code: "invalid_media_id" }, { status: 400 });
+    }
+    const media = await retireMedia({ actorId: admin.id, mediaId, payload });
     return NextResponse.json({ media });
   } catch (error) {
     if (error instanceof MediaReferencedError) {
@@ -34,6 +38,9 @@ export async function POST(
         { code: "media_referenced", references: error.references },
         { status: 409 },
       );
+    }
+    if (error instanceof APIError && error.status === 404) {
+      return NextResponse.json({ code: "media_not_found" }, { status: 404 });
     }
     throw error;
   }

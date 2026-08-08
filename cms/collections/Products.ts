@@ -4,6 +4,7 @@ import { adminOnly } from "../access/admin";
 import { productSpecifications } from "../fields/productSpecifications";
 import { productVariants } from "../fields/productVariants";
 import { productDraftSaveContext, protectSourceFields } from "../hooks/protectSourceFields";
+import { rejectRetiredMediaReferences } from "../hooks/rejectRetiredMediaReferences";
 import { writeAuditEvent } from "../hooks/writeAuditEvent";
 
 type RevisionUpdateBody = {
@@ -163,7 +164,7 @@ export const Products: CollectionConfig = {
     },
   ],
   hooks: {
-    beforeChange: [protectSourceFields],
+    beforeChange: [protectSourceFields, rejectRetiredMediaReferences],
     afterChange: [writeAuditEvent],
   },
   versions: {
