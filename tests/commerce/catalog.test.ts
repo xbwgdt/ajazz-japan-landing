@@ -83,11 +83,56 @@ describe("RMS catalog images", () => {
     );
     expect(productUpsert).toBeDefined();
     expect(productUpsert?.text).toContain(
-      "description_html, category, published",
+      "description_html, category, lifecycle, published",
     );
-    expect(productUpsert?.text).toContain("category = EXCLUDED.category");
+    expect(productUpsert?.text).toContain("THEN EXCLUDED.category");
     expect(productUpsert?.text).toContain("ON CONFLICT (rms_manage_number) WHERE rms_manage_number IS NOT NULL");
     expect(productUpsert?.values).toContain("mechanical-keyboard");
+    expect(productUpsert?.text).toContain("source_type");
+    expect(productUpsert?.text).toContain("'rms'");
+    expect(productUpsert?.text).toContain("source_type = 'rms'");
+    const conflictUpdate = productUpsert?.text.split("DO UPDATE")[1] ?? "";
+    expect(conflictUpdate).not.toContain("published = TRUE");
+    expect(conflictUpdate).not.toContain("lifecycle = 'active'");
+    expect(conflictUpdate).toContain("cms_product_id IS NULL");
+    expect(conflictUpdate).toContain("ELSE products.name");
+    expect(conflictUpdate).toContain("ELSE products.description_html");
+    expect(conflictUpdate).toContain("ELSE products.category");
+  });
+
+  it("keeps RMS variant authority and active state explicit in workbook imports", async () => {
+    observedQueries.length = 0;
+
+    await upsertRmsCatalog([
+      { rmsManageNumber: "ak820-max", name: "AK820 MAX" },
+      { rmsManageNumber: "ak820-max", rmsSkuNumber: "BLACK", salePriceJpy: 19_980, stockQuantity: 4 },
+    ]);
+
+    const variantUpsert = observedQueries.find(({ text }) => text.includes("INSERT INTO product_variants"));
+    expect(variantUpsert?.text).toContain("inventory_mode");
+    expect(variantUpsert?.text).toContain("active");
+    expect(variantUpsert?.text).toContain("'rms'");
+    expect(variantUpsert?.text).toContain("inventory_mode = 'rms'");
+    expect(variantUpsert?.text).toContain("active = TRUE");
+  });
+
+  it("reports stable operational IDs to the CMS bridge after the commerce transaction", async () => {
+    const imported: unknown[] = [];
+
+    await upsertRmsCatalog([
+      { rmsManageNumber: "ak820-max", name: "AK820 MAX" },
+      { rmsManageNumber: "ak820-max", rmsSkuNumber: "BLACK", salePriceJpy: 19_980, stockQuantity: 4 },
+    ], {
+      async afterOperationalImport(product) {
+        imported.push(product);
+      },
+    });
+
+    expect(imported).toEqual([expect.objectContaining({
+      operationalProductId: 42,
+      rmsManageNumber: "ak820-max",
+      variants: [expect.objectContaining({ operationalVariantId: 42, rmsSkuNumber: "BLACK" })],
+    })]);
   });
 
   it("groups SKU rows under their product and keeps the latest duplicate SKU", () => {

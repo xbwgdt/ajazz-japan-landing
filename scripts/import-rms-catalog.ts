@@ -44,3 +44,18 @@ export async function importRmsWorkbook(
 ) {
   return importer(await readRmsWorkbook(filePath));
 }
+
+export async function importRmsWorkbookWithCms(filePath: string) {
+  const rows = await readRmsWorkbook(filePath);
+  const [{ getPayload }, { default: config }, { upsertRmsEditorialDraft }] = await Promise.all([
+    import("payload"),
+    import("@payload-config"),
+    import("../lib/cms/rms-drafts"),
+  ]);
+  const payload = await getPayload({ config });
+  return upsertRmsCatalog(rows, {
+    afterOperationalImport(product) {
+      return upsertRmsEditorialDraft(product, payload);
+    },
+  });
+}

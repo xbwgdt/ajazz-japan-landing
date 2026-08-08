@@ -129,6 +129,8 @@ export const Products: CollectionConfig = {
               index: true,
               admin: { readOnly: true },
             },
+            { name: "sourceSnapshot", type: "json", admin: { readOnly: true, hidden: true } },
+            { name: "sourceUpdatedAt", type: "date", admin: { readOnly: true } },
             { name: "name", type: "text", required: true },
             { name: "slug", type: "text", required: true, unique: true, index: true },
             { name: "shortStatement", type: "textarea" },

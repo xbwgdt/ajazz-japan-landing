@@ -1,4 +1,4 @@
-import { importRmsWorkbook, readRmsWorkbook } from "./import-rms-catalog";
+import { importRmsWorkbookWithCms, readRmsWorkbook } from "./import-rms-catalog";
 import { buildRmsCatalogImport } from "../lib/commerce/catalog";
 
 export function resolveRmsImportArguments(arguments_: string[]) {
@@ -23,7 +23,7 @@ async function main() {
     }, null, 2));
     return;
   }
-  const count = await importRmsWorkbook(filePath);
+  const count = await importRmsWorkbookWithCms(filePath);
   console.log(`Imported ${count} RMS products.`);
 }
 

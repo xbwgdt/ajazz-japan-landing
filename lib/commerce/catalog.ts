@@ -43,8 +43,13 @@ export interface RmsCatalogWriter {
   upsertVariant(
     productId: number,
     variant: RmsCatalogImportProduct["variants"][number],
-  ): Promise<void>;
+  ): Promise<{ id: number } | void>;
 }
+
+export type ImportedRmsProduct = RmsCatalogImportProduct & {
+  operationalProductId: number;
+  variants: Array<RmsCatalogImportProduct["variants"][number] & { operationalVariantId: number }>;
+};
 
 type RmsWorksheetRow = Record<string, unknown>;
 
@@ -217,43 +222,71 @@ export async function writeRmsCatalog(
   products: RmsCatalogImportProduct[],
   writer: RmsCatalogWriter,
 ) {
+  const imported: ImportedRmsProduct[] = [];
   for (const { images, variants, ...product } of products) {
     const savedProduct = await writer.upsertProduct(product);
     await writer.replaceImages(savedProduct.id, images);
 
+    const savedVariants: ImportedRmsProduct["variants"] = [];
     for (const variant of variants) {
-      await writer.upsertVariant(savedProduct.id, variant);
+      const savedVariant = await writer.upsertVariant(savedProduct.id, variant);
+      if (savedVariant) savedVariants.push({ ...variant, operationalVariantId: savedVariant.id });
     }
+    imported.push({ ...product, images, operationalProductId: savedProduct.id, variants: savedVariants });
   }
+  return imported;
 }
 
-export async function upsertRmsCatalog(rows: RmsCatalogRow[]) {
+export async function upsertRmsCatalog(
+  rows: RmsCatalogRow[],
+  options: { afterOperationalImport?: (product: ImportedRmsProduct) => Promise<unknown> } = {},
+) {
   const products = buildRmsCatalogImport(rows);
   await ensureCommerceSchema();
 
-  await commerceSql().begin(async (sql) => {
-    await writeRmsCatalog(products, {
+  const imported = await commerceSql().begin(async (sql) => {
+    return writeRmsCatalog(products, {
       async upsertProduct(product) {
         const [savedProduct] = await sql<{ id: number }[]>`
-          INSERT INTO products (rms_manage_number, slug, name, description_html, category, published)
+          INSERT INTO products (
+            rms_manage_number, source_type, slug, name, description_html, category, lifecycle, published
+          )
           VALUES (
             ${product.rmsManageNumber},
+            'rms',
             ${product.slug},
             ${product.name},
             ${product.descriptionHtml},
             ${product.category},
+            'active',
             TRUE
           )
           ON CONFLICT (rms_manage_number) WHERE rms_manage_number IS NOT NULL DO UPDATE
           SET
-            slug = EXCLUDED.slug,
-            name = EXCLUDED.name,
-            description_html = EXCLUDED.description_html,
-            category = EXCLUDED.category,
-            published = TRUE,
+            source_type = 'rms',
+            slug = CASE
+              WHEN products.cms_product_id IS NULL THEN EXCLUDED.slug
+              ELSE products.slug
+            END,
+            name = CASE
+              WHEN products.cms_product_id IS NULL THEN EXCLUDED.name
+              ELSE products.name
+            END,
+            description_html = CASE
+              WHEN products.cms_product_id IS NULL THEN EXCLUDED.description_html
+              ELSE products.description_html
+            END,
+            category = CASE
+              WHEN products.cms_product_id IS NULL THEN EXCLUDED.category
+              ELSE products.category
+            END,
             updated_at = NOW()
+          WHERE products.source_type = 'rms'
           RETURNING id
         `;
+        if (!savedProduct) {
+          throw new Error(`RMS product identity conflicts with a manual product: ${product.rmsManageNumber}`);
+        }
         return savedProduct;
       },
       async replaceImages(productId, images) {
@@ -266,40 +299,56 @@ export async function upsertRmsCatalog(rows: RmsCatalogRow[]) {
         }
       },
       async upsertVariant(productId, variant) {
-        await sql`
+        const [savedVariant] = await sql<{ id: number }[]>`
           INSERT INTO product_variants (
             product_id,
             rms_sku_number,
+            inventory_mode,
             price_jpy,
             compare_at_price_jpy,
             compare_at_price_approved,
             color_name,
             image_url,
-            available_quantity
+            available_quantity,
+            active
           )
           VALUES (
             ${productId},
             ${variant.rmsSkuNumber},
+            'rms',
             ${variant.priceJpy},
             ${variant.compareAtPriceJpy ?? null},
             FALSE,
             ${variant.colorName ?? null},
             ${variant.imageUrl ?? null},
-            ${variant.stockQuantity}
+            ${variant.stockQuantity},
+            TRUE
           )
           ON CONFLICT (product_id, rms_sku_number) WHERE rms_sku_number IS NOT NULL DO UPDATE
           SET
+            inventory_mode = 'rms',
             price_jpy = EXCLUDED.price_jpy,
             compare_at_price_jpy = EXCLUDED.compare_at_price_jpy,
             compare_at_price_approved = FALSE,
             color_name = EXCLUDED.color_name,
             image_url = EXCLUDED.image_url,
             available_quantity = EXCLUDED.available_quantity,
+            active = TRUE,
             updated_at = NOW()
+          WHERE product_variants.inventory_mode = 'rms'
+          RETURNING id
         `;
+        if (!savedVariant) {
+          throw new Error(`RMS SKU conflicts with a manual variant: ${variant.rmsSkuNumber}`);
+        }
+        return savedVariant;
       },
     });
   });
+
+  for (const product of imported) {
+    await options.afterOperationalImport?.(product);
+  }
 
   return products.length;
 }

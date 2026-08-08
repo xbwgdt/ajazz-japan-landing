@@ -9,7 +9,11 @@ export function databaseRmsInventorySyncStore(): RmsInventorySyncStore {
         SELECT p.rms_manage_number, pv.rms_sku_number
         FROM product_variants pv
         JOIN products p ON p.id = pv.product_id
-        WHERE p.published = TRUE
+        WHERE p.source_type = 'rms'
+          AND pv.inventory_mode = 'rms'
+          AND p.rms_manage_number IS NOT NULL
+          AND pv.rms_sku_number IS NOT NULL
+          AND pv.active = TRUE
       `.then((rows) => rows.map((row) => ({
         rmsManageNumber: row.rms_manage_number,
         rmsSkuNumber: row.rms_sku_number,
@@ -24,6 +28,9 @@ export function databaseRmsInventorySyncStore(): RmsInventorySyncStore {
         WHERE pv.product_id = p.id
           AND p.rms_manage_number = ${record.rmsManageNumber}
           AND pv.rms_sku_number = ${record.rmsSkuNumber}
+          AND p.source_type = 'rms'
+          AND pv.inventory_mode = 'rms'
+          AND pv.active = TRUE
       `;
     },
     async createSyncLog() {

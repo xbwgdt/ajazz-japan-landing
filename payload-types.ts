@@ -182,6 +182,16 @@ export interface Product {
   sourceType: 'rms' | 'manual';
   rmsManageNumber?: string | null;
   operationalProductId?: string | null;
+  sourceSnapshot?:
+    | {
+        [k: string]: unknown;
+      }
+    | unknown[]
+    | string
+    | number
+    | boolean
+    | null;
+  sourceUpdatedAt?: string | null;
   name: string;
   slug: string;
   shortStatement?: string | null;
@@ -444,6 +454,8 @@ export interface ProductsSelect<T extends boolean = true> {
   sourceType?: T;
   rmsManageNumber?: T;
   operationalProductId?: T;
+  sourceSnapshot?: T;
+  sourceUpdatedAt?: T;
   name?: T;
   slug?: T;
   shortStatement?: T;

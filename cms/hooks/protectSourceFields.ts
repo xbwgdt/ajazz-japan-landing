@@ -15,15 +15,19 @@ type SourceProduct = {
   operationalProductId?: string | null;
   rmsManageNumber?: string | null;
   sourceType?: string | null;
+  sourceSnapshot?: unknown;
+  sourceUpdatedAt?: string | null;
   variants?: SourceVariant[] | null;
 };
 
 const productStatusTransitionMarker = Symbol("productStatusTransition");
 const productDraftSaveMarker = Symbol("productDraftSave");
+const productRmsSourceIngestionMarker = Symbol("productRmsSourceIngestion");
 
 // Task 5 will use this server-only context for publication and unpublication writes.
 export const productPublicationContext = Object.freeze({ [productStatusTransitionMarker]: true });
 export const productDraftSaveContext = Object.freeze({ [productDraftSaveMarker]: true });
+export const productRmsSourceIngestionContext = Object.freeze({ [productRmsSourceIngestionMarker]: true });
 
 function sourceIdentityError(): APIError {
   return new APIError(
@@ -74,6 +78,14 @@ function isTrustedDraftSaveContext(context: unknown): boolean {
     context
     && typeof context === "object"
     && (context as Record<PropertyKey, unknown>)[productDraftSaveMarker] === true,
+  );
+}
+
+function isTrustedRmsSourceIngestionContext(context: unknown): boolean {
+  return Boolean(
+    context
+    && typeof context === "object"
+    && (context as Record<PropertyKey, unknown>)[productRmsSourceIngestionMarker] === true,
   );
 }
 
@@ -171,6 +183,7 @@ export const protectSourceFields: CollectionBeforeChangeHook<SourceProduct> = as
 
   const allowSourceConversion = context.allowSourceConversion === true;
   const trustedPublication = isTrustedProductPublicationContext(context);
+  const trustedRmsSourceIngestion = isTrustedRmsSourceIngestionContext(context);
   const originalIsRms = originalDoc?.sourceType === "rms";
   const incomingSourceType = data.sourceType ?? originalDoc?.sourceType;
 
@@ -194,8 +207,17 @@ export const protectSourceFields: CollectionBeforeChangeHook<SourceProduct> = as
 
   if (
     operation === "create"
+    && !trustedRmsSourceIngestion
+    && (data.sourceSnapshot !== undefined || data.sourceUpdatedAt !== undefined)
+  ) {
+    throw sourceIdentityError();
+  }
+
+  if (
+    operation === "create"
     && !allowSourceConversion
     && !trustedPublication
+    && !trustedRmsSourceIngestion
     && data.operationalProductId != null
   ) {
     throw operationalProductLinkageError();
@@ -213,14 +235,21 @@ export const protectSourceFields: CollectionBeforeChangeHook<SourceProduct> = as
   }
 
   if (operation === "update" && originalDoc && !allowSourceConversion) {
+    if (!trustedRmsSourceIngestion && (
+      changed(data.sourceSnapshot, originalDoc.sourceSnapshot)
+      || changed(data.sourceUpdatedAt, originalDoc.sourceUpdatedAt)
+    )) {
+      throw sourceIdentityError();
+    }
     if (
       !trustedPublication
+      && !trustedRmsSourceIngestion
       && changed(data.operationalProductId, originalDoc.operationalProductId)
     ) {
       throw operationalProductLinkageError();
     }
-    if (changed(data.sourceType, originalDoc.sourceType)) throw sourceIdentityError();
-    if (originalIsRms && (
+    if (!trustedRmsSourceIngestion && changed(data.sourceType, originalDoc.sourceType)) throw sourceIdentityError();
+    if (!trustedRmsSourceIngestion && originalIsRms && (
       changed(data.rmsManageNumber, originalDoc.rmsManageNumber)
       || variantIdentityChanged(data.variants, originalDoc.variants)
     )) {
@@ -232,7 +261,7 @@ export const protectSourceFields: CollectionBeforeChangeHook<SourceProduct> = as
     ...data,
     editorialRevision: operation === "create"
       ? 1
-      : trustedPublication
+      : trustedPublication || trustedRmsSourceIngestion
         ? currentRevision
         : currentRevision + 1,
   };

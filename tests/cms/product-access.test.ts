@@ -7,6 +7,7 @@ import { productSpecifications } from "../../cms/fields/productSpecifications";
 import {
   productDraftSaveContext,
   productPublicationContext,
+  productRmsSourceIngestionContext,
   protectSourceFields,
 } from "../../cms/hooks/protectSourceFields";
 
@@ -73,6 +74,14 @@ describe("Products collection", () => {
     );
 
     expect(operationalProductId).toMatchObject({ admin: { readOnly: true } });
+    const sourceSnapshot = basicInformation.fields.find(
+      (field) => "name" in field && field.name === "sourceSnapshot",
+    );
+    const sourceUpdatedAt = basicInformation.fields.find(
+      (field) => "name" in field && field.name === "sourceUpdatedAt",
+    );
+    expect(sourceSnapshot).toMatchObject({ admin: { readOnly: true, hidden: true } });
+    expect(sourceUpdatedAt).toMatchObject({ admin: { readOnly: true } });
   });
 
   it("takes the product publication lock for every single-product edit", async () => {
@@ -312,6 +321,39 @@ describe("protectSourceFields", () => {
     } as never)).rejects.toMatchObject({
       data: { code: "rms_source_identity_immutable" },
       status: 400,
+    });
+  });
+
+  it("rejects ordinary source snapshot changes and accepts trusted RMS ingestion", async () => {
+    const originalDoc = {
+      editorialRevision: 4,
+      operationalProductId: "42",
+      rmsManageNumber: "ak820",
+      sourceSnapshot: { name: "Old RMS" },
+      sourceUpdatedAt: "2026-08-08T00:00:00.000Z",
+      sourceType: "rms",
+      variants: [],
+    };
+    const data = {
+      sourceSnapshot: { name: "New RMS" },
+      sourceUpdatedAt: "2026-08-09T00:00:00.000Z",
+    };
+
+    await expect(protectSourceFields({
+      context: {}, data, operation: "update", originalDoc,
+    } as never)).rejects.toMatchObject({
+      data: { code: "rms_source_identity_immutable" },
+      status: 400,
+    });
+
+    await expect(protectSourceFields({
+      context: productRmsSourceIngestionContext,
+      data,
+      operation: "update",
+      originalDoc,
+    } as never)).resolves.toMatchObject({
+      ...data,
+      editorialRevision: 4,
     });
   });
 

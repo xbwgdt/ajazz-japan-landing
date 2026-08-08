@@ -1,8 +1,44 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { chunkInventoryKeys, createRmsInventoryHttpClient } from "../../lib/rms/client";
 import { syncRmsInventory } from "../../lib/rms/sync";
 
+const { observedDatabaseQueries, databaseSqlMock } = vi.hoisted(() => {
+  const observedDatabaseQueries: string[] = [];
+  const databaseSqlMock = vi.fn((strings: TemplateStringsArray) => {
+    observedDatabaseQueries.push(strings.join("?"));
+    return Promise.resolve([]);
+  });
+  return { observedDatabaseQueries, databaseSqlMock };
+});
+
+vi.mock("../../lib/commerce/db", () => ({
+  commerceSql: () => databaseSqlMock,
+  ensureCommerceSchema: vi.fn(async () => undefined),
+}));
+
+import { databaseRmsInventorySyncStore } from "../../lib/rms/database-store";
+
 describe("RMS inventory synchronization", () => {
+  it("selects only active RMS variants with complete RMS identifiers", async () => {
+    observedDatabaseQueries.length = 0;
+    await databaseRmsInventorySyncStore().getActiveVariantKeys();
+    const query = observedDatabaseQueries[0];
+    expect(query).toContain("p.source_type = 'rms'");
+    expect(query).toContain("pv.inventory_mode = 'rms'");
+    expect(query).toContain("p.rms_manage_number IS NOT NULL");
+    expect(query).toContain("pv.rms_sku_number IS NOT NULL");
+    expect(query).toContain("pv.active = TRUE");
+
+    await databaseRmsInventorySyncStore().setVariantInventory({
+      rmsManageNumber: "ak820-max",
+      rmsSkuNumber: "BLACK",
+      quantity: 8,
+    });
+    const update = observedDatabaseQueries.at(-1);
+    expect(update).toContain("p.source_type = 'rms'");
+    expect(update).toContain("pv.inventory_mode = 'rms'");
+    expect(update).toContain("pv.active = TRUE");
+  });
   it("splits inventory requests into batches of at most 1,000 SKU keys", () => {
     const keys = Array.from({ length: 1001 }, (_, index) => ({
       rmsManageNumber: "ak820-max",
