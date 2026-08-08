@@ -4,12 +4,13 @@ export interface CronEnvironment {
 }
 
 export interface CronTask {
-  path: "/api/cron/release-reservations" | "/api/cron/rms-inventory";
+  path: "/api/cron/media-cleanup" | "/api/cron/release-reservations" | "/api/cron/rms-inventory";
 }
 
 export function tasksForCron(cron: string): CronTask[] {
   if (cron === "*/10 * * * *") return [{ path: "/api/cron/release-reservations" }];
   if (cron === "*/15 * * * *") return [{ path: "/api/cron/rms-inventory" }];
+  if (cron === "0 18 * * *") return [{ path: "/api/cron/media-cleanup" }];
   return [];
 }
 

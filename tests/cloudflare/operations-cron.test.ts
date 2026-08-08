@@ -12,6 +12,7 @@ describe("Cloudflare operations cron", () => {
   it("maps each configured schedule to its intended AJAZZ operation", () => {
     expect(tasksForCron("*/10 * * * *")).toEqual([{ path: "/api/cron/release-reservations" }]);
     expect(tasksForCron("*/15 * * * *")).toEqual([{ path: "/api/cron/rms-inventory" }]);
+    expect(tasksForCron("0 18 * * *")).toEqual([{ path: "/api/cron/media-cleanup" }]);
   });
 
   it("calls the selected endpoint with the shared cron secret", async () => {
@@ -39,6 +40,6 @@ describe("Cloudflare operations cron", () => {
   it("registers the inventory and reservation schedules with Cloudflare", () => {
     const config = JSON.parse(readFileSync(resolve(process.cwd(), "cloudflare/ajazz-operations-cron/wrangler.json"), "utf8"));
 
-    expect(config.triggers.crons).toEqual(["*/10 * * * *", "*/15 * * * *"]);
+    expect(config.triggers.crons).toEqual(["*/10 * * * *", "*/15 * * * *", "0 18 * * *"]);
   });
 });
