@@ -90,6 +90,45 @@ Cloudflare stores both values as Worker secrets. Do not add either value to `wra
 - Fulfillment remains manual through `/admin/orders` for the first release.
 - Payload protects `/admin` and the order administration APIs with the administrator account `xiet@a-jazz.com`. The bootstrap password is read only by `pnpm cms:bootstrap-admin` and should be removed from the service after the account exists.
 
+## Existing catalog migration to Payload CMS
+
+The catalog migration is read-only unless `--apply` is supplied. It never rewrites
+storefront product, variant, image, lifecycle, publication, price, or inventory
+content. Apply creates CMS records and only fills missing product and variant
+identity links (`cms_product_id`, `cms_variant_id`, and their CMS-side operational
+IDs) after the matching records exist.
+
+1. Restore a current production backup into a disposable database and configure a
+   disposable R2 bucket. Run the CMS schema migrations there, then rehearse the
+   complete catalog migration before scheduling production work.
+2. Keep the dry-run output as migration evidence. The JSON path must be absolute:
+
+   ```powershell
+   pnpm cms:migrate-catalog -- --json "C:\migration-evidence\ajazz-catalog-dry-run.json"
+   ```
+
+3. Review all creates, links, and identity conflicts. Resolve every conflict before
+   apply. Apply requires the exact confirmation phrase and uses the JSON file as an
+   atomic, resume-safe checkpoint with deterministic batches of 25 products:
+
+   ```powershell
+   $env:CMS_MIGRATION_CONFIRM="AJAZZ_CATALOG_2026"
+   pnpm cms:migrate-catalog -- --apply --json "C:\migration-evidence\ajazz-catalog-apply.json"
+   ```
+
+   Re-running the same command resumes the recorded run. A changed plan is rejected
+   instead of being applied against an incompatible checkpoint.
+4. Reconcile product and variant counts, RMS and SKU links, sale/comparison prices,
+   image counts, and publication state. Any mismatch returns a nonzero exit code:
+
+   ```powershell
+   pnpm cms:migrate-catalog -- --reconcile --json "C:\migration-evidence\ajazz-catalog-reconcile.json"
+   ```
+
+5. Rollback is non-destructive: deploy the prior application release and leave both
+   the `public` commerce schema and `cms` schema intact for investigation and retry.
+   Never drop CMS, commerce, order, or media data as part of rollback.
+
 ## Business information
 
 - Seller: アジャズジャパン株式会社

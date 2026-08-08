@@ -16,6 +16,7 @@
     "cms:importmap": "payload generate:importmap",
     "cms:migrate": "payload migrate",
     "cms:migrate:create": "payload migrate:create",
+    "cms:migrate-catalog": "tsx scripts/migrate-catalog-to-cms.ts",
     "cms:bootstrap-admin": "tsx scripts/bootstrap-admin.ts"
   },
   "dependencies": {
