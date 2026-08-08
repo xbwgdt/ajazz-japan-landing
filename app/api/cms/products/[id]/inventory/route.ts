@@ -53,6 +53,9 @@ export function createManualInventoryRouteHandler(dependencies: RouteDependencie
       }
 
       const { id } = await params;
+      if (!/^[1-9]\d*$/.test(id) || typeof body.variantId !== "number") {
+        return Response.json({ code: "invalid_inventory_target" }, { status: 400 });
+      }
       const result = await dependencies.adjust({
         productId: Number(id),
         variantId: Number(body.variantId),

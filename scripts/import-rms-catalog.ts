@@ -54,6 +54,25 @@ export async function importRmsWorkbookWithCms(filePath: string) {
   ]);
   const payload = await getPayload({ config });
   return upsertRmsCatalog(rows, {
+    async resolveCmsProductId(product) {
+      const found = await payload.find({
+        collection: "products",
+        depth: 0,
+        draft: true,
+        limit: 2,
+        overrideAccess: true,
+        where: { rmsManageNumber: { equals: product.rmsManageNumber } },
+      });
+      if (found.docs.length > 1) {
+        throw new Error(`Ambiguous RMS CMS linkage for ${product.rmsManageNumber}`);
+      }
+      const existing = found.docs[0];
+      if (!existing) return undefined;
+      if (existing.sourceType !== "rms") {
+        throw new Error(`RMS source conflicts with a manual CMS product: ${product.rmsManageNumber}`);
+      }
+      return existing.id;
+    },
     afterOperationalImport(product) {
       return upsertRmsEditorialDraft(product, payload);
     },

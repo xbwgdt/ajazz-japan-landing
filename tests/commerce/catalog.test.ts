@@ -91,6 +91,8 @@ describe("RMS catalog images", () => {
     expect(productUpsert?.text).toContain("source_type");
     expect(productUpsert?.text).toContain("'rms'");
     expect(productUpsert?.text).toContain("source_type = 'rms'");
+    expect(productUpsert?.text).toContain("'unpublished'");
+    expect(productUpsert?.text).toContain("FALSE");
     const conflictUpdate = productUpsert?.text.split("DO UPDATE")[1] ?? "";
     expect(conflictUpdate).not.toContain("published = TRUE");
     expect(conflictUpdate).not.toContain("lifecycle = 'active'");
@@ -98,6 +100,7 @@ describe("RMS catalog images", () => {
     expect(conflictUpdate).toContain("ELSE products.name");
     expect(conflictUpdate).toContain("ELSE products.description_html");
     expect(conflictUpdate).toContain("ELSE products.category");
+    expect(productUpsert?.text).toContain("editorial_managed");
   });
 
   it("keeps RMS variant authority and active state explicit in workbook imports", async () => {
@@ -113,7 +116,10 @@ describe("RMS catalog images", () => {
     expect(variantUpsert?.text).toContain("active");
     expect(variantUpsert?.text).toContain("'rms'");
     expect(variantUpsert?.text).toContain("inventory_mode = 'rms'");
-    expect(variantUpsert?.text).toContain("active = TRUE");
+    expect(variantUpsert?.text).toContain("ELSE TRUE");
+    expect(variantUpsert?.text).toContain("ELSE product_variants.color_name");
+    expect(variantUpsert?.text).toContain("ELSE product_variants.image_url");
+    expect(variantUpsert?.text).toContain("THEN product_variants.active");
   });
 
   it("reports stable operational IDs to the CMS bridge after the commerce transaction", async () => {
@@ -125,6 +131,7 @@ describe("RMS catalog images", () => {
     ], {
       async afterOperationalImport(product) {
         imported.push(product);
+        return { productId: "cms-7" };
       },
     });
 
@@ -133,6 +140,29 @@ describe("RMS catalog images", () => {
       rmsManageNumber: "ak820-max",
       variants: [expect.objectContaining({ operationalVariantId: 42, rmsSkuNumber: "BLACK" })],
     })]);
+    const linkage = observedQueries.find(({ text }) => text.includes("SET cms_product_id"));
+    expect(linkage?.values).toContain("cms-7");
+    expect(linkage?.values).toContain(42);
+  });
+
+  it("prelinks an existing CMS draft before any operational media write", async () => {
+    observedQueries.length = 0;
+
+    await upsertRmsCatalog([{
+      rmsManageNumber: "ak820-max",
+      name: "AK820 MAX",
+      imagePaths: ["/12437413/ak820/rms.jpg"],
+    }], {
+      async resolveCmsProductId() {
+        return "cms-7";
+      },
+    });
+
+    const productUpsert = observedQueries.find(({ text }) => text.includes("INSERT INTO products"));
+    expect(productUpsert?.text).toContain("cms_product_id");
+    expect(productUpsert?.text).toContain("COALESCE(products.cms_product_id, EXCLUDED.cms_product_id)");
+    expect(productUpsert?.values).toContain("cms-7");
+    expect(observedQueries.some(({ text }) => text.includes("DELETE FROM product_images"))).toBe(false);
   });
 
   it("groups SKU rows under their product and keeps the latest duplicate SKU", () => {
@@ -289,8 +319,8 @@ describe("RMS catalog images", () => {
         async replaceImages(productId, images) {
           calls.push(`images:${productId}:${images.length}`);
         },
-        async upsertVariant(productId, variant) {
-          calls.push(`variant:${productId}:${variant.rmsSkuNumber}:${variant.stockQuantity}`);
+        async upsertVariant(productId, variant, editorialManaged) {
+          calls.push(`variant:${productId}:${variant.rmsSkuNumber}:${variant.stockQuantity}:${editorialManaged}`);
         },
       },
     );
@@ -298,7 +328,30 @@ describe("RMS catalog images", () => {
     expect(calls).toEqual([
       "product:ak820-max:mechanical-keyboard",
       "images:42:1",
-      "variant:42:AK820-BLACK:4",
+      "variant:42:AK820-BLACK:4:false",
     ]);
+  });
+
+  it("does not replace curated media after a product is linked to the CMS", async () => {
+    const calls: string[] = [];
+
+    await writeRmsCatalog(
+      buildRmsCatalogImport([{
+        rmsManageNumber: "ak820-max",
+        name: "AK820 MAX",
+        imagePaths: ["/12437413/ak820/rms.jpg"],
+      }]),
+      {
+        async upsertProduct() {
+          return { id: 42, editorialManaged: true };
+        },
+        async replaceImages() {
+          calls.push("images-replaced");
+        },
+        async upsertVariant() {},
+      },
+    );
+
+    expect(calls).toEqual([]);
   });
 });

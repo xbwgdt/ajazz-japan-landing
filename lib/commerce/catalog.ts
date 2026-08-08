@@ -38,11 +38,12 @@ export interface RmsCatalogImportProduct {
 export interface RmsCatalogWriter {
   upsertProduct(
     product: Omit<RmsCatalogImportProduct, "images" | "variants">,
-  ): Promise<{ id: number }>;
+  ): Promise<{ id: number; editorialManaged?: boolean }>;
   replaceImages(productId: number, images: string[]): Promise<void>;
   upsertVariant(
     productId: number,
     variant: RmsCatalogImportProduct["variants"][number],
+    editorialManaged: boolean,
   ): Promise<{ id: number } | void>;
 }
 
@@ -225,11 +226,17 @@ export async function writeRmsCatalog(
   const imported: ImportedRmsProduct[] = [];
   for (const { images, variants, ...product } of products) {
     const savedProduct = await writer.upsertProduct(product);
-    await writer.replaceImages(savedProduct.id, images);
+    if (!savedProduct.editorialManaged) {
+      await writer.replaceImages(savedProduct.id, images);
+    }
 
     const savedVariants: ImportedRmsProduct["variants"] = [];
     for (const variant of variants) {
-      const savedVariant = await writer.upsertVariant(savedProduct.id, variant);
+      const savedVariant = await writer.upsertVariant(
+        savedProduct.id,
+        variant,
+        Boolean(savedProduct.editorialManaged),
+      );
       if (savedVariant) savedVariants.push({ ...variant, operationalVariantId: savedVariant.id });
     }
     imported.push({ ...product, images, operationalProductId: savedProduct.id, variants: savedVariants });
@@ -239,55 +246,73 @@ export async function writeRmsCatalog(
 
 export async function upsertRmsCatalog(
   rows: RmsCatalogRow[],
-  options: { afterOperationalImport?: (product: ImportedRmsProduct) => Promise<unknown> } = {},
+  options: {
+    resolveCmsProductId?: (
+      product: RmsCatalogImportProduct,
+    ) => Promise<number | string | undefined>;
+    afterOperationalImport?: (
+      product: ImportedRmsProduct,
+    ) => Promise<{ productId: number | string } | void>;
+  } = {},
 ) {
   const products = buildRmsCatalogImport(rows);
+  const cmsProductIds = new Map<string, string>();
+  for (const product of products) {
+    const cmsProductId = await options.resolveCmsProductId?.(product);
+    if (cmsProductId != null) cmsProductIds.set(product.rmsManageNumber, String(cmsProductId));
+  }
   await ensureCommerceSchema();
 
   const imported = await commerceSql().begin(async (sql) => {
     return writeRmsCatalog(products, {
       async upsertProduct(product) {
-        const [savedProduct] = await sql<{ id: number }[]>`
+        const cmsProductId = cmsProductIds.get(product.rmsManageNumber) ?? null;
+        const [savedProduct] = await sql<{ id: number; editorial_managed: boolean }[]>`
           INSERT INTO products (
-            rms_manage_number, source_type, slug, name, description_html, category, lifecycle, published
+            rms_manage_number, cms_product_id, source_type, slug, name, description_html, category, lifecycle, published
           )
           VALUES (
             ${product.rmsManageNumber},
+            ${cmsProductId},
             'rms',
             ${product.slug},
             ${product.name},
             ${product.descriptionHtml},
             ${product.category},
-            'active',
-            TRUE
+            'unpublished',
+            FALSE
           )
           ON CONFLICT (rms_manage_number) WHERE rms_manage_number IS NOT NULL DO UPDATE
           SET
+            cms_product_id = COALESCE(products.cms_product_id, EXCLUDED.cms_product_id),
             source_type = 'rms',
             slug = CASE
-              WHEN products.cms_product_id IS NULL THEN EXCLUDED.slug
+              WHEN products.cms_product_id IS NULL AND EXCLUDED.cms_product_id IS NULL THEN EXCLUDED.slug
               ELSE products.slug
             END,
             name = CASE
-              WHEN products.cms_product_id IS NULL THEN EXCLUDED.name
+              WHEN products.cms_product_id IS NULL AND EXCLUDED.cms_product_id IS NULL THEN EXCLUDED.name
               ELSE products.name
             END,
             description_html = CASE
-              WHEN products.cms_product_id IS NULL THEN EXCLUDED.description_html
+              WHEN products.cms_product_id IS NULL AND EXCLUDED.cms_product_id IS NULL THEN EXCLUDED.description_html
               ELSE products.description_html
             END,
             category = CASE
-              WHEN products.cms_product_id IS NULL THEN EXCLUDED.category
+              WHEN products.cms_product_id IS NULL AND EXCLUDED.cms_product_id IS NULL THEN EXCLUDED.category
               ELSE products.category
             END,
             updated_at = NOW()
           WHERE products.source_type = 'rms'
-          RETURNING id
+          RETURNING id, cms_product_id IS NOT NULL AS editorial_managed
         `;
         if (!savedProduct) {
           throw new Error(`RMS product identity conflicts with a manual product: ${product.rmsManageNumber}`);
         }
-        return savedProduct;
+        return {
+          id: savedProduct.id,
+          editorialManaged: Boolean(savedProduct.editorial_managed || cmsProductId),
+        };
       },
       async replaceImages(productId, images) {
         await sql`DELETE FROM product_images WHERE product_id = ${productId}`;
@@ -298,7 +323,7 @@ export async function upsertRmsCatalog(
           `;
         }
       },
-      async upsertVariant(productId, variant) {
+      async upsertVariant(productId, variant, editorialManaged) {
         const [savedVariant] = await sql<{ id: number }[]>`
           INSERT INTO product_variants (
             product_id,
@@ -322,7 +347,7 @@ export async function upsertRmsCatalog(
             ${variant.colorName ?? null},
             ${variant.imageUrl ?? null},
             ${variant.stockQuantity},
-            TRUE
+            ${!editorialManaged}
           )
           ON CONFLICT (product_id, rms_sku_number) WHERE rms_sku_number IS NOT NULL DO UPDATE
           SET
@@ -330,10 +355,21 @@ export async function upsertRmsCatalog(
             price_jpy = EXCLUDED.price_jpy,
             compare_at_price_jpy = EXCLUDED.compare_at_price_jpy,
             compare_at_price_approved = FALSE,
-            color_name = EXCLUDED.color_name,
-            image_url = EXCLUDED.image_url,
+            color_name = CASE
+              WHEN (SELECT cms_product_id FROM products WHERE id = ${productId}) IS NULL
+                THEN EXCLUDED.color_name
+              ELSE product_variants.color_name
+            END,
+            image_url = CASE
+              WHEN (SELECT cms_product_id FROM products WHERE id = ${productId}) IS NULL
+                THEN EXCLUDED.image_url
+              ELSE product_variants.image_url
+            END,
             available_quantity = EXCLUDED.available_quantity,
-            active = TRUE,
+            active = CASE
+              WHEN ${editorialManaged} THEN product_variants.active
+              ELSE TRUE
+            END,
             updated_at = NOW()
           WHERE product_variants.inventory_mode = 'rms'
           RETURNING id
@@ -347,7 +383,21 @@ export async function upsertRmsCatalog(
   });
 
   for (const product of imported) {
-    await options.afterOperationalImport?.(product);
+    const cms = await options.afterOperationalImport?.(product);
+    if (!cms) continue;
+    await commerceSql().begin(async (sql) => {
+      const linked = await sql<{ id: number }[]>`
+        UPDATE public.products
+        SET cms_product_id = ${String(cms.productId)}, updated_at = NOW()
+        WHERE id = ${product.operationalProductId}
+          AND source_type = 'rms'
+          AND (cms_product_id IS NULL OR cms_product_id = ${String(cms.productId)})
+        RETURNING id
+      `;
+      if (!linked[0]) {
+        throw new Error(`Unable to link RMS product ${product.rmsManageNumber} to its CMS draft`);
+      }
+    });
   }
 
   return products.length;

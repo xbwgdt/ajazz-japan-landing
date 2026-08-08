@@ -353,7 +353,7 @@ describe("protectSourceFields", () => {
       originalDoc,
     } as never)).resolves.toMatchObject({
       ...data,
-      editorialRevision: 4,
+      editorialRevision: 5,
     });
   });
 

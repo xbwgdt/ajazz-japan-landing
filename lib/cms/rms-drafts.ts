@@ -184,7 +184,10 @@ export async function upsertRmsEditorialDraft(
 
   const updated = await payload.update({
     collection: "products",
-    context: productRmsSourceIngestionContext,
+    context: {
+      ...productRmsSourceIngestionContext,
+      expectedRevision: Number(existing.editorialRevision ?? 0),
+    },
     data: mergeRmsSource(existing, source, now),
     draft: true,
     id: existing.id,

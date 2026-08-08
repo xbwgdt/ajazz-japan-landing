@@ -216,4 +216,14 @@ describe("manual inventory route", () => {
     expect(response.status).toBe(400);
     expect(routeAdjustMock).not.toHaveBeenCalled();
   });
+
+  it("rejects non-canonical route and body identifiers", async () => {
+    expect((await POST(request({ variantId: 101, quantity: 8, reason: "在庫修正" }), {
+      params: Promise.resolve({ id: "42x" }),
+    })).status).toBe(400);
+    expect((await POST(request({ variantId: "101", quantity: 8, reason: "在庫修正" }), {
+      params: Promise.resolve({ id: "42" }),
+    })).status).toBe(400);
+    expect(routeAdjustMock).not.toHaveBeenCalled();
+  });
 });

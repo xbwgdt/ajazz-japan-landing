@@ -29,6 +29,7 @@ describe("RMS editorial draft ingestion", () => {
   it("updates only the protected source snapshot and newly discovered identifiers", () => {
     const existing = {
       id: 7,
+      editorialRevision: 4,
       name: "手動編集した商品名",
       slug: "custom-slug",
       lifecycle: "active",
@@ -105,6 +106,7 @@ describe("RMS editorial draft ingestion", () => {
   it("updates a linked draft without creating a duplicate or replacing editorial fields", async () => {
     const existing = {
       id: 7,
+      editorialRevision: 4,
       name: "手動編集した商品名",
       slug: "custom-slug",
       sourceType: "rms",
@@ -133,6 +135,7 @@ describe("RMS editorial draft ingestion", () => {
     expect(data).not.toHaveProperty("lifecycle");
     expect(data).not.toHaveProperty("_status");
     expect(payload.update).toHaveBeenCalledWith(expect.objectContaining({
+      context: expect.objectContaining({ expectedRevision: 4 }),
       user: expect.objectContaining({ email: "xiet@a-jazz.com" }),
     }));
   });

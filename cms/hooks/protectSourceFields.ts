@@ -261,7 +261,7 @@ export const protectSourceFields: CollectionBeforeChangeHook<SourceProduct> = as
     ...data,
     editorialRevision: operation === "create"
       ? 1
-      : trustedPublication || trustedRmsSourceIngestion
+      : trustedPublication
         ? currentRevision
         : currentRevision + 1,
   };
