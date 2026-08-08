@@ -2,7 +2,37 @@ import { APIError } from "payload";
 import { describe, expect, it, vi } from "vitest";
 import { rejectRetiredMediaReferences } from "../../cms/hooks/rejectRetiredMediaReferences";
 
+const concurrencyMocks = vi.hoisted(() => ({ lockMediaRows: vi.fn() }));
+
+vi.mock("../../cms/services/mediaConcurrency", () => concurrencyMocks);
+
 describe("retired media product reference protection", () => {
+  it("locks every referenced media row before checking retirement state", async () => {
+    const events: string[] = [];
+    const req = {
+      payload: {
+        find: vi.fn(async () => {
+          events.push("find");
+          return { docs: [] };
+        }),
+      },
+      transactionID: "tx-1",
+    };
+    concurrencyMocks.lockMediaRows.mockImplementationOnce(async () => {
+      events.push("lock");
+    });
+
+    await rejectRetiredMediaReferences({
+      context: {},
+      data: { galleryImageIds: [8, 7], primaryImageId: 7 },
+      operation: "create",
+      originalDoc: undefined,
+      req,
+    } as never);
+
+    expect(concurrencyMocks.lockMediaRows).toHaveBeenCalledWith(req, [7, 8]);
+    expect(events).toEqual(["lock", "find"]);
+  });
   it("inspects every current product and variant media field", async () => {
     const find = vi.fn().mockResolvedValue({
       docs: [{ id: 6, retiredAt: "2026-08-08T03:00:00.000Z" }],

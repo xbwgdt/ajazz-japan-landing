@@ -1,4 +1,5 @@
 import { APIError, type CollectionBeforeChangeHook, type PayloadRequest } from "payload";
+import { lockMediaRows } from "../services/mediaConcurrency";
 
 type Relation = { id?: number | string | null } | number | string | null | undefined;
 type ProductMediaData = {
@@ -31,7 +32,7 @@ function collectMediaIDs(data: ProductMediaData): Array<number | string> {
     const id = relationID(value);
     if (id !== undefined) unique.set(String(id), id);
   }
-  return [...unique.values()];
+  return [...unique.values()].sort((left, right) => Number(left) - Number(right));
 }
 
 // Task 9 site-settings hooks should call this service before accepting media relationships.
@@ -41,6 +42,8 @@ export async function assertNoRetiredMediaReferences(
 ): Promise<void> {
   const mediaIDs = collectMediaIDs(data);
   if (mediaIDs.length === 0) return;
+
+  await lockMediaRows(req, mediaIDs);
 
   const retired = await req.payload.find({
     collection: "media",

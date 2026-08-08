@@ -65,6 +65,17 @@ describe("Media collection", () => {
     });
   });
 
+  it("keeps the generated filename immutable after upload", () => {
+    const filename = Media.fields.find((field) => "name" in field && field.name === "filename");
+    expect(filename).toMatchObject({
+      access: expect.objectContaining({ update: expect.any(Function) }),
+      admin: expect.objectContaining({ readOnly: true }),
+      name: "filename",
+      required: true,
+    });
+    expect((filename as { access: { update: () => boolean } }).access.update()).toBe(false);
+  });
+
   it("does not decode an unauthenticated upload before collection access runs", async () => {
     const hook = Media.hooks?.beforeOperation?.[0];
     await expect(hook?.({

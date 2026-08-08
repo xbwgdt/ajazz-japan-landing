@@ -1,8 +1,10 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const transactionMocks = vi.hoisted(() => ({ runPayloadTransaction: vi.fn() }));
+const concurrencyMocks = vi.hoisted(() => ({ lockMediaRows: vi.fn() }));
 
 vi.mock("../../cms/services/payloadTransaction", () => transactionMocks);
+vi.mock("../../cms/services/mediaConcurrency", () => concurrencyMocks);
 
 import {
   cleanupRetiredMedia,
@@ -20,6 +22,8 @@ function emptyResult() {
 
 describe("media retirement", () => {
   beforeEach(() => {
+    concurrencyMocks.lockMediaRows.mockReset();
+    concurrencyMocks.lockMediaRows.mockResolvedValue(undefined);
     transactionMocks.runPayloadTransaction.mockReset();
     transactionMocks.runPayloadTransaction.mockImplementation(async (_payload, work) => (
       work({ id: "transaction-request" })
@@ -100,6 +104,8 @@ describe("media retirement", () => {
 
     await retireMedia({ actorId: 3, mediaId: 7, now, payload: payload as never });
 
+    expect(concurrencyMocks.lockMediaRows).toHaveBeenCalledWith(req, [7]);
+
     expect(payload.update).toHaveBeenCalledWith(expect.objectContaining({
       collection: "media",
       data: {
@@ -150,6 +156,8 @@ describe("media retirement", () => {
 
 describe("retired media cleanup", () => {
   beforeEach(() => {
+    concurrencyMocks.lockMediaRows.mockReset();
+    concurrencyMocks.lockMediaRows.mockResolvedValue(undefined);
     transactionMocks.runPayloadTransaction.mockReset();
     transactionMocks.runPayloadTransaction.mockImplementation(async (_payload, work) => (
       work({ id: "transaction-request" })
@@ -227,11 +235,10 @@ describe("retired media cleanup", () => {
     };
 
     await expect(cleanupRetiredMedia({ deleteObject, now, payload: payload as never }))
-      .resolves.toEqual({ deleted: 1, failed: 0, referenced: 0 });
-    expect(payload.create).toHaveBeenCalledTimes(1);
-    expect(payload.create).toHaveBeenCalledWith(expect.objectContaining({
-      data: expect.objectContaining({ details: expect.objectContaining({ phase: "deleted" }) }),
-    }));
+      .resolves.toEqual({ deleted: 0, failed: 0, referenced: 0 });
+    expect(deleteObject).not.toHaveBeenCalled();
+    expect(payload.delete).not.toHaveBeenCalled();
+    expect(payload.create).not.toHaveBeenCalled();
   });
 
   it("does not touch R2 when deletion-start persistence fails", async () => {

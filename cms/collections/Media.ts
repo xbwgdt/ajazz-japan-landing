@@ -58,7 +58,15 @@ export const Media: CollectionConfig = {
     update: adminOnly,
   },
   fields: [
-    { name: "filename", type: "text", required: true, unique: true, index: true },
+    {
+      name: "filename",
+      type: "text",
+      required: true,
+      unique: true,
+      index: true,
+      admin: { readOnly: true },
+      access: { update: () => false },
+    },
     {
       name: "prefix",
       type: "text",

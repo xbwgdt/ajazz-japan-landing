@@ -1,6 +1,7 @@
 import { DeleteObjectCommand, S3Client } from "@aws-sdk/client-s3";
 import type { Payload, PayloadRequest } from "payload";
 import { createMediaObjectKey } from "../../lib/cms/media-validation";
+import { lockMediaRows } from "../services/mediaConcurrency";
 import { runPayloadTransaction } from "../services/payloadTransaction";
 
 const PRODUCT_MEDIA_PATHS = [
@@ -161,6 +162,7 @@ export async function retireMedia({
   const retiredAt = now.toISOString();
   const deleteAfter = new Date(now.getTime() + 24 * 60 * 60 * 1000).toISOString();
   return runPayloadTransaction(payload, async (req) => {
+    await lockMediaRows(req, [normalizedMediaId]);
     const media = await payload.update({
       collection: "media",
       data: { deleteAfter, deletionStartedAt: null, retiredAt, retiredBy: normalizedActorId },
@@ -255,10 +257,11 @@ export async function cleanupRetiredMedia({
     const normalizedActorId = numericPayloadId(actorId, "Retirement actor ID");
 
     try {
-      await runPayloadTransaction(payload, async (req) => {
+      const ownsClaim = await runPayloadTransaction(payload, async (req) => {
+        await lockMediaRows(req, [media.id]);
         const references = await findMediaReferences(payload, media.id, req);
         if (references.length > 0) throw new MediaReferencedError(references);
-        if (media.deletionStartedAt) return;
+        if (media.deletionStartedAt) return true;
 
         const deletionStartedAt = now.toISOString();
         const started = await payload.update({
@@ -273,7 +276,7 @@ export async function cleanupRetiredMedia({
             ],
           },
         });
-        if (started.docs.length === 0) return;
+        if (started.docs.length === 0) return false;
         await payload.create({
           collection: "audit-events",
           data: {
@@ -286,7 +289,9 @@ export async function cleanupRetiredMedia({
           overrideAccess: true,
           req,
         });
+        return true;
       });
+      if (!ownsClaim) continue;
     } catch (error) {
       if (error instanceof MediaReferencedError) result.referenced += 1;
       else result.failed += 1;
