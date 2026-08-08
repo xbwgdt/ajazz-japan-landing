@@ -63,6 +63,18 @@ describe("Products collection", () => {
     expect(operatingSystems).toMatchObject({ dbName: "supported_os" });
   });
 
+  it("marks the operational product linkage read-only in admin", () => {
+    const tabs = Products.fields.find((field) => field.type === "tabs");
+    if (!tabs || tabs.type !== "tabs") throw new Error("Products tabs are required");
+    const basicInformation = tabs.tabs.find((tab) => tab.label === "Basic information");
+    if (!basicInformation || !("fields" in basicInformation)) throw new Error("Basic information tab is required");
+    const operationalProductId = basicInformation.fields.find(
+      (field) => "name" in field && field.name === "operationalProductId",
+    );
+
+    expect(operationalProductId).toMatchObject({ admin: { readOnly: true } });
+  });
+
   it("takes the product publication lock for every single-product edit", async () => {
     const execute = vi.fn().mockResolvedValue([]);
     const req = {
@@ -157,6 +169,40 @@ describe("protectSourceFields", () => {
     } as never);
 
     expect(result).toMatchObject({ _status: "published", editorialRevision: 4 });
+  });
+
+  it("rejects an ordinary manual product update that changes operational linkage", async () => {
+    await expect(protectSourceFields({
+      context: {},
+      data: { operationalProductId: "43" },
+      operation: "update",
+      originalDoc: {
+        editorialRevision: 4,
+        operationalProductId: "42",
+        sourceType: "manual",
+        variants: [],
+      },
+    } as never)).rejects.toMatchObject({
+      data: { code: "operational_product_linkage_immutable" },
+      status: 400,
+    });
+  });
+
+  it("allows trusted publication to link a manual product operational ID", async () => {
+    const result = await protectSourceFields({
+      context: productPublicationContext,
+      data: { _status: "published", operationalProductId: "42" },
+      operation: "update",
+      originalDoc: {
+        _status: "draft",
+        editorialRevision: 4,
+        operationalProductId: null,
+        sourceType: "manual",
+        variants: [],
+      },
+    } as never);
+
+    expect(result).toMatchObject({ operationalProductId: "42", editorialRevision: 4 });
   });
 
   it("allows trusted publication to link an RMS product operational ID", async () => {
@@ -270,6 +316,7 @@ describe("protectSourceFields", () => {
     const result = await protectSourceFields({
       context: { allowSourceConversion: true },
       data: {
+        operationalProductId: "42",
         rmsManageNumber: "ak820",
         sourceType: "rms",
         variants: [{ rmsSkuNumber: "AK820-B", inventoryMode: "manual" }],
@@ -280,6 +327,7 @@ describe("protectSourceFields", () => {
 
     expect(result).toMatchObject({
       editorialRevision: 8,
+      operationalProductId: "42",
       variants: [{ inventoryMode: "rms" }],
     });
   });

@@ -108,7 +108,12 @@ export const Products: CollectionConfig = {
               ],
             },
             { name: "rmsManageNumber", type: "text", index: true },
-            { name: "operationalProductId", type: "text", index: true },
+            {
+              name: "operationalProductId",
+              type: "text",
+              index: true,
+              admin: { readOnly: true },
+            },
             { name: "name", type: "text", required: true },
             { name: "slug", type: "text", required: true, unique: true, index: true },
             { name: "shortStatement", type: "textarea" },

@@ -32,6 +32,14 @@ function sourceIdentityError(): APIError {
   );
 }
 
+function operationalProductLinkageError(): APIError {
+  return new APIError(
+    "Operational product linkage can only be changed by trusted server workflows.",
+    400,
+    { code: "operational_product_linkage_immutable" },
+  );
+}
+
 function staleRevisionError(currentRevision: number): APIError {
   return new APIError(
     "The product was updated by another editor.",
@@ -141,10 +149,15 @@ export const protectSourceFields: CollectionBeforeChangeHook<SourceProduct> = as
   }
 
   if (operation === "update" && originalDoc && !allowSourceConversion) {
+    if (
+      !trustedPublication
+      && changed(data.operationalProductId, originalDoc.operationalProductId)
+    ) {
+      throw operationalProductLinkageError();
+    }
     if (changed(data.sourceType, originalDoc.sourceType)) throw sourceIdentityError();
     if (originalIsRms && (
       changed(data.rmsManageNumber, originalDoc.rmsManageNumber)
-      || (!trustedPublication && changed(data.operationalProductId, originalDoc.operationalProductId))
       || variantIdentityChanged(data.variants, originalDoc.variants)
     )) {
       throw sourceIdentityError();
