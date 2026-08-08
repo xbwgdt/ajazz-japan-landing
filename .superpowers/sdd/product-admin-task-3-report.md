@@ -175,3 +175,27 @@ Payload's timestamp indexes including `audit_events_created_at_idx`.
   completed.
 - Direct `tsc --noEmit` -> exit 0.
 - `git diff --check` -> exit 0 (line-ending notices only).
+
+## Task 3 Draft-Marker Re-Review Evidence (2026-08-08)
+
+### RED
+
+- `pnpm vitest run tests/cms/product-access.test.ts` failed 2 of 18 tests: a
+  main-document update could change `_status` from `published` to `draft` without a
+  Payload draft marker, and `updateProductWithRevision` did not provide a trusted
+  draft-save marker to its nested hook.
+
+### Fix
+
+- A published-to-draft update now requires either Payload's real `req.query.draft`
+  signal or a private symbol-based `productDraftSaveContext`; ordinary main-document
+  updates reject with `product_status_transition_requires_publication_service`.
+- `updateProductWithRevision` passes that private context with `expectedRevision` and
+  `draft: true`. Initial draft creation, ordinary publish rejection, and trusted
+  publication remain unchanged.
+
+### GREEN
+
+- `pnpm vitest run tests/cms/product-access.test.ts` -> 1 file passed, 18 tests passed.
+- `pnpm vitest run tests/cms/product-schema.test.ts tests/cms/product-access.test.ts tests/cms/audit.test.ts`
+  -> 3 files passed, 33 tests passed.

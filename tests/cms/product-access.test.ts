@@ -3,7 +3,11 @@ import { describe, expect, it, vi } from "vitest";
 import { Media } from "../../cms/collections/Media";
 import { Products, updateProductWithRevision } from "../../cms/collections/Products";
 import { productSpecifications } from "../../cms/fields/productSpecifications";
-import { productPublicationContext, protectSourceFields } from "../../cms/hooks/protectSourceFields";
+import {
+  productDraftSaveContext,
+  productPublicationContext,
+  protectSourceFields,
+} from "../../cms/hooks/protectSourceFields";
 
 function namedTabs(fields: Field[]): string[] {
   const tabs = fields.find((field) => field.type === "tabs");
@@ -88,6 +92,7 @@ describe("protectSourceFields", () => {
       context: {},
       data: { _status: "draft", name: "Draft revision" },
       operation: "update",
+      req: { query: { draft: true } },
       originalDoc: {
         _status: "published",
         editorialRevision: 4,
@@ -97,6 +102,24 @@ describe("protectSourceFields", () => {
     } as never);
 
     expect(result).toMatchObject({ _status: "draft", editorialRevision: 5 });
+  });
+
+  it("rejects a main-document update that changes published status to draft", async () => {
+    await expect(protectSourceFields({
+      context: {},
+      data: { _status: "draft" },
+      operation: "update",
+      req: { query: {} },
+      originalDoc: {
+        _status: "published",
+        editorialRevision: 4,
+        sourceType: "manual",
+        variants: [],
+      },
+    } as never)).rejects.toMatchObject({
+      data: { code: "product_status_transition_requires_publication_service" },
+      status: 403,
+    });
   });
 
   it("rejects an ordinary update request that changes product status", async () => {
@@ -263,12 +286,15 @@ describe("optimistic product updates", () => {
     }));
     expect(update).toHaveBeenCalledWith(expect.objectContaining({
       collection: "products",
-      context: { expectedRevision: 3 },
+      context: expect.objectContaining({ expectedRevision: 3 }),
       data: { name: "New" },
       draft: true,
       id: "1",
       overrideAccess: false,
       req,
     }));
+    expect(Object.getOwnPropertySymbols(update.mock.calls[0][0].context)).toEqual(
+      Object.getOwnPropertySymbols(productDraftSaveContext),
+    );
   });
 });

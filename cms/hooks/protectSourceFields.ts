@@ -18,9 +18,11 @@ type SourceProduct = {
 };
 
 const productStatusTransitionMarker = Symbol("productStatusTransition");
+const productDraftSaveMarker = Symbol("productDraftSave");
 
 // Task 5 will use this server-only context for publication and unpublication writes.
 export const productPublicationContext = Object.freeze({ [productStatusTransitionMarker]: true });
+export const productDraftSaveContext = Object.freeze({ [productDraftSaveMarker]: true });
 
 function sourceIdentityError(): APIError {
   return new APIError(
@@ -58,8 +60,30 @@ function isTrustedProductPublicationContext(context: unknown): boolean {
   );
 }
 
+function isTrustedDraftSaveContext(context: unknown): boolean {
+  return Boolean(
+    context
+    && typeof context === "object"
+    && (context as Record<PropertyKey, unknown>)[productDraftSaveMarker] === true,
+  );
+}
+
+function requestIsSavingDraft(req: unknown): boolean {
+  if (!req || typeof req !== "object") return false;
+  const draft = (req as { query?: { draft?: unknown } }).query?.draft;
+  return draft === true || draft === "true";
+}
+
 function publicationRequested(data: Partial<SourceProduct>): boolean {
   return data._status === "published";
+}
+
+function draftSaveOverPublishedRequested(
+  data: Partial<SourceProduct>,
+  originalDoc: SourceProduct | undefined,
+  operation: string,
+): boolean {
+  return operation === "update" && data._status === "draft" && originalDoc?._status === "published";
 }
 
 function variantIdentityChanged(
@@ -87,6 +111,7 @@ export const protectSourceFields: CollectionBeforeChangeHook<SourceProduct> = as
   data,
   operation,
   originalDoc,
+  req,
 }) => {
   const currentRevision = Number(originalDoc?.editorialRevision ?? 0);
   const expectedRevision = context.expectedRevision;
@@ -104,6 +129,13 @@ export const protectSourceFields: CollectionBeforeChangeHook<SourceProduct> = as
   const incomingSourceType = data.sourceType ?? originalDoc?.sourceType;
 
   if (publicationRequested(data) && !isTrustedProductPublicationContext(context)) {
+    throw statusTransitionError();
+  }
+  if (
+    draftSaveOverPublishedRequested(data, originalDoc, operation)
+    && !requestIsSavingDraft(req)
+    && !isTrustedDraftSaveContext(context)
+  ) {
     throw statusTransitionError();
   }
 

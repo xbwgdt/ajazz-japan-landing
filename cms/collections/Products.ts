@@ -3,7 +3,7 @@ import { PRODUCT_CATEGORIES } from "../../lib/commerce/product-categories";
 import { adminOnly } from "../access/admin";
 import { productSpecifications } from "../fields/productSpecifications";
 import { productVariants } from "../fields/productVariants";
-import { protectSourceFields } from "../hooks/protectSourceFields";
+import { productDraftSaveContext, protectSourceFields } from "../hooks/protectSourceFields";
 import { writeAuditEvent } from "../hooks/writeAuditEvent";
 
 type RevisionUpdateBody = {
@@ -54,7 +54,7 @@ export async function updateProductWithRevision(req: PayloadRequest): Promise<Re
 
   const doc = await req.payload.update({
     collection: "products",
-    context: { expectedRevision: body.expectedRevision },
+    context: { expectedRevision: body.expectedRevision, ...productDraftSaveContext },
     data: body.data,
     draft: true,
     id,
