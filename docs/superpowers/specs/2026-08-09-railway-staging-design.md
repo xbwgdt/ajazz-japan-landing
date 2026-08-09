@@ -33,8 +33,8 @@ JAPAN 商城、Payload 商品管理后台、媒体文件和测试结账流程，
 - Railway 环境名称：`staging`。
 - 第一阶段使用 Railway 自动生成的 HTTPS 地址。
 - 使用在 `staging` 环境中新建的空 PostgreSQL 服务。
-- 使用名为 `ajazz-japan-media-staging` 的 R2 Bucket、独立写入密钥及
-  测试环境专用的公开读取地址。
+- 使用名为 `ajazz-japan-media-staging` 的私有 R2 Bucket 和独立写入密钥。
+  图片通过测试环境的 Payload 媒体接口读取，不直接公开 R2 Bucket。
 - 只允许 Stripe 测试模式。发现 Stripe 正式密钥时必须阻止启动。
 - 禁用 RMS 库存同步，不得把正式 RMS 密钥添加到测试环境。
 - 数据库迁移完成后，创建测试环境专用的 Payload 管理员账号。
@@ -52,9 +52,9 @@ JAPAN 商城、Payload 商品管理后台、媒体文件和测试结账流程，
   `CMS_RELEASE_HISTORY_CLEANUP_APPROVED=confirmed`，才能执行数据库迁移。
 - `staging`：必须满足 `RAILWAY_ENVIRONMENT_NAME=staging`、
   `CMS_STAGING_ISOLATION_CONFIRMED=confirmed`、
-  `RMS_SYNC_ENABLED=false`；R2 Bucket 名称必须以 `-staging` 结尾；公开
-  媒体地址不得为 `https://media.ajazz.jp`；Stripe 密钥必须为空，或以
-  `sk_test_` 开头。
+  `RMS_SYNC_ENABLED=false`；R2 Bucket 名称必须以 `-staging` 结尾；不得
+  配置 `https://media.ajazz.jp` 作为媒体地址；Stripe 密钥必须为空，或
+  以 `sk_test_` 开头。
 - `local`：只有在不存在 Railway 环境变量时才允许本地开发。Railway
   中使用 `CMS_DEPLOYMENT_ENV=local` 时必须拒绝部署。
 - 环境类型缺失、值不受支持或不同变量互相矛盾时，必须在数据库迁移前
@@ -78,8 +78,8 @@ JAPAN 商城、Payload 商品管理后台、媒体文件和测试结账流程，
 - 设置 `RMS_SYNC_ENABLED=false`，并且不配置 `RMS_SERVICE_SECRET` 和
   `RMS_LICENSE_KEY`。
 - 只有开始测试结账时，才配置 Stripe 测试模式密钥。
-- 配置 `R2_BUCKET=ajazz-japan-media-staging`、独立的测试 R2 密钥、
-  Endpoint 和公开读取地址。
+- 配置 `R2_BUCKET=ajazz-japan-media-staging`、独立的测试 R2 密钥和
+  Endpoint。R2 Bucket 保持私有，图片由测试环境 Payload 接口读取。
 - 只有创建测试管理员账号时，临时设置 `BOOTSTRAP_ADMIN_EMAIL` 和
   `BOOTSTRAP_ADMIN_PASSWORD`；账号创建后立即删除密码变量。
 
@@ -107,7 +107,8 @@ JAPAN 商城、Payload 商品管理后台、媒体文件和测试结账流程，
 - Payload 管理员登录和后台首页。
 - 新增商品、保存草稿、预览、发布、下架、归档、恢复和版本恢复。
 - 多颜色商品的缩略图、色块、图片、售价、二重价格批准状态和库存行为。
-- 测试 R2 图片上传和公开读取，并确认浏览器无法获得写入权限。
+- 测试 R2 图片上传及通过 Payload 接口读取，并确认 R2 Bucket 不可公开
+  写入或列出对象。
 - 商品搜索和后台全部筛选条件。
 - 商城商品列表、商品详情与后台已发布数据一致。
 - 只使用 Stripe 测试模式结账。
