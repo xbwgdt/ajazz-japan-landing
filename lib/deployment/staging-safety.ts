@@ -15,11 +15,21 @@ export function assertR2EnvironmentSafety(environment: DeploymentEnvironment) {
   if (environment.R2_BUCKET !== "ajazz-japan-media-staging") {
     throw new Error("Staging R2 bucket is not isolated");
   }
-  if (environment.R2_PUBLIC_URL === "https://media.ajazz.jp") {
+  if (isProductionR2MediaUrl(environment.R2_PUBLIC_URL)) {
     throw new Error("Staging R2 cannot use the production media URL");
   }
 }
 
 export function isRmsSyncEnabled(environment: DeploymentEnvironment) {
   return environment.RMS_SYNC_ENABLED !== "false";
+}
+
+function isProductionR2MediaUrl(publicUrl: string | undefined) {
+  if (!publicUrl) return false;
+
+  try {
+    return new URL(publicUrl).hostname.toLowerCase().replace(/\.$/, "") === "media.ajazz.jp";
+  } catch {
+    return false;
+  }
 }

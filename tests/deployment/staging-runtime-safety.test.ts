@@ -46,4 +46,24 @@ describe("staging runtime safety", () => {
     expect(isRmsSyncEnabled({ RMS_SYNC_ENABLED: "true" })).toBe(true);
     expect(isRmsSyncEnabled({ RMS_SYNC_ENABLED: "False" })).toBe(true);
   });
+
+  it("rejects normalized production R2 media hostnames in staging", () => {
+    for (const publicUrl of [
+      "https://media.ajazz.jp/",
+      "https://MEDIA.AJAZZ.JP/path?preview=1",
+      "https://media.ajazz.jp.",
+    ]) {
+      expect(() => assertR2EnvironmentSafety({
+        CMS_DEPLOYMENT_ENV: "staging",
+        R2_BUCKET: "ajazz-japan-media-staging",
+        R2_PUBLIC_URL: publicUrl,
+      })).toThrow("Staging R2");
+    }
+
+    expect(() => assertR2EnvironmentSafety({
+      CMS_DEPLOYMENT_ENV: "staging",
+      R2_BUCKET: "ajazz-japan-media-staging",
+      R2_PUBLIC_URL: "not a production URL",
+    })).not.toThrow();
+  });
 });

@@ -35,7 +35,6 @@ describe("R2 storage configuration", () => {
       ...completeR2Environment,
       CMS_DEPLOYMENT_ENV: "staging",
       R2_BUCKET: "ajazz-japan-media",
-      R2_PUBLIC_URL: "https://media.ajazz.jp",
       R2_SECRET_ACCESS_KEY: secretAccessKey,
     };
 
@@ -46,6 +45,21 @@ describe("R2 storage configuration", () => {
     } catch (error) {
       expect(String(error)).not.toContain(secretAccessKey);
       expect(String(error)).not.toContain(environment.R2_BUCKET);
+    }
+  });
+
+  it("rejects normalized production media URLs with the isolated staging bucket", () => {
+    for (const publicUrl of [
+      "https://media.ajazz.jp/",
+      "https://MEDIA.AJAZZ.JP/path?preview=1",
+      "https://media.ajazz.jp.",
+    ]) {
+      expect(() => createR2StorageOptions({
+        ...completeR2Environment,
+        CMS_DEPLOYMENT_ENV: "staging",
+        R2_BUCKET: "ajazz-japan-media-staging",
+        R2_PUBLIC_URL: publicUrl,
+      })).toThrow("Staging R2");
     }
   });
 
