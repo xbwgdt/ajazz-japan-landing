@@ -91,8 +91,12 @@ export interface Config {
     defaultIDType: number;
   };
   fallbackLocale: null;
-  globals: {};
-  globalsSelect: {};
+  globals: {
+    'site-settings': SiteSetting;
+  };
+  globalsSelect: {
+    'site-settings': SiteSettingsSelect<false> | SiteSettingsSelect<true>;
+  };
   locale: null;
   widgets: {
     collections: CollectionsWidget;
@@ -580,6 +584,229 @@ export interface PayloadMigrationsSelect<T extends boolean = true> {
   batch?: T;
   updatedAt?: T;
   createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "site-settings".
+ */
+export interface SiteSetting {
+  id: number;
+  homepage?: {
+    eyebrow?: string | null;
+    title?: string | null;
+    copy?: string | null;
+    primaryCommandLabel?: string | null;
+    secondaryCommandLabel?: string | null;
+    heroMediaId?: (number | null) | Media;
+    featuredCategoryOrder?:
+      | {
+          category:
+            | 'rapid-trigger-keyboard'
+            | 'mechanical-keyboard'
+            | 'membrane-keyboard'
+            | 'mouse'
+            | 'stream-controller'
+            | 'headset'
+            | 'other';
+          id?: string | null;
+        }[]
+      | null;
+    featuredProducts?:
+      | {
+          slug: string;
+          id?: string | null;
+        }[]
+      | null;
+  };
+  company: {
+    brand: {
+      eyebrow: string;
+      title: string;
+      paragraphs?:
+        | {
+            text: string;
+            id?: string | null;
+          }[]
+        | null;
+    };
+    support: {
+      eyebrow: string;
+      title: string;
+      paragraphs?:
+        | {
+            text: string;
+            id?: string | null;
+          }[]
+        | null;
+    };
+    business: {
+      eyebrow: string;
+      title: string;
+      paragraphs?:
+        | {
+            text: string;
+            id?: string | null;
+          }[]
+        | null;
+      commandLabel?: string | null;
+    };
+  };
+  contact?: {
+    email?: string | null;
+    phone?: string | null;
+  };
+  footer?: {
+    companyName?: string | null;
+    address?: string | null;
+    navigation?:
+      | {
+          label: string;
+          href: '/' | '/about' | '/legal' | '/privacy' | '/terms';
+          id?: string | null;
+        }[]
+      | null;
+  };
+  socialLinks?:
+    | {
+        label: string;
+        href: string;
+        id?: string | null;
+      }[]
+    | null;
+  legal?: {
+    sellerName?: string | null;
+    responsiblePerson?: string | null;
+    address?: string | null;
+    phone?: string | null;
+    email?: string | null;
+    priceNotice?: string | null;
+    additionalFees?: string | null;
+    payment?: string | null;
+    delivery?: string | null;
+    deliveryArea?: string | null;
+    returns?: string | null;
+    refunds?: string | null;
+    quantity?: string | null;
+  };
+  _status?: ('draft' | 'published') | null;
+  updatedAt?: string | null;
+  createdAt?: string | null;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "site-settings_select".
+ */
+export interface SiteSettingsSelect<T extends boolean = true> {
+  homepage?:
+    | T
+    | {
+        eyebrow?: T;
+        title?: T;
+        copy?: T;
+        primaryCommandLabel?: T;
+        secondaryCommandLabel?: T;
+        heroMediaId?: T;
+        featuredCategoryOrder?:
+          | T
+          | {
+              category?: T;
+              id?: T;
+            };
+        featuredProducts?:
+          | T
+          | {
+              slug?: T;
+              id?: T;
+            };
+      };
+  company?:
+    | T
+    | {
+        brand?:
+          | T
+          | {
+              eyebrow?: T;
+              title?: T;
+              paragraphs?:
+                | T
+                | {
+                    text?: T;
+                    id?: T;
+                  };
+            };
+        support?:
+          | T
+          | {
+              eyebrow?: T;
+              title?: T;
+              paragraphs?:
+                | T
+                | {
+                    text?: T;
+                    id?: T;
+                  };
+            };
+        business?:
+          | T
+          | {
+              eyebrow?: T;
+              title?: T;
+              paragraphs?:
+                | T
+                | {
+                    text?: T;
+                    id?: T;
+                  };
+              commandLabel?: T;
+            };
+      };
+  contact?:
+    | T
+    | {
+        email?: T;
+        phone?: T;
+      };
+  footer?:
+    | T
+    | {
+        companyName?: T;
+        address?: T;
+        navigation?:
+          | T
+          | {
+              label?: T;
+              href?: T;
+              id?: T;
+            };
+      };
+  socialLinks?:
+    | T
+    | {
+        label?: T;
+        href?: T;
+        id?: T;
+      };
+  legal?:
+    | T
+    | {
+        sellerName?: T;
+        responsiblePerson?: T;
+        address?: T;
+        phone?: T;
+        email?: T;
+        priceNotice?: T;
+        additionalFees?: T;
+        payment?: T;
+        delivery?: T;
+        deliveryArea?: T;
+        returns?: T;
+        refunds?: T;
+        quantity?: T;
+      };
+  _status?: T;
+  updatedAt?: T;
+  createdAt?: T;
+  globalType?: T;
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema

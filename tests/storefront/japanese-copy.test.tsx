@@ -1,10 +1,10 @@
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
-import LegalPage from "../../app/legal/page";
-import PrivacyPage from "../../app/privacy/page";
+import { LegalContent } from "../../app/legal/page";
+import { PrivacyContent } from "../../app/privacy/page";
 import { CartProvider } from "../../components/store/CartProvider";
 import { Storefront } from "../../components/store/Storefront";
-import AboutPage from "../../app/about/page";
+import { AboutContent } from "../../app/about/page";
 
 describe("Japanese storefront copy", () => {
   it("renders the official store navigation and service commitments in Japanese", () => {
@@ -32,24 +32,24 @@ describe("Japanese storefront copy", () => {
   });
 
   it("renders readable legal notices and links to the terms page", () => {
-    expect(renderToStaticMarkup(<LegalPage />)).toContain("特定商取引法に基づく表記");
-    expect(renderToStaticMarkup(<PrivacyPage />)).toContain("プライバシーポリシー");
+    expect(renderToStaticMarkup(<LegalContent />)).toContain("特定商取引法に基づく表記");
+    expect(renderToStaticMarkup(<PrivacyContent />)).toContain("プライバシーポリシー");
   });
 
   it("discloses the Google Analytics collection loaded by the root layout", () => {
-    const html = renderToStaticMarkup(<PrivacyPage />);
+    const html = renderToStaticMarkup(<PrivacyContent />);
     expect(html).toContain("Google アナリティクス");
     expect(html).toContain("Cookie");
     expect(html).toContain("利用状況");
   });
 
   it("keeps the responsible person in the legal disclosure but not the company profile", () => {
-    expect(renderToStaticMarkup(<AboutPage />)).not.toContain("代表取締役社長 謝天");
-    expect(renderToStaticMarkup(<LegalPage />)).toContain("代表取締役社長 謝天");
+    expect(renderToStaticMarkup(<AboutContent />)).not.toContain("代表取締役社長 謝天");
+    expect(renderToStaticMarkup(<LegalContent />)).toContain("代表取締役社長 謝天");
   });
 
   it("presents OEM and wholesale capability inside the company page", () => {
-    const html = renderToStaticMarkup(<AboutPage />);
+    const html = renderToStaticMarkup(<AboutContent />);
     expect(html).toContain("AJAZZ、2009年に誕生した");
     expect(html).toContain("PC周辺機器ブランド");
     expect(html).toContain("エントリーモデルから、ラピッドトリガー対応キーボード");

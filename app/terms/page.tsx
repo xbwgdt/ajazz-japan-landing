@@ -1,6 +1,9 @@
 import Link from "next/link";
+import { DEFAULT_SITE_SETTINGS, type SiteSettingsViewModel } from "../../lib/cms/site-settings";
+import { getPublishedSiteSettings } from "../../lib/cms/site-settings-reader";
 
 export const metadata = { title: "利用規約 | AJAZZ JAPAN" };
+export const dynamic = "force-dynamic";
 
 const sections = [
   ["適用", "本規約は、アジャズジャパン株式会社が運営するAJAZZ JAPAN公式オンラインストア（以下「当ストア」）での商品購入および関連サービスの利用に適用されます。"],
@@ -14,12 +17,19 @@ const sections = [
   ["お問い合わせ", "アジャズジャパン株式会社\nメール: xiet@a-jazz.com\n電話: 070-9319-5121"],
 ];
 
-export default function TermsPage() {
+export function TermsContent({ settings = DEFAULT_SITE_SETTINGS }: { settings?: SiteSettingsViewModel }) {
+  const renderedSections = sections.map(([term, description]) => term === "お問い合わせ"
+    ? [term, `${settings.footer.companyName}\nメール: ${settings.contact.email}\n電話: ${settings.contact.phone}`]
+    : [term, description]);
   return <main className="storefront store-legal-page">
     <header className="store-nav"><Link href="/" className="store-brand" aria-label="AJAZZ JAPAN home"><img src="/brand/ajazz-japan-logo.jpg" alt="AJAZZ JAPAN" /></Link><Link href="/">ストアへ戻る</Link></header>
     <section className="store-legal"><p className="store-eyebrow">TERMS</p><h1>利用規約</h1>
       <p>最終更新日: 2026年7月25日</p>
-      <dl>{sections.map(([term, description]) => <div key={term}><dt>{term}</dt><dd>{description}</dd></div>)}</dl>
+      <dl>{renderedSections.map(([term, description]) => <div key={term}><dt>{term}</dt><dd>{description}</dd></div>)}</dl>
     </section>
   </main>;
+}
+
+export default async function TermsPage() {
+  return <TermsContent settings={await getPublishedSiteSettings()} />;
 }

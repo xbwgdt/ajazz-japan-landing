@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { VariantPurchasePanel, type PurchasableVariant } from "./VariantPurchasePanel";
+import { DRIVER_LINK_PROPS } from "../../lib/cms/site-settings";
 
 interface StoreVariant extends PurchasableVariant {}
 
@@ -62,7 +63,7 @@ export function ProductDetail({ product }: { product: StoreProduct }) {
           <p className="store-overline">SOFTWARE</p>
           <h2>ドライバー・マニュアル</h2>
           <p>対応ソフトウェア、ファームウェア、取扱説明書をドライバーダウンロードページから確認できます。</p>
-          <a href="/drivers">対応ファイルを確認する</a>
+          <a {...DRIVER_LINK_PROPS}>対応ファイルを確認する</a>
         </section>
       </div>
     </article>

@@ -3,6 +3,11 @@ import type { ProductCategoryKey } from "../../lib/commerce/product-categories";
 import { storefrontProducts } from "./catalogue";
 import { CartLink } from "./CartLink";
 import { ProductCatalogue } from "./ProductCatalogue";
+import {
+  DEFAULT_SITE_SETTINGS,
+  DRIVER_LINK_PROPS,
+  type SiteSettingsViewModel,
+} from "../../lib/cms/site-settings";
 
 interface StorefrontCard {
   slug: string;
@@ -13,7 +18,31 @@ interface StorefrontCard {
   variants?: Array<{ colorName?: string; imageUrl?: string; availableQuantity: number }>;
 }
 
-export function Storefront({ products = storefrontProducts }: { products?: StorefrontCard[] }) {
+function withLineBreaks(value: string) {
+  return value.split("\n").map((line, index) => <span key={`${line}-${index}`}>{index > 0 ? <br /> : null}{line}</span>);
+}
+
+function orderProducts(products: StorefrontCard[], settings: SiteSettingsViewModel): StorefrontCard[] {
+  const featured = new Map(settings.homepage.featuredProductSlugs.map((slug, index) => [slug, index]));
+  const categories = new Map(settings.homepage.featuredCategoryOrder.map((category, index) => [category, index]));
+  return products.map((product, index) => ({ product, index })).sort((left, right) => {
+    const leftFeatured = featured.get(left.product.slug) ?? Number.MAX_SAFE_INTEGER;
+    const rightFeatured = featured.get(right.product.slug) ?? Number.MAX_SAFE_INTEGER;
+    if (leftFeatured !== rightFeatured) return leftFeatured - rightFeatured;
+    const leftCategory = categories.get(left.product.category) ?? Number.MAX_SAFE_INTEGER;
+    const rightCategory = categories.get(right.product.category) ?? Number.MAX_SAFE_INTEGER;
+    return leftCategory - rightCategory || left.index - right.index;
+  }).map(({ product }) => product);
+}
+
+export function Storefront({
+  products = storefrontProducts,
+  settings = DEFAULT_SITE_SETTINGS,
+}: {
+  products?: StorefrontCard[];
+  settings?: SiteSettingsViewModel;
+}) {
+  const orderedProducts = orderProducts(products, settings);
   return (
     <main className="storefront">
       <header className="store-nav">
@@ -23,7 +52,7 @@ export function Storefront({ products = storefrontProducts }: { products?: Store
         <nav aria-label="Primary navigation">
           <a href="#products">製品</a>
           <a href="#performance">テクノロジー</a>
-          <Link href="/drivers">ドライバー</Link>
+          <a {...DRIVER_LINK_PROPS}>ドライバー</a>
           <Link href="/about">ブランド</Link>
         </nav>
         <CartLink />
@@ -31,18 +60,16 @@ export function Storefront({ products = storefrontProducts }: { products?: Store
 
       <section className="store-hero" aria-labelledby="hero-title">
         <div className="store-hero-copy">
-          <p className="store-eyebrow">AJAZZ PERFORMANCE EDITION</p>
-          <h1 id="hero-title">INPUT AT<br />THE SPEED OF INTENT.</h1>
-          <p className="store-hero-text">
-            ラピッドトリガーから高性能ワイヤレスまで。勝負を分ける一打のために設計されたAJAZZの入力デバイス。
-          </p>
+          <p className="store-eyebrow">{settings.homepage.eyebrow}</p>
+          <h1 id="hero-title">{withLineBreaks(settings.homepage.title)}</h1>
+          <p className="store-hero-text">{settings.homepage.copy}</p>
           <div className="store-hero-actions">
-            <a className="store-button store-button-primary" href="#products">製品を見る</a>
-            <Link className="store-button store-button-quiet" href="/drivers">ドライバーを探す</Link>
+            <a className="store-button store-button-primary" href="#products">{settings.homepage.primaryCommandLabel}</a>
+            <a className="store-button store-button-quiet" {...DRIVER_LINK_PROPS}>{settings.homepage.secondaryCommandLabel}</a>
           </div>
         </div>
         <div className="store-hero-image" aria-hidden="true">
-          <img src="/images/ak820maxultra.webp" alt="" />
+          <img src={settings.homepage.heroMediaUrl} alt="" />
           <span className="store-hero-spec spec-one">0.01 mm</span>
           <span className="store-hero-spec spec-two">8K READY</span>
         </div>
@@ -60,7 +87,7 @@ export function Storefront({ products = storefrontProducts }: { products?: Store
           <h2 id="products-title">PLAY WITH<br />PRECISION.</h2>
           <p>日本国内送料無料。ご注文から3営業日以内に発送します。</p>
         </div>
-        <ProductCatalogue products={products} />
+        <ProductCatalogue products={orderedProducts} />
       </section>
 
       <section className="store-service" aria-label="AJAZZ service">
@@ -75,9 +102,15 @@ export function Storefront({ products = storefrontProducts }: { products?: Store
 
       <footer className="store-footer">
         <img src="/brand/ajazz-japan-logo.jpg" alt="AJAZZ JAPAN" />
-        <p>アジャズジャパン株式会社<br />〒340-0043 埼玉県草加市草加2-13-21-7</p>
-        <div><Link href="/drivers">ドライバー</Link></div>
-        <div className="store-footer-legal"><Link href="/legal">特定商取引法に基づく表記</Link><Link href="/privacy">プライバシーポリシー</Link><Link href="/terms">利用規約</Link></div>
+        <p>{settings.footer.companyName}<br />{settings.footer.address}</p>
+        <div><a {...DRIVER_LINK_PROPS}>ドライバー</a></div>
+        <div className="store-footer-legal">{settings.footer.navigation.map((link) => <Link key={link.href} href={link.href}>{link.label}</Link>)}</div>
+        {settings.socialLinks.length > 0 ? <div>{settings.socialLinks.map((link) => <a
+          key={`${link.href}-${link.label}`}
+          href={link.href}
+          rel={link.href.startsWith("https:") ? "noopener noreferrer" : undefined}
+          target={link.href.startsWith("https:") ? "_blank" : undefined}
+        >{link.label}</a>)}</div> : null}
       </footer>
     </main>
   );

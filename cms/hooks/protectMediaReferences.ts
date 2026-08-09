@@ -17,7 +17,7 @@ const MEDIA_FIELD_PATTERN = /(?:image|media)ids?$/i;
 export interface MediaReference {
   label?: string;
   path: string;
-  source: "product" | "product-version" | "site-settings";
+  source: "product" | "product-version" | "site-settings" | "site-settings-version";
   sourceId: string;
 }
 
@@ -125,12 +125,30 @@ export async function findMediaReferences(
   if (hasSiteSettings) {
     const settings = await payload.findGlobal({
       depth: 0,
+      draft: true,
       overrideAccess: true,
       req,
       slug: "site-settings" as never,
     });
     for (const path of collectReferencePaths(settings, id)) {
       references.push({ path, source: "site-settings", sourceId: "site-settings" });
+    }
+    const settingVersions = await payload.findGlobalVersions({
+      depth: 0,
+      overrideAccess: true,
+      pagination: false,
+      req,
+      slug: "site-settings" as never,
+    });
+    for (const versionDoc of settingVersions.docs as JsonRecord[]) {
+      const version = isRecord(versionDoc.version) ? versionDoc.version : {};
+      for (const path of collectReferencePaths(version, id)) {
+        references.push({
+          path,
+          source: "site-settings-version",
+          sourceId: String(versionDoc.id),
+        });
+      }
     }
   }
   return references;

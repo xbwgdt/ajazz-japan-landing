@@ -7,6 +7,7 @@ import { Admins } from "./cms/collections/Admins";
 import { AuditEvents } from "./cms/collections/AuditEvents";
 import { Media } from "./cms/collections/Media";
 import { Products } from "./cms/collections/Products";
+import { SiteSettings } from "./cms/globals/SiteSettings";
 import { createR2StorageOptions } from "./lib/cms/r2-storage";
 
 export default buildConfig({
@@ -25,6 +26,7 @@ export default buildConfig({
     },
   },
   collections: [Admins, Media, Products, AuditEvents],
+  globals: [SiteSettings],
   db: postgresAdapter({
     pool: {
       connectionString: process.env.DATABASE_URL ?? process.env.POSTGRES_URL,

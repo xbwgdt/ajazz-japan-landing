@@ -44,6 +44,10 @@ describe("media retirement", () => {
         hasNextPage: false,
       }),
       findGlobal: vi.fn().mockResolvedValue({ id: 1, homeHeroImageId: 7 }),
+      findGlobalVersions: vi.fn().mockResolvedValue({
+        docs: [{ id: 33, version: { homepage: { heroMediaId: 7 } } }],
+        hasNextPage: false,
+      }),
       findVersions: vi.fn().mockResolvedValue({
         docs: [{ id: 22, parent: 10, version: { galleryImageIds: [7] } }],
         hasNextPage: false,
@@ -55,10 +59,12 @@ describe("media retirement", () => {
       expect.objectContaining({ path: "variants.0.imageId", source: "product", sourceId: "10" }),
       expect.objectContaining({ path: "galleryImageIds.0", source: "product-version", sourceId: "22" }),
       expect.objectContaining({ path: "homeHeroImageId", source: "site-settings", sourceId: "site-settings" }),
+      expect.objectContaining({ path: "homepage.heroMediaId", source: "site-settings-version", sourceId: "33" }),
     ]);
     expect(payload.find).toHaveBeenCalledWith(expect.objectContaining({ req }));
     expect(payload.findVersions).toHaveBeenCalledWith(expect.objectContaining({ req }));
-    expect(payload.findGlobal).toHaveBeenCalledWith(expect.objectContaining({ req }));
+    expect(payload.findGlobal).toHaveBeenCalledWith(expect.objectContaining({ draft: true, req }));
+    expect(payload.findGlobalVersions).toHaveBeenCalledWith(expect.objectContaining({ req }));
   });
 
   it("updates first, performs the final reference check in the transaction, and rolls back", async () => {
