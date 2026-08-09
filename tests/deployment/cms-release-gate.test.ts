@@ -11,6 +11,15 @@ const runGate = (environment: NodeJS.ProcessEnv) =>
     stdio: ["ignore", "pipe", "pipe"],
   });
 
+const runGateFailure = (environment: NodeJS.ProcessEnv) => {
+  try {
+    runGate(environment);
+  } catch (error) {
+    return error as { stderr?: string };
+  }
+  throw new Error("Expected the CMS release gate to reject the environment");
+};
+
 const controlledEnvironment = () => {
   const environment = { ...process.env };
   for (const key of [
@@ -98,6 +107,45 @@ describe("CMS release gate", () => {
     ).toThrow();
   });
 
+  it.each([
+    "https://ajazz.jp/",
+    "https://AJAZZ.JP/cms",
+    "https://ajazz.jp/path?preview=true",
+  ])("rejects staging site URL with production hostname: %s", (siteUrl) => {
+    expect(() =>
+      runGate({
+        ...controlledEnvironment(),
+        CMS_DEPLOYMENT_ENV: "staging",
+        RAILWAY_ENVIRONMENT_NAME: "staging",
+        CMS_STAGING_ISOLATION_CONFIRMED: "confirmed",
+        NEXT_PUBLIC_SITE_URL: siteUrl,
+        R2_BUCKET: "ajazz-japan-media-staging",
+        RMS_SYNC_ENABLED: "false",
+        STRIPE_SECRET_KEY: "sk_test_staging_value",
+      }),
+    ).toThrow();
+  });
+
+  it.each([
+    "https://media.ajazz.jp/",
+    "https://MEDIA.AJAZZ.JP/assets",
+    "https://media.ajazz.jp/assets?download=true",
+  ])("rejects staging media URL with production hostname: %s", (mediaUrl) => {
+    expect(() =>
+      runGate({
+        ...controlledEnvironment(),
+        CMS_DEPLOYMENT_ENV: "staging",
+        RAILWAY_ENVIRONMENT_NAME: "staging",
+        CMS_STAGING_ISOLATION_CONFIRMED: "confirmed",
+        NEXT_PUBLIC_SITE_URL: "https://ajazz-staging.up.railway.app",
+        R2_BUCKET: "ajazz-japan-media-staging",
+        R2_PUBLIC_URL: mediaUrl,
+        RMS_SYNC_ENABLED: "false",
+        STRIPE_SECRET_KEY: "sk_test_staging_value",
+      }),
+    ).toThrow();
+  });
+
   it("rejects a Railway deployment classified as local", () => {
     expect(() =>
       runGate({
@@ -117,6 +165,16 @@ describe("CMS release gate", () => {
     ).toContain("CMS local environment accepted");
   });
 
+  it("rejects local when Railway environment is explicitly present but empty", () => {
+    expect(() =>
+      runGate({
+        ...controlledEnvironment(),
+        CMS_DEPLOYMENT_ENV: "local",
+        RAILWAY_ENVIRONMENT_NAME: "",
+      }),
+    ).toThrow();
+  });
+
   it.each([undefined, "qa"]) (
     "rejects missing or unknown environment classification: %s",
     (environment) => {
@@ -130,20 +188,17 @@ describe("CMS release gate", () => {
 
   it("does not expose secret values in gate errors", () => {
     const secret = "sk_live_secret_value";
-    try {
-      runGate({
-        ...controlledEnvironment(),
-        CMS_DEPLOYMENT_ENV: "staging",
-        RAILWAY_ENVIRONMENT_NAME: "staging",
-        CMS_STAGING_ISOLATION_CONFIRMED: "confirmed",
-        R2_BUCKET: "ajazz-japan-media-staging",
-        RMS_SYNC_ENABLED: "false",
-        STRIPE_SECRET_KEY: secret,
-      });
-    } catch (error) {
-      expect(String(error)).not.toContain(secret);
-      return;
-    }
-    throw new Error("Expected the staging gate to reject the live Stripe key");
+    const error = runGateFailure({
+      ...controlledEnvironment(),
+      CMS_DEPLOYMENT_ENV: "staging",
+      RAILWAY_ENVIRONMENT_NAME: "staging",
+      CMS_STAGING_ISOLATION_CONFIRMED: "confirmed",
+      R2_BUCKET: "ajazz-japan-media-staging",
+      RMS_SYNC_ENABLED: "false",
+      STRIPE_SECRET_KEY: secret,
+    });
+
+    expect(error.stderr).toBeDefined();
+    expect(error.stderr).not.toContain(secret);
   });
 });

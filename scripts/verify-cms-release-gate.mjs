@@ -1,5 +1,4 @@
 const environment = process.env.CMS_DEPLOYMENT_ENV;
-const railwayEnvironment = process.env.RAILWAY_ENVIRONMENT_NAME;
 
 const fail = (message) => {
   console.error(`CMS release blocked: ${message}`);
@@ -9,6 +8,18 @@ const fail = (message) => {
 const requireExact = (name, expected) => {
   if (process.env[name] !== expected) {
     fail(`${name} must equal ${expected}`);
+  }
+};
+
+const hasHostname = (value, expectedHostname) => {
+  if (!value) {
+    return false;
+  }
+
+  try {
+    return new URL(value).hostname.toLowerCase() === expectedHostname;
+  } catch {
+    return false;
   }
 };
 
@@ -25,10 +36,10 @@ if (environment === "production") {
   if (process.env.R2_BUCKET !== "ajazz-japan-media-staging") {
     fail("R2_BUCKET must identify a staging bucket");
   }
-  if (process.env.NEXT_PUBLIC_SITE_URL === "https://ajazz.jp") {
+  if (hasHostname(process.env.NEXT_PUBLIC_SITE_URL, "ajazz.jp")) {
     fail("staging cannot use the production site URL");
   }
-  if (process.env.R2_PUBLIC_URL === "https://media.ajazz.jp") {
+  if (hasHostname(process.env.R2_PUBLIC_URL, "media.ajazz.jp")) {
     fail("staging cannot use the production media URL");
   }
   if (
@@ -39,7 +50,7 @@ if (environment === "production") {
   }
   console.log("CMS staging release gate passed; schema migration may proceed.");
 } else if (environment === "local") {
-  if (railwayEnvironment) {
+  if (Object.hasOwn(process.env, "RAILWAY_ENVIRONMENT_NAME")) {
     fail("Railway cannot deploy with CMS_DEPLOYMENT_ENV=local");
   }
   console.log("CMS local environment accepted.");
