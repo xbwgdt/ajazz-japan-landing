@@ -83,6 +83,7 @@ export const Products: CollectionConfig = {
   slug: "products",
   admin: {
     components: {
+      beforeListTable: ["/cms/admin/ProductListStockFilter#ProductListStockFilter"],
       edit: {
         beforeDocumentControls: [
           "/cms/admin/ProductActions#ProductActions",

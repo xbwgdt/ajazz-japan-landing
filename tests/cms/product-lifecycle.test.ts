@@ -2,6 +2,7 @@ import { describe, expect, it, vi } from "vitest";
 import {
   archiveProduct,
   createProductLifecycleRouteHandler,
+  createPayloadProductLifecycleStore,
   deleteUnreferencedDraft,
   restoreProductAsDraft,
   ProductLifecycleError,
@@ -170,5 +171,35 @@ describe("product lifecycle routes", () => {
     expect(response.status).toBe(409);
     await expect(response.json()).resolves.toEqual({ code: "product_has_order_history" });
     expect(archiveSpy).toHaveBeenCalledWith("product-1", admin, "ARCHIVE ak820");
+  });
+});
+
+function sqlText(query: unknown): string {
+  const chunks = (query as { queryChunks?: unknown[] }).queryChunks ?? [];
+  return chunks.flatMap((chunk) => typeof chunk === "string" ? [chunk] : (
+    chunk && typeof chunk === "object" && "value" in chunk && Array.isArray((chunk as { value?: unknown }).value)
+      ? (chunk as { value: unknown[] }).value.filter((value): value is string => typeof value === "string") : []
+  )).join("") + chunks.flatMap((chunk) => chunk && typeof chunk === "object" && "queryChunks" in chunk ? [sqlText(chunk)] : []).join("");
+}
+
+describe("Payload lifecycle store protections", () => {
+  it("locks every operational variant and active reservation before checking order history", async () => {
+    const queries: string[] = [];
+    const payload = {
+      findByID: vi.fn(async () => ({ id: "cms-1", lifecycle: "unpublished", slug: "ak820", variants: [{ operationalVariantId: "41" }, { operationalVariantId: 42 }] })),
+      findVersions: vi.fn(async () => ({ docs: [] })),
+      find: vi.fn(async () => ({ docs: [] })),
+      config: { globals: [] },
+    } as unknown as Parameters<typeof createPayloadProductLifecycleStore>[0];
+    // The injected request exposes the same transaction session production uses.
+    const req = { payload: { ...payload, db: { sessions: { tx: { db: { execute: async (query: unknown) => { queries.push(sqlText(query)); return [{ referenced: false }]; } } } } } }, transactionID: Promise.resolve("tx") };
+    const guarded = createPayloadProductLifecycleStore(payload, async (_payload, work) => work(req as never));
+    await guarded.transaction(admin, async (tx) => tx.getProduct("cms-1"));
+    expect(queries).toHaveLength(5);
+    expect(queries[1]).toContain("stock_reservations");
+    expect(queries[1]).toContain("FOR UPDATE OF r");
+    expect(queries[2]).toContain("FOR UPDATE");
+    expect(queries[3]).toContain("stock_reservations");
+    expect(queries[4]).toContain("order_items");
   });
 });

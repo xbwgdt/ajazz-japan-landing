@@ -2,6 +2,7 @@
 
 import { useDocumentInfo } from "@payloadcms/ui";
 import { useState } from "react";
+import { manualInventoryEndpoint } from "../../lib/cms/manual-inventory-route";
 
 type Variant = { inventoryMode?: "manual" | "rms"; operationalVariantId?: string; rmsSkuNumber?: string; sku?: string };
 type ProductInventoryData = {
@@ -19,7 +20,7 @@ export function ManualInventoryActionPanel({ product, productId }: { product: Pr
   async function adjust(variant: Variant, form: HTMLFormElement) {
     if (!productId || !variant.operationalVariantId) return;
     const values = new FormData(form);
-    const response = await fetch(`/api/cms/products/${encodeURIComponent(String(productId))}/inventory`, {
+    const response = await fetch(manualInventoryEndpoint(productId), {
       body: JSON.stringify({
         quantity: Number(values.get("quantity")),
         reason: String(values.get("reason") ?? ""),

@@ -221,12 +221,31 @@ export function createProductLifecycleRouteHandler(
 async function hasOrderReferences(req: PayloadRequest, product: PayloadProduct): Promise<boolean> {
   const variantIds = operationalVariantIds(product);
   if (!variantIds.length) return false;
-  await (await transactionDatabase(req)).execute(sql`
+  const database = await transactionDatabase(req);
+  // Order creation locks reservations before variants. Match that order so no paid
+  // order can cross this decision while a draft product is being deleted.
+  await database.execute(sql`
+    SELECT r.id FROM public.stock_reservations r
+    JOIN public.stock_reservation_items sri ON sri.reservation_id = r.id
+    WHERE r.status = 'active'
+      AND sri.variant_id IN (${sql.join(variantIds.map((id) => sql`${id}`), sql`, `)})
+    FOR UPDATE OF r
+  `);
+  await database.execute(sql`
     SELECT id FROM public.product_variants
     WHERE id IN (${sql.join(variantIds.map((id) => sql`${id}`), sql`, `)})
     FOR UPDATE
   `);
-  const result = await (await transactionDatabase(req)).execute(sql`
+  const activeReservations = await database.execute(sql`
+    SELECT EXISTS (
+      SELECT 1 FROM public.stock_reservations r
+      JOIN public.stock_reservation_items sri ON sri.reservation_id = r.id
+      WHERE r.status = 'active' AND sri.variant_id IN (${sql.join(variantIds.map((id) => sql`${id}`), sql`, `)})
+    ) AS referenced
+  `) as { rows?: Array<{ referenced?: boolean }> } | Array<{ referenced?: boolean }>;
+  const reservationRows = Array.isArray(activeReservations) ? activeReservations : activeReservations.rows ?? [];
+  if (reservationRows[0]?.referenced === true) return true;
+  const result = await database.execute(sql`
     SELECT EXISTS (
       SELECT 1
       FROM public.order_items oi
@@ -255,10 +274,13 @@ async function hasPublicationHistory(payload: Payload, product: PayloadProduct, 
   ));
 }
 
-export function createPayloadProductLifecycleStore(payload: Payload): ProductLifecycleStore {
+export function createPayloadProductLifecycleStore(
+  payload: Payload,
+  transaction = runPayloadTransaction,
+): ProductLifecycleStore {
   return {
     transaction(actor, work) {
-      return runPayloadTransaction(payload, async (req) => {
+      return transaction(payload, async (req) => {
         const loadProduct = async (id: string): Promise<LifecycleProduct | null> => {
           await lockProduct(req, id);
           let product: PayloadProduct;

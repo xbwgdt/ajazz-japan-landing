@@ -31,18 +31,11 @@ describe("admin dashboard snapshot", () => {
     });
   });
 
-  it("registers focused product controls and indexed list filters", () => {
+  it("registers focused product controls and native CMS list filters", () => {
     expect(Products.admin?.components?.edit?.beforeDocumentControls).toEqual(expect.arrayContaining([
       "/cms/admin/ProductActions#ProductActions",
       "/cms/admin/ManualInventoryAction#ManualInventoryAction",
     ]));
-    expect(Products.admin?.listSearchableFields).toEqual(expect.arrayContaining([
-      "name",
-      "slug",
-      "category",
-      "sourceType",
-      "lifecycle",
-      "stockState",
-    ]));
+    expect(Products.admin?.listSearchableFields).toEqual(["name", "slug"]);
   });
 });

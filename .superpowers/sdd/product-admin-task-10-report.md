@@ -77,3 +77,29 @@ The pre-existing edits to `product-admin-task-4-report.md` and
 - Remaining review item: an authoritative stock-state filter requires a dedicated server-backed
   list view/query layer; the invalid `stockState` search field was removed, but that full filter
   UI was not completed in this pass.
+
+## Second Review Fix Pass
+
+### RED evidence
+
+- Focused command: `pnpm vitest run tests/cms/stock-state-filter.test.ts tests/cms/product-lifecycle.test.ts tests/cms/admin-dashboard.test.ts`
+- Result: 14 passed, 2 failed. The new SQL test renderer initially did not recurse through Drizzle SQL chunks, and the lifecycle sequence assertion omitted the existing advisory product lock. These were test harness/integration failures, not production behavior failures.
+
+### GREEN evidence
+
+- Focused command: `pnpm vitest run tests/cms/stock-state-filter.test.ts tests/cms/product-lifecycle.test.ts tests/cms/admin-dashboard.test.ts tests/cms/manual-inventory-action.test.ts`
+- Result: 4 files, 17 tests passed.
+- `pnpm lint`, `pnpm cms:types`, and `pnpm cms:importmap` passed.
+
+### Changes and self-review
+
+- Added a protected same-origin administrator stock-state endpoint. It returns only CMS IDs, queries current operational rows, requires published active products, and uses reservation-aware sellable stock.
+- Added the Payload `beforeListTable` filter, intersecting current operational IDs with native Payload `where` filters and preserving native filters when cleared.
+- Permanent deletion now locks active reservations first, then every CMS `operationalVariantId` row, rechecks reservations, and checks order items. This matches paid-order lock order and guards supported checkout/order creation paths.
+- Added behavior coverage for endpoint semantics/auth/ID mapping/filter composition/config registration, operational inventory routing, and lifecycle lock ordering.
+- The existing publication conflict handler returns HTTP 409 with `currentRevision`; the duplicate branch was removed.
+
+### Final test evidence and concern
+
+- Full command: `pnpm test` with a 480 second timeout.
+- Result: 67 files passed, 345 tests passed; 1 existing test failed: `tests/cms/media-reference-hook.test.ts` timed out at its 5-second dynamic `Products` import. The suite ran for 441.65 seconds. No production calls, migrations, deployment, or push were performed.
