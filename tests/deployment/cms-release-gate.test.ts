@@ -109,6 +109,7 @@ describe("CMS release gate", () => {
 
   it.each([
     "https://ajazz.jp/",
+    "https://ajazz.jp.",
     "https://AJAZZ.JP/cms",
     "https://ajazz.jp/path?preview=true",
   ])("rejects staging site URL with production hostname: %s", (siteUrl) => {
@@ -128,6 +129,7 @@ describe("CMS release gate", () => {
 
   it.each([
     "https://media.ajazz.jp/",
+    "https://media.ajazz.jp.",
     "https://MEDIA.AJAZZ.JP/assets",
     "https://media.ajazz.jp/assets?download=true",
   ])("rejects staging media URL with production hostname: %s", (mediaUrl) => {

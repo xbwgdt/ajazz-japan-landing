@@ -17,7 +17,8 @@ const hasHostname = (value, expectedHostname) => {
   }
 
   try {
-    return new URL(value).hostname.toLowerCase() === expectedHostname;
+    const hostname = new URL(value).hostname.toLowerCase().replace(/\.$/, "");
+    return hostname === expectedHostname;
   } catch {
     return false;
   }
