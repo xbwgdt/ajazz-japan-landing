@@ -109,7 +109,7 @@ it("allows an isolated staging environment", () => {
 ```
 
 同时增加失败用例：staging 使用 `sk_live_`、`https://ajazz.jp`、
-`https://media.ajazz.jp`、非 `-staging` Bucket、启用 RMS、Railway 环境名不一致；
+`https://media.ajazz.jp`、非 `ajazz-japan-media-staging` Bucket、启用 RMS、Railway 环境名不一致；
 Railway 中使用 `local`；环境类型缺失或未知。
 
 - [ ] **步骤 2：运行测试并确认失败**
@@ -151,7 +151,7 @@ if (environment === "production") {
   requireExact("CMS_STAGING_ISOLATION_CONFIRMED", "confirmed");
   requireExact("RMS_SYNC_ENABLED", "false");
 
-  if (!process.env.R2_BUCKET?.endsWith("-staging")) {
+  if (process.env.R2_BUCKET !== "ajazz-japan-media-staging") {
     fail("R2_BUCKET must identify a staging bucket");
   }
   if (process.env.NEXT_PUBLIC_SITE_URL === "https://ajazz.jp") {
@@ -231,7 +231,7 @@ describe("staging runtime safety", () => {
       CMS_DEPLOYMENT_ENV: "staging",
       R2_BUCKET: "ajazz-japan-media",
       R2_PUBLIC_URL: "https://media.ajazz.jp",
-    })).toThrow("staging R2");
+    })).toThrow("Staging R2");
   });
 
   it("accepts staging test resources and disables RMS only on exact false", () => {
@@ -274,7 +274,7 @@ export function assertStripeEnvironmentSafety(environment: DeploymentEnvironment
 
 export function assertR2EnvironmentSafety(environment: DeploymentEnvironment) {
   if (environment.CMS_DEPLOYMENT_ENV !== "staging") return;
-  if (!environment.R2_BUCKET?.endsWith("-staging")) {
+  if (environment.R2_BUCKET !== "ajazz-japan-media-staging") {
     throw new Error("Staging R2 bucket is not isolated");
   }
   if (environment.R2_PUBLIC_URL === "https://media.ajazz.jp") {

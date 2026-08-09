@@ -52,9 +52,9 @@ JAPAN 商城、Payload 商品管理后台、媒体文件和测试结账流程，
   `CMS_RELEASE_HISTORY_CLEANUP_APPROVED=confirmed`，才能执行数据库迁移。
 - `staging`：必须满足 `RAILWAY_ENVIRONMENT_NAME=staging`、
   `CMS_STAGING_ISOLATION_CONFIRMED=confirmed`、
-  `RMS_SYNC_ENABLED=false`；R2 Bucket 名称必须以 `-staging` 结尾；不得
-  配置 `https://media.ajazz.jp` 作为媒体地址；Stripe 密钥必须为空，或
-  以 `sk_test_` 开头。
+  `RMS_SYNC_ENABLED=false`；R2 Bucket 名称必须精确为
+  `ajazz-japan-media-staging`；不得配置 `https://media.ajazz.jp` 作为
+  媒体地址；Stripe 密钥必须为空，或以 `sk_test_` 开头。
 - `local`：只有在不存在 Railway 环境变量时才允许本地开发。Railway
   中使用 `CMS_DEPLOYMENT_ENV=local` 时必须拒绝部署。
 - 环境类型缺失、值不受支持或不同变量互相矛盾时，必须在数据库迁移前
