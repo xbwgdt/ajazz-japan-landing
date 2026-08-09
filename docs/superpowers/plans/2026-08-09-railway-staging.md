@@ -40,7 +40,7 @@
 
 ---
 
-### 任务 1：把发布闸门改为环境感知模式
+### Task 1：把发布闸门改为环境感知模式
 
 **文件：**
 - 修改：`scripts/verify-cms-release-gate.mjs`
@@ -195,7 +195,7 @@ git commit -m "feat: separate CMS release gates by environment"
 
 ---
 
-### 任务 2：增加 staging 运行时安全保护
+### Task 2：增加 staging 运行时安全保护
 
 **文件：**
 - 新建：`lib/deployment/staging-safety.ts`
@@ -324,7 +324,7 @@ git commit -m "feat: protect staging payment and media resources"
 
 ---
 
-### 任务 3：让 staging 明确停用 RMS 同步
+### Task 3：让 staging 明确停用 RMS 同步
 
 **文件：**
 - 修改：`lib/rms/cron.ts`
@@ -414,7 +414,7 @@ git commit -m "feat: disable RMS inventory sync in staging"
 
 ---
 
-### 任务 4：补齐 staging 配置和运维文档
+### Task 4：补齐 staging 配置和运维文档
 
 **文件：**
 - 修改：`.env.example`
@@ -502,7 +502,7 @@ git commit -m "docs: add Railway staging operations guide"
 
 ---
 
-### 任务 5：完成代码验证并推送到用户自己的 GitHub 仓库
+### Task 5：完成代码验证并推送到用户自己的 GitHub 仓库
 
 **文件：**
 - 验证整个工作树，不修改业务文件。
@@ -547,7 +547,7 @@ git push fork feat/ajazz-japan-store
 
 ---
 
-### 任务 6：创建 Railway 和 Cloudflare staging 资源
+### Task 6：创建 Railway 和 Cloudflare staging 资源
 
 **文件：**
 - 不修改仓库文件。
@@ -618,7 +618,7 @@ railway ssh -e staging pnpm cms:bootstrap-admin
 
 ---
 
-### 任务 7：执行 HTTPS 浏览器验收
+### Task 7：执行 HTTPS 浏览器验收
 
 **文件：**
 - 新建本地验收证据目录：`artifacts/cms-acceptance/staging/desktop/`
