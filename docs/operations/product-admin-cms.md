@@ -11,6 +11,17 @@ Use a release owner for each step and retain command output, backup references,
 catalog JSON evidence, and acceptance evidence with the release record. Do not
 put credentials, bootstrap passwords, or Stripe/RMS/R2 values in those records.
 
+## staging 边界
+
+本文件保留 production 的既有十步发布顺序；不要把 production 变量或发布证明复制到
+staging。staging 的唯一变量清单、资源创建顺序和验收步骤见
+[`railway-staging.md`](railway-staging.md)。其中 `CMS_DEPLOYMENT_ENV=staging` 会让
+发布闸门要求 Railway 环境为 `staging`、
+`CMS_STAGING_ISOLATION_CONFIRMED=confirmed` 和 `RMS_SYNC_ENABLED=false`；运行时还会
+拒绝正式 Stripe、正式站点 URL 与正式 R2 资源。production 的
+`CMS_RELEASE_CREDENTIALS_ROTATED` 和
+`CMS_RELEASE_HISTORY_CLEANUP_APPROVED` 只适用于本 runbook 的 production 发布闸门。
+
 ## Required production variables
 
 Set the following values in Railway. Do not commit production credentials.

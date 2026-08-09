@@ -20,12 +20,15 @@ pnpm test
 pnpm build
 ```
 
-## Required production configuration
+## Railway 配置
+
+### 生产长期变量
 
 Set these values in the Railway service. Do not commit production credentials.
 
 ```env
 DATABASE_URL=postgresql://user:password@host/database?sslmode=require
+CMS_DEPLOYMENT_ENV=production
 PAYLOAD_SECRET=replace-with-at-least-32-random-characters
 STRIPE_SECRET_KEY=sk_live_replace_me
 STRIPE_WEBHOOK_SECRET=whsec_replace_me
@@ -33,6 +36,7 @@ NEXT_PUBLIC_SITE_URL=https://ajazz.jp
 CRON_SECRET=replace-with-a-long-random-value
 RMS_SERVICE_SECRET=replace-with-rms-service-secret
 RMS_LICENSE_KEY=replace-with-rms-license-key
+RMS_SYNC_ENABLED=true
 R2_BUCKET=ajazz-japan-media
 R2_ACCESS_KEY_ID=replace-only-in-railway
 R2_SECRET_ACCESS_KEY=replace-only-in-railway
@@ -41,6 +45,13 @@ R2_PUBLIC_URL=https://media.ajazz.jp
 ```
 
 `POSTGRES_URL` is accepted as an alternative to `DATABASE_URL`.
+
+### staging 长期变量
+
+staging 的唯一变量清单和创建顺序在
+[`docs/operations/railway-staging.md`](docs/operations/railway-staging.md)。不要从
+production 复制变量；staging 保持 RMS 关闭，只可使用 Stripe 测试模式，并使用独立
+PostgreSQL、Railway HTTPS 域名和私有 R2 Bucket。
 
 ## CMS production release
 
@@ -68,6 +79,8 @@ CMS_RELEASE_HISTORY_CLEANUP_APPROVED=confirmed
 Set these only after completing and recording the corresponding runbook steps.
 Remove them after the accepted deployment so every future release requires a
 fresh explicit approval.
+
+### 一次性 bootstrap 变量
 
 `BOOTSTRAP_ADMIN_EMAIL` and `BOOTSTRAP_ADMIN_PASSWORD` are temporary bootstrap
 inputs, not required Railway service configuration. Set them only while running
