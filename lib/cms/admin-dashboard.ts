@@ -68,7 +68,12 @@ export function createPayloadAdminDashboardStore(payload: Payload): AdminDashboa
             SELECT COUNT(DISTINCT p.cms_product_id) AS out_of_stock_count
             FROM public.products p
             JOIN public.product_variants pv ON pv.product_id = p.id
-            WHERE p.cms_product_id IS NOT NULL AND pv.active = TRUE AND pv.available_quantity <= 0
+            WHERE p.published = TRUE AND p.lifecycle = 'active'
+              AND NOT EXISTS (
+                SELECT 1 FROM public.product_variants sellable
+                WHERE sellable.product_id = p.id AND sellable.active = TRUE
+                  AND sellable.available_quantity - sellable.reserved_quantity > 0
+              )
           `,
           commerceSql()<CommerceRow[]>`
             SELECT completed_at, updated_count
@@ -80,8 +85,8 @@ export function createPayloadAdminDashboardStore(payload: Payload): AdminDashboa
           commerceSql()<CommerceRow[]>`
             SELECT completed_at, failed_count
             FROM public.inventory_sync_logs
-            WHERE status <> 'completed' OR failed_count > 0
-            ORDER BY completed_at DESC NULLS LAST, id DESC
+            WHERE id = (SELECT MAX(id) FROM public.inventory_sync_logs)
+              AND (status <> 'completed' OR failed_count > 0)
             LIMIT 1
           `,
         ]),

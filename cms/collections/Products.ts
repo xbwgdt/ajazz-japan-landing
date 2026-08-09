@@ -91,7 +91,7 @@ export const Products: CollectionConfig = {
       },
     },
     defaultColumns: ["name", "category", "sourceType", "lifecycle", "updatedAt"],
-    listSearchableFields: ["name", "slug", "category", "sourceType", "lifecycle", "stockState"],
+    listSearchableFields: ["name", "slug"],
     preview: (doc) => {
       const id = doc.id;
       const revision = Number(doc.editorialRevision);

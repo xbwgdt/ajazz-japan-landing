@@ -59,3 +59,21 @@ The pre-existing edits to `product-admin-task-4-report.md` and
 - Product category/source/lifecycle and Payload publication status use native indexed filters.
   Stock state remains operational data and is surfaced on the dashboard rather than persisted
   into the CMS product schema, avoiding an unrequested schema migration.
+
+## Review Fix Pass
+
+- RED baseline: the review findings reproduced against `2146bd3`; deletion inspected only
+  product linkage, version-only media was omitted, inventory used the CMS product ID, and the
+  dashboard stock/failure queries used incorrect predicates.
+- GREEN focused evidence: `pnpm vitest run tests/cms/product-lifecycle.test.ts
+  tests/cms/admin-dashboard.test.ts tests/cms/manual-inventory.test.ts
+  tests/cms/publication-routes.test.ts` passed 4 files and 34 tests.
+- `pnpm lint` passed before the full-suite attempt. The later `pnpm lint; pnpm test` command
+  exceeded the 120-second execution limit without a final result, so no full-suite success is claimed.
+- Corrected deletion to lock and inspect all CMS operational variant IDs, include product-version
+  media ownership, route manual adjustments through `operationalProductId`, use sellable-stock
+  dashboard semantics, clear failure summaries after a later successful RMS sync, and return
+  publication conflicts as HTTP 409.
+- Remaining review item: an authoritative stock-state filter requires a dedicated server-backed
+  list view/query layer; the invalid `stockState` search field was removed, but that full filter
+  UI was not completed in this pass.

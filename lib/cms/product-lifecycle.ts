@@ -145,6 +145,15 @@ function productMediaIds(product: PayloadProduct): string[] {
   ])];
 }
 
+function operationalVariantIds(product: PayloadProduct): number[] {
+  const variants = Array.isArray(product.variants) ? product.variants : [];
+  return variants.flatMap((variant) => {
+    const id = variant && typeof variant === "object" ? (variant as Record<string, unknown>).operationalVariantId : undefined;
+    const value = typeof id === "number" ? id : typeof id === "string" && /^\d+$/.test(id) ? Number(id) : NaN;
+    return Number.isSafeInteger(value) && value > 0 ? [value] : [];
+  });
+}
+
 async function transactionDatabase(req: PayloadRequest): Promise<TransactionDatabase> {
   const transactionId = req.transactionID ? String(await req.transactionID) : "";
   const database = req.payload.db.sessions?.[transactionId]?.db as TransactionDatabase | undefined;
@@ -210,17 +219,19 @@ export function createProductLifecycleRouteHandler(
 }
 
 async function hasOrderReferences(req: PayloadRequest, product: PayloadProduct): Promise<boolean> {
-  const operationalId = typeof product.operationalProductId === "string" && /^\d+$/.test(product.operationalProductId)
-    ? Number(product.operationalProductId)
-    : null;
+  const variantIds = operationalVariantIds(product);
+  if (!variantIds.length) return false;
+  await (await transactionDatabase(req)).execute(sql`
+    SELECT id FROM public.product_variants
+    WHERE id IN (${sql.join(variantIds.map((id) => sql`${id}`), sql`, `)})
+    FOR UPDATE
+  `);
   const result = await (await transactionDatabase(req)).execute(sql`
     SELECT EXISTS (
       SELECT 1
       FROM public.order_items oi
       JOIN public.product_variants pv ON pv.id = oi.variant_id
-      JOIN public.products p ON p.id = pv.product_id
-      WHERE p.cms_product_id = ${String(product.id)}
-        OR (${operationalId} IS NOT NULL AND p.id = ${operationalId})
+      WHERE pv.id IN (${sql.join(variantIds.map((id) => sql`${id}`), sql`, `)})
     ) AS referenced
   `) as { rows?: Array<{ referenced?: boolean }> } | Array<{ referenced?: boolean }>;
   const rows = Array.isArray(result) ? result : result.rows ?? [];
@@ -265,10 +276,21 @@ export function createPayloadProductLifecycleStore(payload: Payload): ProductLif
             throw error;
           }
 
+          const versions = await payload.findVersions({ collection: "products", depth: 0, limit: 50, overrideAccess: true, pagination: false, req, where: { parent: { equals: product.id } } });
+          const ownerIds = new Set([String(product.id), ...versions.docs.map((version) => String(version.id))]);
+          const mediaIds = new Set(productMediaIds(product));
+          for (const version of versions.docs) {
+            if (version.version && typeof version.version === "object") {
+              for (const id of productMediaIds(version.version as unknown as PayloadProduct)) mediaIds.add(id);
+            }
+          }
           const mediaOwnedOnlyByProduct: string[] = [];
-          for (const mediaId of productMediaIds(product)) {
+          for (const mediaId of mediaIds) {
             const references = await findMediaReferences(payload, mediaId, req);
-            if (references.length > 0 && references.every((reference) => reference.source === "product" && reference.sourceId === String(product.id))) {
+            if (references.length > 0 && references.every((reference) => (
+              (reference.source === "product" && reference.sourceId === String(product.id))
+              || (reference.source === "product-version" && ownerIds.has(reference.sourceId))
+            ))) {
               mediaOwnedOnlyByProduct.push(mediaId);
             }
           }

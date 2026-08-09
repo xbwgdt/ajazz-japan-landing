@@ -191,6 +191,9 @@ export function publicationErrorResponse(error: unknown): Response {
   if (error instanceof PublicationConflictError) {
     return Response.json({ code: error.code, currentRevision: error.currentRevision }, { status: 409 });
   }
+  if (error instanceof PublicationConflictError) {
+    return Response.json({ code: error.code, currentRevision: error.currentRevision }, { status: 409 });
+  }
   if (error instanceof APIError && error.status >= 400 && error.status < 500) {
     const data = error.data && typeof error.data === "object" ? error.data as Record<string, unknown> : {};
     const code = typeof data.code === "string"

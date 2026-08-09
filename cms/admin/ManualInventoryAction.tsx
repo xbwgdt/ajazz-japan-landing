@@ -61,5 +61,6 @@ export function ManualInventoryActionPanel({ product, productId }: { product: Pr
 
 export function ManualInventoryAction() {
   const { data, id } = useDocumentInfo();
-  return <ManualInventoryActionPanel product={(data ?? {}) as ProductInventoryData} productId={id} />;
+  const product = (data ?? {}) as ProductInventoryData & { operationalProductId?: string | number };
+  return <ManualInventoryActionPanel product={product} productId={product.operationalProductId} />;
 }
