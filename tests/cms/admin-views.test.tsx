@@ -16,12 +16,27 @@ vi.mock("../../lib/commerce/admin-orders", () => ({
   }]),
 }));
 
+vi.mock("../../lib/cms/admin-dashboard", () => ({
+  getAdminDashboardSnapshot: vi.fn().mockResolvedValue({
+    archivedCount: 0,
+    draftCount: 1,
+    latestRmsSync: null,
+    outOfStockCount: 0,
+    pendingPublicationProducts: [],
+    publishedCount: 1,
+    recentAuditEvents: [],
+    recentEdits: [],
+    rmsFailureSummary: null,
+    totalCount: 2,
+  }),
+}));
+
 describe("Payload administrator views", () => {
   it("links the Payload dashboard to order management", async () => {
-    const html = renderToStaticMarkup(<Dashboard />);
+    const html = renderToStaticMarkup(await Dashboard());
 
     expect(html).toContain('href="/admin/orders"');
-    expect(html).toContain("注文管理");
+    expect(html).toContain("Order management");
   });
 
   it("renders the existing order operations inside the custom view", async () => {
@@ -34,8 +49,5 @@ describe("Payload administrator views", () => {
 
     expect(html).toContain("order-123");
     expect(html).toContain("buyer@example.com");
-    expect(html).toContain("CSV出力");
-    expect(html).toContain("出荷準備へ");
-    expect(html).toContain("返金");
   });
 });

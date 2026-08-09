@@ -82,7 +82,16 @@ export async function updateProductWithRevision(req: PayloadRequest): Promise<Re
 export const Products: CollectionConfig = {
   slug: "products",
   admin: {
+    components: {
+      edit: {
+        beforeDocumentControls: [
+          "/cms/admin/ProductActions#ProductActions",
+          "/cms/admin/ManualInventoryAction#ManualInventoryAction",
+        ],
+      },
+    },
     defaultColumns: ["name", "category", "sourceType", "lifecycle", "updatedAt"],
+    listSearchableFields: ["name", "slug", "category", "sourceType", "lifecycle", "stockState"],
     preview: (doc) => {
       const id = doc.id;
       const revision = Number(doc.editorialRevision);
@@ -116,6 +125,7 @@ export const Products: CollectionConfig = {
               name: "sourceType",
               type: "select",
               required: true,
+              index: true,
               defaultValue: "manual",
               options: [
                 { label: "RMS", value: "rms" },
@@ -139,12 +149,14 @@ export const Products: CollectionConfig = {
               name: "category",
               type: "select",
               required: true,
+              index: true,
               options: PRODUCT_CATEGORIES.map(({ key, label }) => ({ label, value: key })),
             },
             {
               name: "lifecycle",
               type: "select",
               required: true,
+              index: true,
               defaultValue: "unpublished",
               options: [
                 { label: "Active", value: "active" },
