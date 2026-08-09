@@ -8,6 +8,18 @@ const readDocument = (path: string) =>
 const stagingVariables = (document: string) =>
   document.match(/## Staging \u53d8\u91cf\u6e05\u5355\uff08\u552f\u4e00\uff09[\s\S]*?```env\n([\s\S]*?)```/)?.[1] ?? "";
 
+const hasProductionSiteUrl = (variables: string) =>
+  variables.split(/\r?\n/).some((line) => {
+    const value = line.match(/^NEXT_PUBLIC_SITE_URL=(.+)$/)?.[1];
+    if (!value) return false;
+
+    try {
+      return new URL(value).hostname.toLowerCase().replace(/\.$/, "") === "ajazz.jp";
+    } catch {
+      return false;
+    }
+  });
+
 describe("Railway staging documentation readiness", () => {
   it("documents the isolated staging environment and keeps its variable list safe", () => {
     const design = readDocument(
@@ -37,6 +49,14 @@ describe("Railway staging documentation readiness", () => {
     );
 
     const variables = stagingVariables(stagingRunbook);
+    expect(variables).not.toBe("");
+    expect(variables).toContain("CMS_DEPLOYMENT_ENV=staging");
+    expect(variables).toContain("CMS_STAGING_ISOLATION_CONFIRMED=confirmed");
+    expect(variables).toContain("RMS_SYNC_ENABLED=false");
+    expect(variables).toContain("R2_BUCKET=ajazz-japan-media-staging");
+    expect(hasProductionSiteUrl(variables)).toBe(false);
+    expect(variables).not.toMatch(/^STRIPE_SECRET_KEY=sk_live_/m);
+    expect(variables).not.toContain("BOOTSTRAP_ADMIN_PASSWORD");
     expect(variables).not.toContain("RMS_SERVICE_SECRET");
     expect(variables).not.toContain("RMS_LICENSE_KEY");
     expect(variables).not.toContain("CMS_RELEASE_CREDENTIALS_ROTATED");
