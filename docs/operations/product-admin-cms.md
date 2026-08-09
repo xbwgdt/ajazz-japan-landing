@@ -47,9 +47,26 @@ BOOTSTRAP_ADMIN_PASSWORD=replace-only-in-railway-or-local-untracked-env
 Do not set `ADMIN_PASSWORD` or `ADMIN_SECRET`. Remove
 `BOOTSTRAP_ADMIN_PASSWORD` immediately after account creation.
 
+## Enforced Railway release gate
+
+Railway must not migrate or start a candidate CMS release based on this document
+alone. After steps 1 and 2 below are complete and their evidence is attached to
+the release record, the release owner may set these non-secret attestations:
+
+```env
+CMS_RELEASE_CREDENTIALS_ROTATED=confirmed
+CMS_RELEASE_HISTORY_CLEANUP_APPROVED=confirmed
+```
+
+`pnpm cms:release:check` requires both exact values before Railway can run the
+schema migration. This is an execution gate, not proof by itself: the release
+record remains the source of evidence. Remove both attestations after the
+accepted deployment so a later deployment cannot reuse an old approval.
+
 ## Railway migration behavior
 
-`railway.json` declares `pnpm cms:migrate` as Railway's pre-deploy command and
+`railway.json` declares `pnpm cms:release:check && pnpm cms:migrate` as
+Railway's pre-deploy command and
 `HOSTNAME=0.0.0.0 pnpm start` as the application start command. Railway must run
 the migration before the candidate application starts. A nonzero migration exit
 code must fail the candidate deployment and leave the previous production release

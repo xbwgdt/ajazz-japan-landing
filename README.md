@@ -27,8 +27,6 @@ Set these values in the Railway service. Do not commit production credentials.
 ```env
 DATABASE_URL=postgresql://user:password@host/database?sslmode=require
 PAYLOAD_SECRET=replace-with-at-least-32-random-characters
-BOOTSTRAP_ADMIN_EMAIL=xiet@a-jazz.com
-BOOTSTRAP_ADMIN_PASSWORD=replace-only-in-railway-or-local-untracked-env
 STRIPE_SECRET_KEY=sk_live_replace_me
 STRIPE_WEBHOOK_SECRET=whsec_replace_me
 NEXT_PUBLIC_SITE_URL=https://ajazz.jp
@@ -58,8 +56,22 @@ and does not change the current production deployment. The application starts
 only after that phase succeeds, then Railway checks `GET /api/health` before
 routing traffic.
 
+Before Railway can run that migration, the release owner must attest that the
+two production gates are complete by setting the following non-secret values to
+the exact word `confirmed`. Missing values block the candidate deployment:
+
+```env
+CMS_RELEASE_CREDENTIALS_ROTATED=confirmed
+CMS_RELEASE_HISTORY_CLEANUP_APPROVED=confirmed
+```
+
+Set these only after completing and recording the corresponding runbook steps.
+Remove them after the accepted deployment so every future release requires a
+fresh explicit approval.
+
 `BOOTSTRAP_ADMIN_EMAIL` and `BOOTSTRAP_ADMIN_PASSWORD` are temporary bootstrap
-inputs. Set them only for `pnpm cms:bootstrap-admin`, remove
+inputs, not required Railway service configuration. Set them only while running
+`pnpm cms:bootstrap-admin`, remove
 `BOOTSTRAP_ADMIN_PASSWORD` immediately after the administrator account is
 created, and never use legacy `ADMIN_PASSWORD` or `ADMIN_SECRET` variables.
 

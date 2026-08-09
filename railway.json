@@ -4,7 +4,7 @@
     "buildCommand": "pnpm build"
   },
   "deploy": {
-    "preDeployCommand": "pnpm cms:migrate",
+    "preDeployCommand": "pnpm cms:release:check && pnpm cms:migrate",
     "startCommand": "HOSTNAME=0.0.0.0 pnpm start",
     "healthcheckPath": "/api/health",
     "healthcheckTimeout": 100,

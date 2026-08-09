@@ -15,6 +15,7 @@
     "cms:types": "payload generate:types",
     "cms:importmap": "payload generate:importmap",
     "cms:migrate": "payload migrate",
+    "cms:release:check": "node scripts/verify-cms-release-gate.mjs",
     "cms:migrate:create": "payload migrate:create",
     "cms:migrate-catalog": "tsx scripts/migrate-catalog-to-cms.ts",
     "cms:bootstrap-admin": "tsx scripts/bootstrap-admin.ts"
