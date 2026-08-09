@@ -1,151 +1,139 @@
-# AJAZZ JAPAN Railway Staging Design
+# AJAZZ JAPAN Railway 测试环境设计
 
-## Purpose
+## 目的
 
-Create a non-production Railway environment where the AJAZZ JAPAN storefront,
-Payload product administration, media delivery, and test checkout can be
-validated through a public HTTPS URL before any production release. The staging
-environment must not read or modify production orders, catalog records, media,
-Stripe payments, or Rakuten RMS inventory.
+在 Railway 中创建一个非正式环境，通过公开的 HTTPS 地址验收 AJAZZ
+JAPAN 商城、Payload 商品管理后台、媒体文件和测试结账流程，再考虑发布到
+正式环境。测试环境不得读取或修改正式订单、商品数据、媒体文件、Stripe
+付款或乐天 RMS 库存。
 
-## Selected Approach
+## 已选方案
 
-Use the existing Railway project and add an environment named `staging`.
-Services may share the project boundary, but staging receives its own web-service
-deployment, PostgreSQL database, variables, and Cloudflare R2 bucket. The
-production environment remains unchanged and continues to serve `ajazz.jp` only
-after its separate release gate and acceptance process pass.
+在现有 Railway 项目中新增一个名为 `staging` 的环境。两个环境可以属于
+同一个 Railway 项目，但测试环境必须拥有独立的网站服务、PostgreSQL
+数据库、环境变量和 Cloudflare R2 Bucket。正式环境保持不变，只有通过
+单独的正式发布闸门和验收流程后，才允许为 `ajazz.jp` 提供服务。
 
-This approach is preferred over a separate Railway project because it keeps
-project ownership and deployment management simple while retaining resource
-isolation. Testing directly in production is excluded.
+与新建另一个 Railway 项目相比，这种方式更容易管理，同时仍能隔离资源。
+禁止直接使用正式环境进行测试。
 
-## Environment Model
+## 环境划分
 
-### Production
+### 正式环境
 
-- Railway environment name: `production`.
-- Site URL: `https://ajazz.jp`.
-- Media URL: `https://media.ajazz.jp`.
-- Uses production PostgreSQL, production R2, live Stripe credentials, and RMS
-  credentials only after the production release procedure authorizes them.
-- Deployment remains blocked unless credential rotation and approved Git-history
-  cleanup are explicitly attested.
+- Railway 环境名称：`production`。
+- 网站地址：`https://ajazz.jp`。
+- 媒体地址：`https://media.ajazz.jp`。
+- 只有在正式发布流程批准后，才允许使用正式 PostgreSQL、正式 R2、
+  Stripe 正式密钥和 RMS 密钥。
+- 在确认密钥轮换及经过批准的 Git 历史清理之前，必须禁止部署。
 
-### Staging
+### 测试环境
 
-- Railway environment name: `staging`.
-- Site URL: Railway's generated HTTPS domain during the first phase.
-- Uses a new empty PostgreSQL service created inside the staging environment.
-- Uses an R2 bucket named `ajazz-japan-media-staging` with independent write
-  credentials and a staging-only public delivery URL.
-- Uses Stripe test mode only. A live Stripe secret key must block startup.
-- RMS inventory synchronization is disabled. No production RMS credentials are
-  added to staging.
-- Uses a staging-only Payload administrator account created after migrations.
-- Does not receive `ajazz.jp` or `media.ajazz.jp` traffic.
+- Railway 环境名称：`staging`。
+- 第一阶段使用 Railway 自动生成的 HTTPS 地址。
+- 使用在 `staging` 环境中新建的空 PostgreSQL 服务。
+- 使用名为 `ajazz-japan-media-staging` 的 R2 Bucket、独立写入密钥及
+  测试环境专用的公开读取地址。
+- 只允许 Stripe 测试模式。发现 Stripe 正式密钥时必须阻止启动。
+- 禁用 RMS 库存同步，不得把正式 RMS 密钥添加到测试环境。
+- 数据库迁移完成后，创建测试环境专用的 Payload 管理员账号。
+- 不接收 `ajazz.jp` 或 `media.ajazz.jp` 的流量。
 
-## Deployment Classification and Gate
+## 环境识别与发布闸门
 
-Introduce `CMS_DEPLOYMENT_ENV` with the allowed values `production`, `staging`,
-and `local`.
+新增环境变量 `CMS_DEPLOYMENT_ENV`，只允许使用 `production`、`staging`
+和 `local` 三个值。
 
-The release-check command must behave as follows:
+发布检查命令必须按以下规则运行：
 
-- `production`: require `RAILWAY_ENVIRONMENT_NAME=production`,
-  `CMS_RELEASE_CREDENTIALS_ROTATED=confirmed`, and
-  `CMS_RELEASE_HISTORY_CLEANUP_APPROVED=confirmed` before migration.
-- `staging`: require `RAILWAY_ENVIRONMENT_NAME=staging`,
-  `CMS_STAGING_ISOLATION_CONFIRMED=confirmed`,
-  `RMS_SYNC_ENABLED=false`, an R2 bucket name ending in `-staging`, a public
-  media URL different from `https://media.ajazz.jp`, and either no Stripe secret
-  key or a key beginning with `sk_test_`.
-- `local`: permit local development only when Railway environment variables are
-  absent. Railway must reject `CMS_DEPLOYMENT_ENV=local`.
-- Missing, unknown, or contradictory classifications fail closed before schema
-  migration.
+- `production`：必须同时满足 `RAILWAY_ENVIRONMENT_NAME=production`、
+  `CMS_RELEASE_CREDENTIALS_ROTATED=confirmed` 和
+  `CMS_RELEASE_HISTORY_CLEANUP_APPROVED=confirmed`，才能执行数据库迁移。
+- `staging`：必须满足 `RAILWAY_ENVIRONMENT_NAME=staging`、
+  `CMS_STAGING_ISOLATION_CONFIRMED=confirmed`、
+  `RMS_SYNC_ENABLED=false`；R2 Bucket 名称必须以 `-staging` 结尾；公开
+  媒体地址不得为 `https://media.ajazz.jp`；Stripe 密钥必须为空，或以
+  `sk_test_` 开头。
+- `local`：只有在不存在 Railway 环境变量时才允许本地开发。Railway
+  中使用 `CMS_DEPLOYMENT_ENV=local` 时必须拒绝部署。
+- 环境类型缺失、值不受支持或不同变量互相矛盾时，必须在数据库迁移前
+  阻止部署。
 
-`CMS_STAGING_ISOLATION_CONFIRMED` is an operator attestation, not automatic proof
-that the database is isolated. Before setting it, the release owner must verify
-in Railway that staging's `DATABASE_URL` references the new staging PostgreSQL
-service and not a shared or production variable.
+`CMS_STAGING_ISOLATION_CONFIRMED` 是负责人对资源隔离情况的确认，不能
+自动证明数据库确实独立。设置这个变量之前，负责人必须在 Railway 页面
+确认测试环境的 `DATABASE_URL` 指向新建的测试 PostgreSQL 服务，而不是
+共享变量或正式数据库。
 
-## Staging Variables
+## 测试环境变量
 
-Staging requires the following categories of configuration:
+测试环境需要配置以下内容：
 
-- Railway-generated `DATABASE_URL` from the staging PostgreSQL service.
-- A newly generated staging `PAYLOAD_SECRET`.
-- `CMS_DEPLOYMENT_ENV=staging`.
-- `CMS_STAGING_ISOLATION_CONFIRMED=confirmed`, set only after resource review.
-- `NEXT_PUBLIC_SITE_URL` set to the generated Railway HTTPS domain.
-- `RMS_SYNC_ENABLED=false`; omit `RMS_SERVICE_SECRET` and `RMS_LICENSE_KEY`.
-- Stripe test-mode values only when checkout testing begins.
-- `R2_BUCKET=ajazz-japan-media-staging` and independent staging R2 credentials,
-  endpoint, and public URL.
-- Temporary `BOOTSTRAP_ADMIN_EMAIL` and `BOOTSTRAP_ADMIN_PASSWORD` only while
-  creating the staging administrator; remove the password immediately afterward.
+- 由测试环境 PostgreSQL 服务自动生成的 `DATABASE_URL`。
+- 新生成的测试环境 `PAYLOAD_SECRET`。
+- `CMS_DEPLOYMENT_ENV=staging`。
+- 只在资源检查完成后设置
+  `CMS_STAGING_ISOLATION_CONFIRMED=confirmed`。
+- 将 `NEXT_PUBLIC_SITE_URL` 设置为 Railway 自动生成的 HTTPS 地址。
+- 设置 `RMS_SYNC_ENABLED=false`，并且不配置 `RMS_SERVICE_SECRET` 和
+  `RMS_LICENSE_KEY`。
+- 只有开始测试结账时，才配置 Stripe 测试模式密钥。
+- 配置 `R2_BUCKET=ajazz-japan-media-staging`、独立的测试 R2 密钥、
+  Endpoint 和公开读取地址。
+- 只有创建测试管理员账号时，临时设置 `BOOTSTRAP_ADMIN_EMAIL` 和
+  `BOOTSTRAP_ADMIN_PASSWORD`；账号创建后立即删除密码变量。
 
-No value from a production secret is copied into staging. Documentation and
-screenshots may show variable names and presence status but never secret values.
+不得把任何正式密钥复制到测试环境。文档和截图可以显示变量名称及是否
+已配置，但不得显示密钥内容。
 
-## Data and Service Flow
+## 数据与服务流程
 
-1. GitHub branch `feat/ajazz-japan-store` deploys to Railway staging.
-2. Railway runs the environment release check.
-3. A passing check allows Payload migrations against the staging PostgreSQL
-   service.
-4. Railway starts the Next.js application and verifies `/api/health`.
-5. The administrator is bootstrapped once, then the bootstrap password is
-   removed.
-6. Test catalog records and media are created only in staging PostgreSQL and the
-   staging R2 bucket.
-7. Stripe Checkout uses test mode. RMS synchronization stays disabled.
-8. Browser acceptance is performed against the Railway HTTPS staging domain.
+1. GitHub 分支 `feat/ajazz-japan-store` 部署到 Railway 测试环境。
+2. Railway 执行环境发布检查。
+3. 检查通过后，才允许对测试 PostgreSQL 执行 Payload 数据库迁移。
+4. Railway 启动 Next.js 应用，并通过 `/api/health` 检查运行状态。
+5. 创建一次测试管理员账号，然后删除管理员初始化密码。
+6. 测试商品和媒体文件只能写入测试 PostgreSQL 和测试 R2 Bucket。
+7. Stripe Checkout 使用测试模式，RMS 同步保持关闭。
+8. 使用 Railway 的 HTTPS 测试地址执行浏览器验收。
 
-## Browser Acceptance
+## 浏览器验收
 
-Acceptance uses representative test products and no customer or production
-order data. Capture and inspect desktop screenshots at `1440x900` and mobile
-screenshots at `390x844`.
+只能使用代表性的测试商品，不得使用真实客户信息或正式订单数据。分别以
+`1440x900` 桌面尺寸和 `390x844` 手机尺寸截图并检查。
 
-Required checks:
+必须检查以下项目：
 
-- Payload administrator login and dashboard.
-- Product creation, draft save, preview, publish, unpublish, archive, restore,
-  and version restore.
-- Multiple colors with thumbnail, swatch, image, price, comparison-price
-  approval state, and inventory behavior.
-- Staging R2 upload and public delivery without write access from the browser.
-- Product search and all administration filters.
-- Storefront listing and detail consistency with the published record.
-- Stripe test-mode checkout only.
-- Order export, shipment, refund, and restock controls using test orders.
-- Driver redirect and external-link safety.
-- No layout overlap, clipped text, missing images, or application console errors.
+- Payload 管理员登录和后台首页。
+- 新增商品、保存草稿、预览、发布、下架、归档、恢复和版本恢复。
+- 多颜色商品的缩略图、色块、图片、售价、二重价格批准状态和库存行为。
+- 测试 R2 图片上传和公开读取，并确认浏览器无法获得写入权限。
+- 商品搜索和后台全部筛选条件。
+- 商城商品列表、商品详情与后台已发布数据一致。
+- 只使用 Stripe 测试模式结账。
+- 使用测试订单检查订单导出、发货、退款和库存返还。
+- 驱动页面跳转和外部链接安全。
+- 页面不存在重叠、文字截断、图片缺失或应用程序控制台错误。
 
-The staging environment is not accepted if any page loads production media,
-creates a live Stripe payment, triggers RMS synchronization, or references a
-production database.
+如果测试页面加载正式媒体文件、产生 Stripe 正式付款、触发 RMS 同步，
+或者连接正式数据库，则测试环境不得通过验收。
 
-## Failure Handling and Cleanup
+## 失败处理与清理
 
-- A release-gate or migration failure leaves the prior staging deployment active.
-- Failed staging catalog or media operations must not trigger production cleanup
-  jobs or production webhooks.
-- Remove `BOOTSTRAP_ADMIN_PASSWORD` after administrator creation.
-- Keep staging available for future pre-production validation, but rotate or
-  remove unused test credentials.
-- Deleting staging later requires explicit approval and a verified staging-only
-  resource list. Production resources are never deleted as staging cleanup.
+- 发布闸门或数据库迁移失败时，保留上一个可用的测试环境部署。
+- 测试商品或媒体操作失败时，不得触发正式环境的清理任务或 Webhook。
+- 管理员账号创建后删除 `BOOTSTRAP_ADMIN_PASSWORD`。
+- 保留测试环境用于以后正式发布前的验收，但应轮换或删除不再使用的测试
+  密钥。
+- 将来删除测试环境时，需要明确批准，并先确认待删除资源全部属于测试
+  环境。清理测试环境时绝不删除正式资源。
 
-## Implementation and Operational Boundaries
+## 实施与操作边界
 
-The implementation phase may change release-gate code, tests, documentation,
-and Railway staging configuration. It may create staging-only Railway and R2
-resources after their destinations are visibly verified. It must not push to a
-production branch, switch `ajazz.jp`, run production migrations, alter production
-variables, enable RMS synchronization, or use Stripe live mode.
+实施阶段可以修改发布闸门代码、测试和文档，也可以在明确确认目标位置后
+创建测试专用的 Railway 和 R2 资源。禁止推送到正式分支、切换
+`ajazz.jp`、执行正式数据库迁移、修改正式环境变量、启用 RMS 同步或使用
+Stripe 正式模式。
 
-Success means the staging HTTPS site passes automated checks and the documented
-desktop/mobile browser acceptance while production remains untouched.
+成功标准是：测试环境 HTTPS 网站通过全部自动化检查及桌面、手机浏览器
+验收，同时正式环境保持不变。
