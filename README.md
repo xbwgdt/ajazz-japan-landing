@@ -35,31 +35,33 @@ NEXT_PUBLIC_SITE_URL=https://ajazz.jp
 CRON_SECRET=replace-with-a-long-random-value
 RMS_SERVICE_SECRET=replace-with-rms-service-secret
 RMS_LICENSE_KEY=replace-with-rms-license-key
+R2_BUCKET=ajazz-japan-media
+R2_ACCESS_KEY_ID=replace-only-in-railway
+R2_SECRET_ACCESS_KEY=replace-only-in-railway
+R2_ENDPOINT=https://ACCOUNT_ID.r2.cloudflarestorage.com
+R2_PUBLIC_URL=https://media.ajazz.jp
 ```
 
 `POSTGRES_URL` is accepted as an alternative to `DATABASE_URL`.
 
-## First deployment checklist
+## CMS production release
 
-1. In Railway, create a project from `xbwgdt/ajazz-japan-landing` and select the production branch after it is merged.
-2. Add the environment variables above to the Railway service and deploy. Railway uses `railway.json` to build the application, start it, and check `GET /api/health` before routing production traffic.
-3. Generate the temporary `*.up.railway.app` domain and complete the Stripe and database checks there before adding `ajazz.jp`.
-4. Add `ajazz.jp` as a Railway custom domain. Railway will provide a CNAME and a TXT record; add both records to Cloudflare. Add `www.ajazz.jp` as a CNAME to `ajazz.jp`, then configure the redirect in Cloudflare.
+Follow the gated release sequence in
+[`docs/operations/product-admin-cms.md`](docs/operations/product-admin-cms.md).
+It is the authoritative procedure for credential rotation, approved Git-history
+cleanup, Railway backup rehearsal, catalog migration, R2 verification, browser
+acceptance, traffic switching, and rollback.
 
-When Cloudflare proxying is enabled for the Railway domain, set Cloudflare SSL/TLS encryption mode to **Full**. Railway verifies the custom domain with the required CNAME and TXT records before it serves traffic.
-5. In Stripe Dashboard, set the public terms-of-service URL to `https://ajazz.jp/terms`. Checkout requires this URL because customers must accept the terms before payment.
-6. In Stripe Dashboard, add `https://ajazz.jp/api/stripe/webhook` as a webhook endpoint and subscribe to `checkout.session.completed`, `checkout.session.expired`, `refund.created`, `refund.updated`, and `refund.failed`. Copy the endpoint signing secret to `STRIPE_WEBHOOK_SECRET`.
-7. Import the current RMS catalog after the database is configured:
+Railway runs `pnpm cms:migrate` in the pre-deploy phase. A migration failure
+prevents the candidate release from starting; it does not run a migration now
+and does not change the current production deployment. The application starts
+only after that phase succeeds, then Railway checks `GET /api/health` before
+routing traffic.
 
-   ```powershell
-   pnpm import:rms "C:\path\to\dl-normal-item.xlsx"
-   ```
-
-   Run `pnpm import:rms --dry-run "C:\path\to\dl-normal-item.xlsx"` first to review product and SKU totals without writing data.
-
-8. Deploy the Cloudflare Worker described below, then configure protected schedules to request `GET /api/cron/release-reservations` and `GET /api/cron/rms-inventory` with `Authorization: Bearer <CRON_SECRET>`. Stripe normally releases abandoned checkout reservations through `checkout.session.expired`; the first schedule is a four-day fallback for missed events, and the second reads current stock from RMS InventoryAPI 2.1.
-9. Run `pnpm cms:migrate` and `pnpm cms:bootstrap-admin`, then remove `BOOTSTRAP_ADMIN_PASSWORD` from the Railway service after the account exists.
-10. Complete a Stripe test-mode purchase, confirm the webhook creates an order, sign in at `/admin`, check the order in `/admin/orders`, and test manual fulfillment and refund handling before switching to live keys.
+`BOOTSTRAP_ADMIN_EMAIL` and `BOOTSTRAP_ADMIN_PASSWORD` are temporary bootstrap
+inputs. Set them only for `pnpm cms:bootstrap-admin`, remove
+`BOOTSTRAP_ADMIN_PASSWORD` immediately after the administrator account is
+created, and never use legacy `ADMIN_PASSWORD` or `ADMIN_SECRET` variables.
 
 ## Operational limits before launch
 
