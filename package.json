@@ -29,6 +29,7 @@
     "exceljs": "4.4.0",
     "next": "16.2.10",
     "payload": "^3.87.0",
+    "qs-esm": "8.0.1",
     "postgres": "^3.4.9",
     "react": "19.2.7",
     "react-dom": "19.2.7",

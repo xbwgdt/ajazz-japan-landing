@@ -10,6 +10,6 @@ export const GET = createStockStateRouteHandler({
     await requireAuthenticatedAdmin(headers, payload);
   },
   findIds(state) {
-    return findCmsProductIdsForStockState(async (query) => commerceSql()(query as never) as unknown as { cms_product_id?: string | number }[], state);
+    return findCmsProductIdsForStockState(commerceSql(), state);
   },
 });

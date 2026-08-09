@@ -86,7 +86,7 @@ export function createPayloadAdminDashboardStore(payload: Payload): AdminDashboa
             SELECT completed_at, failed_count
             FROM public.inventory_sync_logs
             WHERE id = (SELECT MAX(id) FROM public.inventory_sync_logs)
-              AND (status <> 'completed' OR failed_count > 0)
+              AND (status = 'failed' OR failed_count > 0)
             LIMIT 1
           `,
         ]),

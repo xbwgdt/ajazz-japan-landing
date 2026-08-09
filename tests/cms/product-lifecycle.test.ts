@@ -8,6 +8,7 @@ import {
   ProductLifecycleError,
   type ProductLifecycleStore,
 } from "../../lib/cms/product-lifecycle";
+import { PublicationConflictError } from "../../lib/cms/publication";
 
 const admin = { id: 1, email: "xiet@a-jazz.com" };
 
@@ -171,6 +172,20 @@ describe("product lifecycle routes", () => {
     expect(response.status).toBe(409);
     await expect(response.json()).resolves.toEqual({ code: "product_has_order_history" });
     expect(archiveSpy).toHaveBeenCalledWith("product-1", admin, "ARCHIVE ak820");
+  });
+
+  it("maps operational publication conflicts to 409", async () => {
+    const POST = createProductLifecycleRouteHandler({
+      authenticate,
+      archive: async () => { throw new PublicationConflictError(7); },
+      remove,
+      restore,
+    }, "archive");
+    const response = await POST(lifecycleRequest({ confirmation: "ARCHIVE ak820" }), {
+      params: Promise.resolve({ id: "product-1" }),
+    });
+    expect(response.status).toBe(409);
+    await expect(response.json()).resolves.toEqual({ code: "publication_conflict", currentRevision: 7 });
   });
 });
 

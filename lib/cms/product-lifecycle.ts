@@ -6,7 +6,7 @@ import { lockProduct } from "../../cms/services/productConcurrency";
 import { runPayloadTransaction } from "../../cms/services/payloadTransaction";
 import type { Admin } from "../../payload-types";
 import { createPostgresPublicationStore } from "./publication-store";
-import { unpublishProduct } from "./publication";
+import { PublicationConflictError, unpublishProduct } from "./publication";
 import { isSameOrigin } from "../http-security";
 
 export type LifecycleActor = { id: number | string; email: string };
@@ -182,6 +182,9 @@ function lifecycleErrorResponse(error: unknown): Response {
   }
   if (error instanceof APIError && error.status === 401) {
     return Response.json({ code: "unauthorized" }, { status: 401 });
+  }
+  if (error instanceof PublicationConflictError) {
+    return Response.json({ code: "publication_conflict", currentRevision: error.currentRevision }, { status: 409 });
   }
   return Response.json({ code: "product_lifecycle_failed" }, { status: 500 });
 }

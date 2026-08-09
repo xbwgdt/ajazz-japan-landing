@@ -1,36 +1,61 @@
-import { sql } from "@payloadcms/db-postgres";
 import { isSameOrigin } from "../http-security";
 
 export type StockState = "in" | "out";
-type Query = { rows?: Array<{ cms_product_id?: string | number }> } | Array<{ cms_product_id?: string | number }>;
+type StockRow = { cms_product_id?: string | number };
+type Query = { rows?: StockRow[] } | StockRow[];
+type StockSql = (strings: TemplateStringsArray, ...values: unknown[]) => PromiseLike<Query>;
 
 function rows(result: Query) {
   return Array.isArray(result) ? result : result.rows ?? [];
 }
 
 export async function findCmsProductIdsForStockState(
-  execute: (query: unknown) => Promise<Query>,
+  database: StockSql,
   state: StockState,
 ): Promise<string[]> {
-  const sellable = sql`
-    SELECT 1 FROM public.product_variants pv
-    WHERE pv.product_id = p.id AND pv.active = TRUE
-      AND pv.available_quantity - pv.reserved_quantity > 0
-  `;
-  const result = await execute(sql`
+  const result = state === "in" ? await database`
     SELECT p.cms_product_id
     FROM public.products p
     WHERE p.cms_product_id IS NOT NULL
       AND p.published = TRUE
       AND p.lifecycle = 'active'
-      AND ${state === "in" ? sql`EXISTS (${sellable})` : sql`NOT EXISTS (${sellable})`}
-  `);
+      AND EXISTS (
+        SELECT 1 FROM public.product_variants pv
+        WHERE pv.product_id = p.id AND pv.active = TRUE
+          AND pv.available_quantity - pv.reserved_quantity > 0
+      )
+  ` : await database`
+    SELECT p.cms_product_id
+    FROM public.products p
+    WHERE p.cms_product_id IS NOT NULL
+      AND p.published = TRUE
+      AND p.lifecycle = 'active'
+      AND NOT EXISTS (
+        SELECT 1 FROM public.product_variants pv
+        WHERE pv.product_id = p.id AND pv.active = TRUE
+          AND pv.available_quantity - pv.reserved_quantity > 0
+      )
+  `;
   return rows(result).flatMap((row) => row.cms_product_id === undefined || row.cms_product_id === null ? [] : [String(row.cms_product_id)]);
 }
 
 export function stockStateWhere(existing: unknown, ids: string[]) {
-  const stockWhere = { id: { in: ids.length ? ids : ["__stock_state_no_match__"] } };
+  const stockWhere = { id: { in: ids.length ? ids : [-1] } };
   if (!existing || typeof existing !== "object" || Array.isArray(existing)) return stockWhere;
+  const record = existing as Record<string, unknown>;
+  if (Array.isArray(record.or)) {
+    if (record.or.length === 0) return stockWhere;
+    return {
+      or: record.or.map((branch) => {
+        if (!branch || typeof branch !== "object" || Array.isArray(branch)) return { and: [branch, stockWhere] };
+        const branchRecord = branch as Record<string, unknown>;
+        return Array.isArray(branchRecord.and)
+          ? { ...branchRecord, and: [...branchRecord.and, stockWhere] }
+          : { and: [branchRecord, stockWhere] };
+      }),
+    };
+  }
+  if (Array.isArray(record.and)) return { ...record, and: [...record.and, stockWhere] };
   return { and: [existing, stockWhere] };
 }
 
@@ -39,7 +64,7 @@ export function createStockStateRouteHandler(dependencies: {
   findIds(state: StockState): Promise<string[]>;
 }) {
   return async function GET(request: Request): Promise<Response> {
-    if (!request.headers.get("origin") || !isSameOrigin(request)) return Response.json({ code: "forbidden" }, { status: 403 });
+    if (request.headers.get("origin") && !isSameOrigin(request)) return Response.json({ code: "forbidden" }, { status: 403 });
     const state = new URL(request.url).searchParams.get("state");
     if (state !== "in" && state !== "out") return Response.json({ code: "stock_state_required" }, { status: 400 });
     try {

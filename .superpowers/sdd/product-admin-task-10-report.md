@@ -103,3 +103,13 @@ The pre-existing edits to `product-admin-task-4-report.md` and
 
 - Full command: `pnpm test` with a 480 second timeout.
 - Result: 67 files passed, 345 tests passed; 1 existing test failed: `tests/cms/media-reference-hook.test.ts` timed out at its 5-second dynamic `Products` import. The suite ran for 441.65 seconds. No production calls, migrations, deployment, or push were performed.
+
+## Controller Final Fix And Verification
+
+- Reproduced and fixed Payload URL incompatibility: stock filters now use the same `qs-esm` nested query format that Payload parses, preserve canonical `or -> and` native filters, restore them when cleared, and keep the selector synchronized with the URL.
+- Replaced the invalid Drizzle-to-Postgres.js adapter with a real tagged Postgres.js query; no-match uses numeric `-1` for the numeric CMS ID.
+- Same-origin read-only GET requests no longer depend on a browser-forbidden manual `Origin` header; mismatched origins remain rejected and administrator authentication remains mandatory.
+- Running RMS syncs are not reported as failures, and operational publication conflicts return HTTP 409 with the current revision.
+- Focused final verification: 4 files / 19 tests passed; the canonical Payload filter RED test failed before the compatibility fix and 5/5 passed afterward.
+- Independent full regression: 68 files / 348 tests passed with one worker; the previously timed-out media test also passed independently 5/5.
+- TypeScript `--noEmit`, `git diff --check`, and the Next.js production build passed. The build includes the protected stock-state, archive, restore, and delete-draft routes.
