@@ -1,4 +1,5 @@
 import Stripe from "stripe";
+import { assertStripeEnvironmentSafety } from "../deployment/staging-safety";
 import type { CheckoutSessionGateway } from "./checkout";
 import type { VerifiedStripeEvent } from "./stripe-webhook";
 import type { StripeRefundGateway } from "./refunds";
@@ -67,6 +68,7 @@ export function createStripeCheckoutGateway(
 }
 
 export function configuredStripeCheckoutGateway() {
+  assertStripeEnvironmentSafety(process.env);
   const secretKey = process.env.STRIPE_SECRET_KEY;
   if (!secretKey) {
     throw new Error("STRIPE_SECRET_KEY is not configured");
@@ -89,12 +91,14 @@ export function createStripeRefundGateway(client: StripeRefundClient): StripeRef
 }
 
 export function configuredStripeRefundGateway() {
+  assertStripeEnvironmentSafety(process.env);
   const secretKey = process.env.STRIPE_SECRET_KEY;
   if (!secretKey) throw new Error("STRIPE_SECRET_KEY is not configured");
   return createStripeRefundGateway(new Stripe(secretKey) as unknown as StripeRefundClient);
 }
 
 export function configuredStripeWebhookVerifier() {
+  assertStripeEnvironmentSafety(process.env);
   const secretKey = process.env.STRIPE_SECRET_KEY;
   const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
   if (!secretKey || !webhookSecret) {

@@ -29,6 +29,26 @@ describe("R2 storage configuration", () => {
     expect(JSON.stringify(options)).not.toContain(completeR2Environment.R2_PUBLIC_URL);
   });
 
+  it("rejects production media resources in staging without exposing credentials", () => {
+    const secretAccessKey = "staging-must-not-leak";
+    const environment = {
+      ...completeR2Environment,
+      CMS_DEPLOYMENT_ENV: "staging",
+      R2_BUCKET: "ajazz-japan-media",
+      R2_PUBLIC_URL: "https://media.ajazz.jp",
+      R2_SECRET_ACCESS_KEY: secretAccessKey,
+    };
+
+    expect(() => createR2StorageOptions(environment)).toThrow("Staging R2");
+
+    try {
+      createR2StorageOptions(environment);
+    } catch (error) {
+      expect(String(error)).not.toContain(secretAccessKey);
+      expect(String(error)).not.toContain(environment.R2_BUCKET);
+    }
+  });
+
   it("rejects partial configuration without exposing supplied values", () => {
     expect(() => createR2StorageOptions({
       R2_BUCKET: "private-media",
