@@ -53,6 +53,18 @@ describe("storefront cards", () => {
     }])[0].compareAtPriceJpy).toBeUndefined();
   });
 
+  it.each([11999, Number.POSITIVE_INFINITY, Number.NaN])(
+    "omits an invalid selected comparison price: %s",
+    (compareAtPriceJpy) => {
+      expect(toStorefrontCards([{
+        slug: "invalid-comparison",
+        name: "Invalid comparison",
+        image: "/invalid-comparison.jpg",
+        variants: [{ priceJpy: 12000, compareAtPriceJpy, availableQuantity: 1 }],
+      }])[0].compareAtPriceJpy).toBeUndefined();
+    },
+  );
+
   it("normalizes an unknown category to other", () => {
     expect(toStorefrontCards([{
       slug: "unknown", name: "Unknown", image: "https://example.test/unknown.jpg", category: "unsupported-category",
