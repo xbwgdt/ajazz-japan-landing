@@ -20,7 +20,7 @@ export function AboutContent({ settings = DEFAULT_SITE_SETTINGS }: { settings?: 
   const subject = encodeURIComponent("OEM・卸売事業についてのご相談");
   return <main className="storefront store-about-page">
     <header className="store-nav">
-      <Link href="/" className="store-brand" aria-label="AJAZZ JAPAN home"><img src="/brand/ajazz-japan-logo.jpg" alt="AJAZZ JAPAN" /></Link>
+      <Link href="/" className="store-brand" aria-label="AJAZZ JAPAN home"><img src="/brand/ajazz-japan-logo-dark.png" alt="AJAZZ JAPAN" /></Link>
       <nav aria-label="Primary navigation"><Link href="/">ストア</Link><a {...DRIVER_LINK_PROPS}>ドライバー</a><Link href="/legal">特定商取引法に基づく表記</Link></nav>
     </header>
     <section className="store-about-hero">
@@ -56,7 +56,7 @@ export function AboutContent({ settings = DEFAULT_SITE_SETTINGS }: { settings?: 
       </dl>
     </section>
     <footer className="store-footer">
-      <img src="/brand/ajazz-japan-logo.jpg" alt="AJAZZ JAPAN" />
+      <img src="/brand/ajazz-japan-logo-dark.png" alt="AJAZZ JAPAN" />
       <p>{settings.footer.companyName}<br />{settings.footer.address}</p>
       <div>{settings.footer.navigation.map((link) => <Link key={link.href} href={link.href}>{link.label}</Link>)}</div>
       {settings.socialLinks.length > 0 ? <div>{settings.socialLinks.map((link) => <a

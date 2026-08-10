@@ -7,7 +7,7 @@ export const dynamic = "force-dynamic";
 
 export function PrivacyContent({ settings = DEFAULT_SITE_SETTINGS }: { settings?: SiteSettingsViewModel }) {
   return <main className="storefront store-legal-page">
-    <header className="store-nav"><Link href="/" className="store-brand" aria-label="AJAZZ JAPAN home"><img src="/brand/ajazz-japan-logo.jpg" alt="AJAZZ JAPAN" /></Link><Link href="/">ストアへ戻る</Link></header>
+    <header className="store-nav"><Link href="/" className="store-brand" aria-label="AJAZZ JAPAN home"><img src="/brand/ajazz-japan-logo-dark.png" alt="AJAZZ JAPAN" /></Link><Link href="/">ストアへ戻る</Link></header>
     <section className="store-legal"><p className="store-eyebrow">PRIVACY</p><h1>プライバシーポリシー</h1>
       <article><h2>取得する情報</h2><p>当社は、ご注文・お問い合わせに際して、氏名、配送先住所、電話番号、メールアドレス、注文内容および配送情報を取得します。クレジットカード情報は決済事業者Stripeが取り扱い、当社はカード番号を保有しません。</p></article>
       <article><h2>利用目的</h2><p>取得した情報は、商品の販売、決済確認、発送、返品・交換対応、お問い合わせ対応、不正利用の防止および法令上の義務の履行のために利用します。</p></article>

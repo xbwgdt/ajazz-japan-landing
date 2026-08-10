@@ -28,7 +28,7 @@ function legalRows(settings: SiteSettingsViewModel): Array<[string, string]> {
 
 export function LegalContent({ settings = DEFAULT_SITE_SETTINGS }: { settings?: SiteSettingsViewModel }) {
   return <main className="storefront store-legal-page">
-    <header className="store-nav"><Link href="/" className="store-brand" aria-label="AJAZZ JAPAN home"><img src="/brand/ajazz-japan-logo.jpg" alt="AJAZZ JAPAN" /></Link><Link href="/">ストアへ戻る</Link></header>
+    <header className="store-nav"><Link href="/" className="store-brand" aria-label="AJAZZ JAPAN home"><img src="/brand/ajazz-japan-logo-dark.png" alt="AJAZZ JAPAN" /></Link><Link href="/">ストアへ戻る</Link></header>
     <section className="store-legal"><p className="store-eyebrow">LEGAL NOTICE</p><h1>特定商取引法に基づく表記</h1>
       <dl>{legalRows(settings).map(([term, description]) => <div key={term}><dt>{term}</dt><dd>{description}</dd></div>)}</dl>
     </section>

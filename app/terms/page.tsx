@@ -22,7 +22,7 @@ export function TermsContent({ settings = DEFAULT_SITE_SETTINGS }: { settings?: 
     ? [term, `${settings.footer.companyName}\nメール: ${settings.contact.email}\n電話: ${settings.contact.phone}`]
     : [term, description]);
   return <main className="storefront store-legal-page">
-    <header className="store-nav"><Link href="/" className="store-brand" aria-label="AJAZZ JAPAN home"><img src="/brand/ajazz-japan-logo.jpg" alt="AJAZZ JAPAN" /></Link><Link href="/">ストアへ戻る</Link></header>
+    <header className="store-nav"><Link href="/" className="store-brand" aria-label="AJAZZ JAPAN home"><img src="/brand/ajazz-japan-logo-dark.png" alt="AJAZZ JAPAN" /></Link><Link href="/">ストアへ戻る</Link></header>
     <section className="store-legal"><p className="store-eyebrow">TERMS</p><h1>利用規約</h1>
       <p>最終更新日: 2026年7月25日</p>
       <dl>{renderedSections.map(([term, description]) => <div key={term}><dt>{term}</dt><dd>{description}</dd></div>)}</dl>

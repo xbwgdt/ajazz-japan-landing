@@ -47,7 +47,7 @@ export function Storefront({
     <main className="storefront">
       <header className="store-nav store-nav-dark">
         <Link href="/" className="store-brand" aria-label="AJAZZ JAPAN home">
-          <img src="/brand/ajazz-japan-logo.jpg" alt="AJAZZ JAPAN" />
+          <img src="/brand/ajazz-japan-logo-dark.png" alt="AJAZZ JAPAN" />
         </Link>
         <nav aria-label="Primary navigation">
           <a href="#products">製品</a>
@@ -99,7 +99,7 @@ export function Storefront({
       </section>
 
       <footer className="store-footer">
-        <img src="/brand/ajazz-japan-logo.jpg" alt="AJAZZ JAPAN" />
+        <img src="/brand/ajazz-japan-logo-dark.png" alt="AJAZZ JAPAN" />
         <p>{settings.footer.companyName}<br />{settings.footer.address}</p>
         <div><a {...DRIVER_LINK_PROPS}>ドライバー</a></div>
         <div className="store-footer-legal">{settings.footer.navigation.map((link) => <Link key={link.href} href={link.href}>{link.label}</Link>)}</div>

@@ -13,7 +13,7 @@ export default async function OrderSuccessPage({ searchParams }: { searchParams:
   }) : undefined;
 
   return <main className="storefront store-order-success">
-    <header className="store-nav"><Link href="/" className="store-brand" aria-label="AJAZZ JAPAN home"><img src="/brand/ajazz-japan-logo.jpg" alt="AJAZZ JAPAN" /></Link></header>
+    <header className="store-nav"><Link href="/" className="store-brand" aria-label="AJAZZ JAPAN home"><img src="/brand/ajazz-japan-logo-dark.png" alt="AJAZZ JAPAN" /></Link></header>
     <section className="store-success-content">
       <p className="store-eyebrow">ORDER STATUS</p>
       {order ? <>

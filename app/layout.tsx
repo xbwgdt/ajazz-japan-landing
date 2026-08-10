@@ -1,8 +1,24 @@
 import type { Metadata } from "next";
+import { Barlow_Condensed, Noto_Sans_JP } from "next/font/google";
 import "./globals.css";
+import "./storefront.css";
 import { CartProvider } from "../components/store/CartProvider";
 
 const siteUrl = "https://ajazz.jp";
+
+const storeDisplay = Barlow_Condensed({
+  subsets: ["latin"],
+  weight: ["600", "700", "800", "900"],
+  variable: "--font-store-display",
+  display: "swap",
+});
+
+const storeBody = Noto_Sans_JP({
+  subsets: ["latin"],
+  weight: ["400", "500", "600", "700", "800", "900"],
+  variable: "--font-store-body",
+  display: "swap",
+});
 
 export const metadata: Metadata = {
   metadataBase: new URL(siteUrl),
@@ -55,7 +71,9 @@ export default function RootLayout({
           }}
         />
       </head>
-      <body><CartProvider>{children}</CartProvider></body>
+      <body className={`${storeDisplay.variable} ${storeBody.variable}`}>
+        <CartProvider>{children}</CartProvider>
+      </body>
     </html>
   );
 }

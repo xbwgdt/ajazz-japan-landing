@@ -70,7 +70,7 @@ export function CartPage() {
   }
 
   return <main className="storefront store-cart-page">
-    <header className="store-nav"><Link href="/" className="store-brand" aria-label="AJAZZ JAPAN home"><img src="/brand/ajazz-japan-logo.jpg" alt="AJAZZ JAPAN" /></Link><Link href="/">買い物を続ける</Link></header>
+    <header className="store-nav"><Link href="/" className="store-brand" aria-label="AJAZZ JAPAN home"><img src="/brand/ajazz-japan-logo-dark.png" alt="AJAZZ JAPAN" /></Link><Link href="/">買い物を続ける</Link></header>
     <section className="store-cart-content"><p className="store-eyebrow">YOUR SELECTION</p><h1>カート</h1>
       {!lines.length ? <div className="store-cart-empty"><p>カートに商品はありません。</p><Link className="store-button store-button-primary" href="/#products">商品を見る</Link></div> : <>
         <div className="store-cart-lines">{lines.map((line) => <article key={line.variantId}>
