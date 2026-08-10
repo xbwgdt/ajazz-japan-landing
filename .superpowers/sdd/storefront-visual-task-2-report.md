@@ -19,6 +19,8 @@ COMPLETE - LOCAL COMMIT ONLY
 - Connected both search controls to `/#store-product-search`; the homepage search is focused and scrolled into view when present, otherwise the anchor fallback remains available.
 - Rendered CMS-controlled company, footer navigation, and social links from the shared footer.
 - Added responsive header/footer layout, stable 44px controls, mobile navigation containment, and narrow viewport sizing. The existing storefront-wide `:focus-visible` rule covers all new shell controls.
+- Addressed the Task 2 review findings by moving keyboard focus into the first navigation link whenever the mobile menu opens, while preserving Escape-to-close and focus return to the menu trigger.
+- Kept icon controls at `44px` width, height, and flex basis at the `420px` breakpoint instead of reducing their touch target to `42px`.
 
 ## Files
 
@@ -66,11 +68,26 @@ Result: 4 files passed, 15 tests passed.
 
 The first complete storefront run exposed one stale source-level logo ownership assertion. It was updated to test `StoreLogo` and both consumers. The final complete storefront run passed 12 files and 37 tests.
 
+### REVIEW FIX RED / GREEN
+
+The Task 2 review identified two mobile regressions. Regression tests were added before production changes:
+
+```powershell
+pnpm exec vitest run tests/storefront/store-shell.test.tsx
+```
+
+RED result: 1 file failed with 2 expected failures. Focus remained on the expanded menu trigger instead of entering the first navigation link, and the narrow breakpoint still declared `width:42px` and `flex-basis:42px`.
+
+GREEN result after the minimal fixes: 1 file passed, 5 tests passed. The test now exercises real focus movement from the focused menu trigger into the opened navigation and statically verifies the `44px` narrow-breakpoint dimensions.
+
 ## Final Verification
 
 ```powershell
 pnpm exec vitest run tests/storefront --maxWorkers=1 --minWorkers=1 --no-file-parallelism
-# 12 files passed, 37 tests passed
+# 12 files passed, 38 tests passed
+
+pnpm exec vitest run tests/storefront/store-shell.test.tsx tests/storefront/driver-links.test.tsx tests/storefront/site-settings-rendering.test.tsx tests/storefront/hero-visual.test.tsx
+# 4 files passed, 16 tests passed
 
 pnpm run build
 # passed; Next.js compiled, type checked, and generated all 16 static pages
@@ -82,7 +99,7 @@ git diff --check
 # passed
 ```
 
-Independent review rechecked the shared shell/header/footer, menu state, search focus fallback, disabled account control, `CartLink`, Lucide dependency, homepage migration, and CSS. No additional Task 2 defect required a production change. The existing local preview at `http://127.0.0.1:3007/` returned 200 with the logo and exactly one rendered header and footer.
+Independent review rechecked the shared shell/header/footer, menu state, search focus fallback, disabled account control, `CartLink`, Lucide dependency, homepage migration, and CSS. Its two mobile findings were reproduced with failing tests and fixed: expanded-menu focus now enters navigation, and narrow controls remain at least `44px`. The existing local preview at `http://127.0.0.1:3007/` returned 200 with the logo and exactly one rendered header and footer.
 
 ## Concerns
 

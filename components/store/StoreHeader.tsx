@@ -12,9 +12,12 @@ const navigationId = "store-mobile-navigation";
 export function StoreHeader(): React.ReactElement {
   const [menuOpen, setMenuOpen] = useState(false);
   const menuButtonRef = useRef<HTMLButtonElement>(null);
+  const navigationRef = useRef<HTMLElement>(null);
 
   useEffect(() => {
     if (!menuOpen) return;
+
+    navigationRef.current?.querySelector<HTMLAnchorElement>("a")?.focus();
 
     function closeOnEscape(event: KeyboardEvent) {
       if (event.key !== "Escape") return;
@@ -47,6 +50,7 @@ export function StoreHeader(): React.ReactElement {
       </Link>
 
       <nav
+        ref={navigationRef}
         id={navigationId}
         className={`store-primary-nav${menuOpen ? " is-open" : ""}`}
         aria-label="メインナビゲーション"

@@ -3,6 +3,8 @@
 import { act } from "react";
 import { createRoot } from "react-dom/client";
 import { renderToStaticMarkup } from "react-dom/server";
+import { readFileSync } from "node:fs";
+import { resolve } from "node:path";
 import { describe, expect, it } from "vitest";
 import { CartProvider } from "../../components/store/CartProvider";
 import { Storefront } from "../../components/store/Storefront";
@@ -49,6 +51,7 @@ describe("shared public storefront shell", () => {
 
   it("operates the mobile menu by button, Escape, and link activation", async () => {
     const container = document.createElement("div");
+    document.body.append(container);
     const root = createRoot(container);
 
     await act(async () => {
@@ -60,9 +63,11 @@ describe("shared public storefront shell", () => {
     expect(menuButton?.getAttribute("aria-expanded")).toBe("false");
     expect(menu?.classList.contains("is-open")).toBe(false);
 
+    menuButton?.focus();
     await act(async () => menuButton?.click());
     expect(menuButton?.getAttribute("aria-expanded")).toBe("true");
     expect(menu?.classList.contains("is-open")).toBe(true);
+    expect(document.activeElement).toBe(menu?.querySelector("a"));
 
     await act(async () => document.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape", bubbles: true })));
     expect(menuButton?.getAttribute("aria-expanded")).toBe("false");
@@ -74,6 +79,16 @@ describe("shared public storefront shell", () => {
     expect(menuButton?.getAttribute("aria-expanded")).toBe("false");
 
     await act(async () => root.unmount());
+    container.remove();
+  });
+
+  it("keeps icon controls at least 44px wide at the narrowest breakpoint", () => {
+    const css = readFileSync(resolve(process.cwd(), "app/storefront.css"), "utf8");
+    const narrowBreakpoint = css.match(/@media \(max-width:420px\)\s*\{([\s\S]*?)\}\s*\}/)?.[1];
+
+    expect(narrowBreakpoint).toMatch(/\.store-icon-button\s*\{[^}]*width:44px/);
+    expect(narrowBreakpoint).toMatch(/\.store-icon-button\s*\{[^}]*height:44px/);
+    expect(narrowBreakpoint).toMatch(/\.store-icon-button\s*\{[^}]*flex-basis:44px/);
   });
 
   it("focuses the existing homepage product search without inventing a search route", async () => {
