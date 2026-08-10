@@ -41,6 +41,18 @@ describe("storefront cards", () => {
     });
   });
 
+  it("omits an approved comparison price that is not greater than the selected sale price", () => {
+    expect(toStorefrontCards([{
+      slug: "invalid-comparison",
+      name: "Invalid comparison",
+      image: "/invalid-comparison.jpg",
+      variants: [
+        { priceJpy: 12000, compareAtPriceJpy: 12000, availableQuantity: 1 },
+        { priceJpy: 15000, compareAtPriceJpy: 20000, availableQuantity: 1 },
+      ],
+    }])[0].compareAtPriceJpy).toBeUndefined();
+  });
+
   it("normalizes an unknown category to other", () => {
     expect(toStorefrontCards([{
       slug: "unknown", name: "Unknown", image: "https://example.test/unknown.jpg", category: "unsupported-category",

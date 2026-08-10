@@ -8,6 +8,29 @@ import { ProductCard } from "../../components/store/ProductCard";
 (globalThis as typeof globalThis & { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
 
 describe("product card color previews", () => {
+  it("does not render a comparison price when the adapter omits it", async () => {
+    const container = document.createElement("div");
+    const root = createRoot(container);
+    await act(async () => {
+      root.render(<ProductCard
+        slug="invalid-comparison"
+        name="Invalid comparison"
+        category="mouse"
+        tagline="Invalid comparison"
+        image="/main.jpg"
+        index={0}
+        priceJpy={12000}
+        points={120}
+        available
+        variants={[]}
+      />);
+    });
+
+    expect(container.querySelector(".store-card-compare-price")).toBeNull();
+
+    await act(async () => { root.unmount(); });
+  });
+
   it("exposes and updates the selected color with aria-pressed", async () => {
     const container = document.createElement("div");
     const root = createRoot(container);

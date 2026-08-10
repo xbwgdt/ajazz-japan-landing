@@ -33,6 +33,7 @@ export function toStorefrontCards(products: StorefrontCardSource[]): StorefrontC
       (lowest, variant) => variant.priceJpy > 0 && (!lowest || variant.priceJpy < lowest.priceJpy) ? variant : lowest,
       undefined,
     );
+    const compareAtPriceJpy = selected?.compareAtPriceJpy;
     return {
       slug: product.slug,
       name: product.name,
@@ -40,7 +41,10 @@ export function toStorefrontCards(products: StorefrontCardSource[]): StorefrontC
       category: normalizeProductCategory(product.category),
       tagline: selected ? `¥${selected.priceJpy.toLocaleString("ja-JP")}から` : "価格準備中",
       priceJpy: selected?.priceJpy,
-      compareAtPriceJpy: selected?.compareAtPriceJpy,
+      compareAtPriceJpy:
+        selected && typeof compareAtPriceJpy === "number" && Number.isFinite(compareAtPriceJpy) && compareAtPriceJpy > selected.priceJpy
+          ? compareAtPriceJpy
+          : undefined,
       points: selected ? Math.floor(selected.priceJpy / 100) : 0,
       available: product.variants.some((variant) => variant.availableQuantity > 0),
       variants: product.variants,
