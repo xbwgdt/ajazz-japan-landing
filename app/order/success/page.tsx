@@ -1,4 +1,6 @@
 import Link from "next/link";
+import { StoreShell } from "../../../components/store/StoreShell";
+import { getPublishedSiteSettings } from "../../../lib/cms/site-settings-reader";
 import { CommerceDatabaseNotConfiguredError } from "../../../lib/commerce/db";
 import { findOrderConfirmation } from "../../../lib/commerce/order-confirmation";
 
@@ -6,26 +8,36 @@ export const dynamic = "force-dynamic";
 export const metadata = { title: "ご注文を受け付けました | AJAZZ JAPAN", robots: { index: false, follow: false } };
 
 export default async function OrderSuccessPage({ searchParams }: { searchParams: Promise<{ session_id?: string }> }) {
-  const { session_id: sessionId } = await searchParams;
-  const order = sessionId ? await findOrderConfirmation(sessionId).catch((error) => {
-    if (error instanceof CommerceDatabaseNotConfiguredError) return undefined;
-    throw error;
-  }) : undefined;
+  const confirmation = searchParams.then(({ session_id: sessionId }) => sessionId
+    ? findOrderConfirmation(sessionId).catch((error) => {
+      if (error instanceof CommerceDatabaseNotConfiguredError) return undefined;
+      throw error;
+    })
+    : undefined);
+  const [settings, order] = await Promise.all([
+    getPublishedSiteSettings(),
+    confirmation,
+  ]);
 
-  return <main className="storefront store-order-success">
-    <header className="store-nav"><Link href="/" className="store-brand" aria-label="AJAZZ JAPAN home"><img src="/brand/ajazz-japan-logo-dark.png" alt="AJAZZ JAPAN" /></Link></header>
+  return <StoreShell settings={settings} className="store-order-success-route">
     <section className="store-success-content">
       <p className="store-eyebrow">ORDER STATUS</p>
       {order ? <>
         <h1>ご注文を<br />受け付けました。</h1>
-        <p>ご注文番号: <strong>{order.id}</strong></p><p>お支払い金額: <strong>¥{order.totalJpy.toLocaleString("ja-JP")}</strong></p>
-        {order.customerEmail ? <p>ご注文に関する連絡先: <strong>{order.customerEmail}</strong></p> : null}
-        <p className="store-success-note">通常3営業日以内に発送します。発送後、追跡番号をご案内します。</p>
+        <p className="store-order-status">決済完了</p>
+        <dl className="store-order-details">
+          <div className="store-order-reference"><dt>ご注文番号</dt><dd>{order.id}</dd></div>
+          <div className="store-order-amount"><dt>お支払い金額</dt><dd>¥{order.totalJpy.toLocaleString("ja-JP")}</dd></div>
+          {order.customerEmail ? <div className="store-order-contact"><dt>確認メール送信先</dt><dd>{order.customerEmail}</dd></div> : null}
+        </dl>
+        <p className="store-order-shipment">通常3営業日以内に発送します。発送後、追跡番号をご案内します。</p>
       </> : <>
         <h1>ご注文を<br />確認しています。</h1>
-        <p>決済情報を確認中です。このページを数分後に更新してください。</p>
+        <p className="store-order-status is-pending">確認中</p>
+        <p className="store-order-pending">決済情報を確認中です。このページを数分後に更新してください。</p>
       </>}
+      <p className="store-order-support">ご注文についてのお問い合わせ: <a href={`mailto:${settings.contact.email}`}>{settings.contact.email}</a></p>
       <Link className="store-button store-button-primary" href="/">ストアへ戻る</Link>
     </section>
-  </main>;
+  </StoreShell>;
 }
