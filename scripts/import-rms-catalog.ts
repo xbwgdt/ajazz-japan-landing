@@ -51,6 +51,17 @@ export async function importRmsWorkbook(
   return importer(await readRmsWorkbook(filePath));
 }
 
+export async function withPayloadCleanup<T>(
+  operation: () => Promise<T>,
+  destroy: () => Promise<void>,
+): Promise<T> {
+  try {
+    return await operation();
+  } finally {
+    await destroy();
+  }
+}
+
 export async function importRmsWorkbookWithCms(filePath: string) {
   const rows = await readRmsWorkbook(filePath);
   const [{ getPayload }, { default: config }, { upsertRmsEditorialDraft }] = await Promise.all([
@@ -59,28 +70,31 @@ export async function importRmsWorkbookWithCms(filePath: string) {
     import("../lib/cms/rms-drafts"),
   ]);
   const payload = await getPayload({ config });
-  return upsertRmsCatalog(rows, {
-    async resolveCmsProductId(product) {
-      const found = await payload.find({
-        collection: "products",
-        depth: 0,
-        draft: true,
-        limit: 2,
-        overrideAccess: true,
-        where: { rmsManageNumber: { equals: product.rmsManageNumber } },
-      });
-      if (found.docs.length > 1) {
-        throw new Error(`Ambiguous RMS CMS linkage for ${product.rmsManageNumber}`);
-      }
-      const existing = found.docs[0];
-      if (!existing) return undefined;
-      if (existing.sourceType !== "rms") {
-        throw new Error(`RMS source conflicts with a manual CMS product: ${product.rmsManageNumber}`);
-      }
-      return existing.id;
-    },
-    afterOperationalImport(product) {
-      return upsertRmsEditorialDraft(product, payload);
-    },
-  });
+  return withPayloadCleanup(
+    () => upsertRmsCatalog(rows, {
+      async resolveCmsProductId(product) {
+        const found = await payload.find({
+          collection: "products",
+          depth: 0,
+          draft: true,
+          limit: 2,
+          overrideAccess: true,
+          where: { rmsManageNumber: { equals: product.rmsManageNumber } },
+        });
+        if (found.docs.length > 1) {
+          throw new Error(`Ambiguous RMS CMS linkage for ${product.rmsManageNumber}`);
+        }
+        const existing = found.docs[0];
+        if (!existing) return undefined;
+        if (existing.sourceType !== "rms") {
+          throw new Error(`RMS source conflicts with a manual CMS product: ${product.rmsManageNumber}`);
+        }
+        return existing.id;
+      },
+      afterOperationalImport(product) {
+        return upsertRmsEditorialDraft(product, payload);
+      },
+    }),
+    () => payload.destroy(),
+  );
 }

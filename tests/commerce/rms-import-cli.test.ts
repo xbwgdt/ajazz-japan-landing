@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { resolveRmsImportArguments } from "../../scripts/import-rms-catalog-cli";
+import { withPayloadCleanup } from "../../scripts/import-rms-catalog";
 
 describe("RMS import CLI", () => {
   it("accepts one workbook path and an optional dry-run flag", () => {
@@ -7,5 +8,25 @@ describe("RMS import CLI", () => {
     expect(resolveRmsImportArguments(["--dry-run", "C:/exports/catalog.xlsx"])).toEqual({ filePath: "C:/exports/catalog.xlsx", dryRun: true });
     expect(() => resolveRmsImportArguments([])).toThrow("Usage");
     expect(() => resolveRmsImportArguments(["one.xlsx", "two.xlsx"])).toThrow("Usage");
+  });
+
+  it("closes Payload after a completed import", async () => {
+    let destroyed = false;
+
+    await expect(withPayloadCleanup(
+      async () => 43,
+      async () => { destroyed = true; },
+    )).resolves.toBe(43);
+    expect(destroyed).toBe(true);
+  });
+
+  it("closes Payload after a failed import", async () => {
+    let destroyed = false;
+
+    await expect(withPayloadCleanup(
+      async () => { throw new Error("import failed"); },
+      async () => { destroyed = true; },
+    )).rejects.toThrow("import failed");
+    expect(destroyed).toBe(true);
   });
 });
