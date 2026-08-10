@@ -1,10 +1,12 @@
 import { commerceSql, ensureCommerceSchema } from "./db";
 import { toStorefrontCards, type StorefrontCard } from "./storefront";
+import { mapCmsSpecifications, type CmsSpecificationRow, type ProductSpecifications } from "./product-specifications";
 
 export interface StorefrontDatabaseProduct {
   name: string;
   descriptionHtml: string;
   images: string[];
+  specifications?: ProductSpecifications;
   variants: Array<{
     id: string;
     rmsSkuNumber: string;
@@ -22,10 +24,55 @@ export function getSellableQuantity(availableQuantity: number, reservedQuantity:
 
 export async function getStorefrontDatabaseProduct(slug: string): Promise<StorefrontDatabaseProduct | undefined> {
   await ensureCommerceSchema();
-  const [product] = await commerceSql()<Array<{ id: number; name: string; description_html: string }>>`
-    SELECT id, name, description_html
-    FROM products
-    WHERE slug = ${slug} AND published = TRUE
+  const [product] = await commerceSql()<Array<{ id: number; name: string; description_html: string } & CmsSpecificationRow>>`
+    SELECT p.id, p.name, p.description_html,
+      cp.specifications_keyboard_layout AS keyboard_layout,
+      cp.specifications_size AS size,
+      cp.specifications_switch_type AS switch_type,
+      cp.specifications_polling_rate_hz AS polling_rate_hz,
+      cp.specifications_rapid_trigger_supported AS rapid_trigger_supported,
+      cp.specifications_actuation_min_mm AS actuation_min_mm,
+      cp.specifications_actuation_max_mm AS actuation_max_mm,
+      cp.specifications_keycap_material AS keycap_material,
+      cp.specifications_mouse_sensor AS mouse_sensor,
+      cp.specifications_maximum_dpi AS maximum_dpi,
+      cp.specifications_weight_grams AS weight_grams,
+      cp.specifications_button_count AS button_count,
+      cp.specifications_driver_size_mm AS driver_size_mm,
+      cp.specifications_microphone_type AS microphone_type,
+      cp.specifications_stream_controller_key_count AS stream_controller_key_count,
+      cp.specifications_stream_controller_display_count AS stream_controller_display_count,
+      COALESCE((
+        SELECT array_agg(mode.value::text ORDER BY mode."order")
+        FROM cms.products_specifications_connection_modes mode
+        WHERE mode.parent_id = cp.id
+      ), ARRAY[]::text[]) AS connection_modes,
+      COALESCE((
+        SELECT array_agg(connection.value::text ORDER BY connection."order")
+        FROM cms.products_specifications_headset_connection connection
+        WHERE connection.parent_id = cp.id
+      ), ARRAY[]::text[]) AS headset_connection,
+      COALESCE((
+        SELECT array_agg(application.name ORDER BY application._order)
+        FROM cms.products_specifications_supported_applications application
+        WHERE application._parent_id = cp.id AND application.name IS NOT NULL
+      ), ARRAY[]::text[]) AS supported_applications,
+      COALESCE((
+        SELECT array_agg(os.value::text ORDER BY os."order")
+        FROM cms._supported_os_v os
+        JOIN cms._products_v version ON version.id = os.parent_id
+        WHERE version.id = (
+          SELECT published_version.id
+          FROM cms._products_v published_version
+          WHERE published_version.parent_id = cp.id
+            AND published_version.version__status = 'published'
+          ORDER BY published_version.version_updated_at DESC NULLS LAST, published_version.id DESC
+          LIMIT 1
+        )
+      ), ARRAY[]::text[]) AS supported_operating_systems
+    FROM products p
+    LEFT JOIN cms.products cp ON cp.id::text = p.cms_product_id
+    WHERE p.slug = ${slug} AND p.published = TRUE
   `;
   if (!product) return undefined;
 
@@ -47,6 +94,7 @@ export async function getStorefrontDatabaseProduct(slug: string): Promise<Storef
     name: product.name,
     descriptionHtml: product.description_html,
     images: images.map((image) => image.url),
+    specifications: mapCmsSpecifications(product),
     variants: variants.map((variant) => ({
       id: String(variant.id),
       rmsSkuNumber: variant.rms_sku_number,

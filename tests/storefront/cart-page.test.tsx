@@ -94,6 +94,30 @@ describe("cart checkout notice", () => {
     container.remove();
   });
 
+  it("releases checkout loading and shows a Japanese error when the request is rejected", async () => {
+    window.localStorage.setItem("ajazz-japan-cart", JSON.stringify([{
+      variantId: "variant-blue",
+      name: "AJ159 APEX / ブルー",
+      priceJpy: 12980,
+      quantity: 1,
+    }]));
+    vi.spyOn(globalThis, "fetch").mockRejectedValue(new TypeError("Failed to fetch"));
+    const container = document.createElement("div");
+    document.body.append(container);
+    const root = createRoot(container);
+
+    await act(async () => root.render(<CartProvider><CartPage /></CartProvider>));
+    const checkoutButton = container.querySelector<HTMLButtonElement>(".store-cart-checkout")!;
+    await act(async () => checkoutButton.click());
+
+    expect(container.querySelector('[role="alert"]')?.textContent).toContain("通信エラー");
+    expect(checkoutButton.disabled).toBe(false);
+    expect(checkoutButton.textContent).toBe("安全な決済へ進む");
+
+    await act(async () => root.unmount());
+    container.remove();
+  });
+
   it("redirects to the checkoutUrl returned by the commerce API", async () => {
     const destinations: string[] = [];
     const result = await startCheckout(

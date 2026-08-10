@@ -2,10 +2,10 @@ import Link from "next/link";
 import { StoreShell } from "../../../components/store/StoreShell";
 import { getPublishedSiteSettings } from "../../../lib/cms/site-settings-reader";
 import { CommerceDatabaseNotConfiguredError } from "../../../lib/commerce/db";
-import { findOrderConfirmation } from "../../../lib/commerce/order-confirmation";
+import { findOrderConfirmation, getOrderStatusDisplay } from "../../../lib/commerce/order-confirmation";
 
 export const dynamic = "force-dynamic";
-export const metadata = { title: "ご注文を受け付けました | AJAZZ JAPAN", robots: { index: false, follow: false } };
+export const metadata = { title: "ご注文を受け付けました", robots: { index: false, follow: false } };
 
 export default async function OrderSuccessPage({ searchParams }: { searchParams: Promise<{ session_id?: string }> }) {
   const confirmation = searchParams.then(({ session_id: sessionId }) => sessionId
@@ -18,19 +18,20 @@ export default async function OrderSuccessPage({ searchParams }: { searchParams:
     getPublishedSiteSettings(),
     confirmation,
   ]);
+  const statusDisplay = order ? getOrderStatusDisplay(order.status) : undefined;
 
   return <StoreShell settings={settings} className="store-order-success-route">
     <section className="store-success-content">
       <p className="store-eyebrow">ORDER STATUS</p>
-      {order ? <>
-        <h1>ご注文を<br />受け付けました。</h1>
-        <p className="store-order-status">決済完了</p>
+      {order && statusDisplay ? <>
+        <h1>{statusDisplay.heading}</h1>
+        <p className="store-order-status">{statusDisplay.payment}</p>
         <dl className="store-order-details">
           <div className="store-order-reference"><dt>ご注文番号</dt><dd>{order.id}</dd></div>
           <div className="store-order-amount"><dt>お支払い金額</dt><dd>¥{order.totalJpy.toLocaleString("ja-JP")}</dd></div>
           {order.customerEmail ? <div className="store-order-contact"><dt>確認メール送信先</dt><dd>{order.customerEmail}</dd></div> : null}
         </dl>
-        <p className="store-order-shipment">通常3営業日以内に発送します。発送後、追跡番号をご案内します。</p>
+        <p className="store-order-shipment">{statusDisplay.shipment}</p>
       </> : <>
         <h1>ご注文を<br />確認しています。</h1>
         <p className="store-order-status is-pending">確認中</p>

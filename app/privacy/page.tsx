@@ -2,7 +2,7 @@ import { DEFAULT_SITE_SETTINGS, type SiteSettingsViewModel } from "../../lib/cms
 import { getPublishedSiteSettings } from "../../lib/cms/site-settings-reader";
 import { StoreShell } from "../../components/store/StoreShell";
 
-export const metadata = { title: "プライバシーポリシー | AJAZZ JAPAN" };
+export const metadata = { title: "プライバシーポリシー" };
 export const dynamic = "force-dynamic";
 
 export function PrivacyContent({ settings = DEFAULT_SITE_SETTINGS }: { settings?: SiteSettingsViewModel }) {

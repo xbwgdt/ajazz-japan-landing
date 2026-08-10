@@ -6,7 +6,7 @@ import { getPublishedSiteSettings } from "../../lib/cms/site-settings-reader";
 import { StoreShell } from "../../components/store/StoreShell";
 
 export const metadata = {
-  title: "AJAZZ JAPANについて | AJAZZ JAPAN",
+  title: "AJAZZ JAPANについて",
   description: "AJAZZ JAPAN公式ストアの運営会社とブランドについて。",
 };
 export const dynamic = "force-dynamic";

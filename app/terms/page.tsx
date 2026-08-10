@@ -2,7 +2,7 @@ import { DEFAULT_SITE_SETTINGS, type SiteSettingsViewModel } from "../../lib/cms
 import { getPublishedSiteSettings } from "../../lib/cms/site-settings-reader";
 import { StoreShell } from "../../components/store/StoreShell";
 
-export const metadata = { title: "利用規約 | AJAZZ JAPAN" };
+export const metadata = { title: "利用規約" };
 export const dynamic = "force-dynamic";
 
 const sections = [

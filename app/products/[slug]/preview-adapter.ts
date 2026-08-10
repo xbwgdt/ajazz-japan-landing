@@ -9,6 +9,7 @@ import {
   type StorefrontDatabaseProduct,
 } from "../../../lib/commerce/storefront-db";
 import { getStorefrontProduct } from "../../../components/store/catalogue";
+import type { ProductSpecifications } from "../../../lib/commerce/product-specifications";
 
 type ProductPageProduct = StorefrontDatabaseProduct | ReturnType<typeof getStorefrontProduct>;
 
@@ -71,10 +72,34 @@ export function adaptDraftProduct(product: Product): StorefrontDatabaseProduct {
       };
     });
 
+  const specifications: ProductSpecifications = {
+    keyboardLayout: product.specifications?.keyboardLayout || undefined,
+    size: product.specifications?.size || undefined,
+    switchType: product.specifications?.switchType || undefined,
+    connectionModes: product.specifications?.connectionModes || undefined,
+    pollingRateHz: product.specifications?.pollingRateHz ?? undefined,
+    rapidTriggerSupported: product.specifications?.rapidTriggerSupported ?? undefined,
+    actuationMinMm: product.specifications?.actuationMinMm ?? undefined,
+    actuationMaxMm: product.specifications?.actuationMaxMm ?? undefined,
+    keycapMaterial: product.specifications?.keycapMaterial || undefined,
+    mouseSensor: product.specifications?.mouseSensor || undefined,
+    maximumDpi: product.specifications?.maximumDpi ?? undefined,
+    weightGrams: product.specifications?.weightGrams ?? undefined,
+    buttonCount: product.specifications?.buttonCount ?? undefined,
+    headsetConnection: product.specifications?.headsetConnection || undefined,
+    driverSizeMm: product.specifications?.driverSizeMm ?? undefined,
+    microphoneType: product.specifications?.microphoneType || undefined,
+    streamControllerKeyCount: product.specifications?.streamControllerKeyCount ?? undefined,
+    streamControllerDisplayCount: product.specifications?.streamControllerDisplayCount ?? undefined,
+    supportedApplications: product.specifications?.supportedApplications?.map((application) => application.name),
+    supportedOperatingSystems: product.specifications?.supportedOperatingSystems || undefined,
+  };
+
   return {
     name: product.name,
     descriptionHtml: descriptionHTML(product.description),
     images: [...new Set(images)],
+    specifications,
     variants,
   };
 }

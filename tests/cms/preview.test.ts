@@ -3,6 +3,7 @@ import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { CartProvider } from "../../components/store/CartProvider";
 import { ProductDetail } from "../../components/store/ProductDetail";
+import { sanitizeProductForRendering } from "../../lib/commerce/product-html";
 import {
   authorizeProductPreview,
   createPreviewToken,
@@ -239,7 +240,7 @@ describe("draft product adapter", () => {
     const html = renderToStaticMarkup(createElement(
       CartProvider,
       null,
-      createElement(ProductDetail, { product }),
+      createElement(ProductDetail, { product: sanitizeProductForRendering(product) }),
     ));
     expect(html).toContain("SKU NEW");
     expect(html).toMatch(/<button[^>]*disabled=""[^>]*class="store-add-button"/);

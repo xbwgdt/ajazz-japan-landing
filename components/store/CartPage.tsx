@@ -61,11 +61,16 @@ export function CartPage() {
     setIsCheckingOut(true);
     const checkoutLines = lines.map((line) => ({ variantId: line.variantId, quantity: line.quantity }));
     attemptRef.current = checkoutAttempt(checkoutLines, attemptRef.current);
-    const result = await startCheckout(checkoutLines, fetch, (url) => window.location.assign(url), attemptRef.current.idempotencyKey);
-    if (!result.redirected) {
-      if (result.resetAttempt) attemptRef.current = undefined;
+    try {
+      const result = await startCheckout(checkoutLines, fetch, (url) => window.location.assign(url), attemptRef.current.idempotencyKey);
+      if (!result.redirected) {
+        if (result.resetAttempt) attemptRef.current = undefined;
+        setError(result.error);
+      }
+    } catch {
+      setError("通信エラーが発生しました。時間をおいて再度お試しください。");
+    } finally {
       setIsCheckingOut(false);
-      setError(result.error);
     }
   }
 

@@ -14,7 +14,7 @@ import { ProductDetail } from "../../components/store/ProductDetail";
 describe("product detail", () => {
   it("shows an available RMS product with price, image, shipping, and returns terms", () => {
     const html = renderToStaticMarkup(<CartProvider><ProductDetail product={{
-      name: "AK820 MAX", descriptionHtml: "<p>Rapid trigger keyboard</p>",
+      name: "AK820 MAX", sanitizedDescriptionHtml: "<p>Rapid trigger keyboard</p>",
       images: ["https://image.rakuten.co.jp/ajazz/cabinet/12437413/ak820/hero.jpg"],
       variants: [{
         rmsSkuNumber: "AK820-BLACK",
@@ -54,7 +54,7 @@ describe("product detail", () => {
 
   it("marks variants without available stock as unavailable", () => {
     const html = renderToStaticMarkup(<CartProvider><ProductDetail product={{
-      name: "AK820 MAX", descriptionHtml: "", images: [],
+      name: "AK820 MAX", sanitizedDescriptionHtml: "", images: [],
       variants: [{ rmsSkuNumber: "AK820-BLACK", priceJpy: 19980, availableQuantity: 0 }],
     }} /></CartProvider>);
     expect(html).toContain("在庫切れ");
@@ -62,7 +62,7 @@ describe("product detail", () => {
 
   it("hides unsafe comparison prices and disables unavailable variants", () => {
     const html = renderToStaticMarkup(<CartProvider><ProductDetail product={{
-      name: "AK820 MAX", descriptionHtml: "", images: [],
+      name: "AK820 MAX", sanitizedDescriptionHtml: "", images: [],
       variants: [
         { id: "one", rmsSkuNumber: "AK820-BLACK", priceJpy: 19980, compareAtPriceJpy: 19980, availableQuantity: 2 },
         { id: "two", rmsSkuNumber: "AK820-WHITE", priceJpy: 21980, compareAtPriceJpy: Number.POSITIVE_INFINITY, availableQuantity: 0 },
@@ -79,7 +79,7 @@ describe("product detail", () => {
     const root = createRoot(container);
 
     await act(async () => root.render(<CartProvider><ProductDetail product={{
-      name: "AK820 MAX", descriptionHtml: "", images: [],
+      name: "AK820 MAX", sanitizedDescriptionHtml: "", images: [],
       variants: [{ id: "variant-1", rmsSkuNumber: "AK820-BLACK", priceJpy: 19980, availableQuantity: 4 }],
     }} /></CartProvider>));
 
@@ -102,7 +102,7 @@ describe("product detail", () => {
     const root = createRoot(container);
 
     await act(async () => root.render(<CartProvider><ProductDetail product={{
-      name: "AK820 MAX", descriptionHtml: "", images: [],
+      name: "AK820 MAX", sanitizedDescriptionHtml: "", images: [],
       variants: [
         { id: "variant-black", rmsSkuNumber: "AK820-BLACK", colorName: "Black", priceJpy: 19980, availableQuantity: 4 },
         { id: "variant-white", rmsSkuNumber: "AK820-WHITE", colorName: "White", priceJpy: 20980, availableQuantity: 3 },
@@ -127,7 +127,7 @@ describe("product detail", () => {
   it("constrains fixed-width RMS description media and tables", () => {
     const html = renderToStaticMarkup(<CartProvider><ProductDetail product={{
       name: "AK820 MAX",
-      descriptionHtml: '<img src="/wide.jpg" width="1200"><video width="1200"></video><iframe width="1200"></iframe><table width="1200"><tbody><tr><td>wide</td></tr></tbody></table><p>verylongcontent</p>',
+      sanitizedDescriptionHtml: '<img src="/wide.jpg" width="1200"><video width="1200"></video><iframe width="1200"></iframe><table width="1200"><tbody><tr><td>wide</td></tr></tbody></table><p>verylongcontent</p>',
       images: [],
       variants: [{ rmsSkuNumber: "AK820-BLACK", priceJpy: 19980, availableQuantity: 1 }],
     }} /></CartProvider>);

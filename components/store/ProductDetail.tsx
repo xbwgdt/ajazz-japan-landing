@@ -3,13 +3,15 @@
 import { useMemo, useState } from "react";
 import { VariantPurchasePanel, type PurchasableVariant } from "./VariantPurchasePanel";
 import { DRIVER_LINK_PROPS } from "../../lib/cms/site-settings";
+import { productSpecificationRows, type ProductSpecifications } from "../../lib/commerce/product-specifications";
 
 interface StoreVariant extends PurchasableVariant {}
 
 interface StoreProduct {
   name: string;
-  descriptionHtml: string;
+  sanitizedDescriptionHtml: string;
   images: string[];
+  specifications?: ProductSpecifications;
   variants: StoreVariant[];
 }
 
@@ -22,6 +24,7 @@ export function ProductDetail({ product }: { product: StoreProduct }) {
   );
   const [galleryIndex, setGalleryIndex] = useState(0);
   const activeImage = gallery[galleryIndex] ?? gallery[0];
+  const specificationRows = useMemo(() => productSpecificationRows(product.specifications ?? {}), [product.specifications]);
 
   const selectVariant = (index: number) => {
     setSelectedIndex(index);
@@ -50,12 +53,14 @@ export function ProductDetail({ product }: { product: StoreProduct }) {
         <section className="store-product-feature-band">
           <p className="store-overline">PERFORMANCE</p>
           <h2>製品の特長</h2>
-          {product.descriptionHtml ? <div className="store-product-description" dangerouslySetInnerHTML={{ __html: product.descriptionHtml }} /> : <p>応答性、操作精度、長時間使用時の快適性まで、プレイ環境に必要な性能を一つのデバイスにまとめました。</p>}
+          {product.sanitizedDescriptionHtml ? <div className="store-product-description" dangerouslySetInnerHTML={{ __html: product.sanitizedDescriptionHtml }} /> : <p>応答性、操作精度、長時間使用時の快適性まで、プレイ環境に必要な性能を一つのデバイスにまとめました。</p>}
         </section>
         <section className="store-product-specification-band">
           <p className="store-overline">SPECIFICATIONS</p>
           <h2>商品仕様</h2>
-          <p>接続方式、サイズ、重量、対応OSなどの詳細仕様は、商品データから確認できます。</p>
+          {specificationRows.length ? <dl className="store-product-specifications">
+            {specificationRows.map((row) => <div key={row.label}><dt>{row.label}</dt><dd>{row.value}</dd></div>)}
+          </dl> : <p>詳細仕様は順次更新します。</p>}
         </section>
         <section className="store-product-driver-band">
           <p className="store-overline">SOFTWARE</p>

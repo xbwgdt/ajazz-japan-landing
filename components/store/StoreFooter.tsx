@@ -3,6 +3,9 @@ import { DRIVER_LINK_PROPS, type SiteSettingsViewModel } from "../../lib/cms/sit
 import { StoreLogo } from "./StoreLogo";
 
 export function StoreFooter({ settings }: { settings: SiteSettingsViewModel }): React.ReactElement {
+  const phoneDigits = settings.contact.phone.replace(/\D/g, "");
+  const telephoneHref = settings.contact.phone.trim().startsWith("+") ? `+${phoneDigits}` : phoneDigits;
+
   return (
     <footer className="store-footer">
       <div className="store-footer-brand">
@@ -10,6 +13,10 @@ export function StoreFooter({ settings }: { settings: SiteSettingsViewModel }): 
           <StoreLogo />
         </Link>
         <p>{settings.footer.companyName}<br />{settings.footer.address}</p>
+        <div className="store-footer-contact">
+          <a href={`mailto:${settings.contact.email}`}>{settings.contact.email}</a>
+          <a href={`tel:${telephoneHref}`}>{settings.contact.phone}</a>
+        </div>
       </div>
 
       <nav className="store-footer-column" aria-label="フッターナビゲーション">

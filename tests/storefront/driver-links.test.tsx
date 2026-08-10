@@ -33,7 +33,7 @@ describe("external driver destination", () => {
   it("uses the same safe external destination on product pages", () => {
     const html = renderToStaticMarkup(<CartProvider><ProductDetail product={{
       name: "AK820 MAX ULTRA",
-      descriptionHtml: "",
+      sanitizedDescriptionHtml: "",
       images: ["/keyboard.webp"],
       variants: [{
         availableQuantity: 1,

@@ -5,7 +5,7 @@ import {
 import { getPublishedSiteSettings } from "../../lib/cms/site-settings-reader";
 import { StoreShell } from "../../components/store/StoreShell";
 
-export const metadata = { title: "特定商取引法に基づく表記 | AJAZZ JAPAN" };
+export const metadata = { title: "特定商取引法に基づく表記" };
 export const dynamic = "force-dynamic";
 
 function legalRows(settings: SiteSettingsViewModel): Array<[string, string]> {
