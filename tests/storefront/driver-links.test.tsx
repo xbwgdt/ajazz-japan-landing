@@ -2,8 +2,10 @@ import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it, vi } from "vitest";
 import { CartProvider } from "../../components/store/CartProvider";
 import { ProductDetail } from "../../components/store/ProductDetail";
+import { StoreFooter } from "../../components/store/StoreFooter";
+import { StoreHeader } from "../../components/store/StoreHeader";
 import { Storefront } from "../../components/store/Storefront";
-import { DRIVER_DESTINATION } from "../../lib/cms/site-settings";
+import { DEFAULT_SITE_SETTINGS, DRIVER_DESTINATION } from "../../lib/cms/site-settings";
 
 const navigationMocks = vi.hoisted(() => ({ redirect: vi.fn() }));
 vi.mock("next/navigation", () => ({ redirect: navigationMocks.redirect }));
@@ -15,6 +17,17 @@ describe("external driver destination", () => {
     expect(html.match(new RegExp(`href="${DRIVER_DESTINATION}"`, "g"))).toHaveLength(3);
     expect(html.match(/target="_blank"/g)).toHaveLength(3);
     expect(html.match(/rel="noopener noreferrer"/g)).toHaveLength(3);
+  });
+
+  it("keeps the shared header and footer on the approved driver destination", () => {
+    const header = renderToStaticMarkup(<CartProvider><StoreHeader /></CartProvider>);
+    const footer = renderToStaticMarkup(<StoreFooter settings={DEFAULT_SITE_SETTINGS} />);
+
+    for (const html of [header, footer]) {
+      expect(html).toContain(`href="${DRIVER_DESTINATION}"`);
+      expect(html).toContain('target="_blank"');
+      expect(html).toContain('rel="noopener noreferrer"');
+    }
   });
 
   it("uses the same safe external destination on product pages", () => {

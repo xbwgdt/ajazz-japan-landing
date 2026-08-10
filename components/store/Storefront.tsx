@@ -1,8 +1,7 @@
-import Link from "next/link";
 import type { ProductCategoryKey } from "../../lib/commerce/product-categories";
 import { storefrontProducts } from "./catalogue";
-import { CartLink } from "./CartLink";
 import { ProductCatalogue } from "./ProductCatalogue";
+import { StoreShell } from "./StoreShell";
 import {
   DEFAULT_SITE_SETTINGS,
   DRIVER_LINK_PROPS,
@@ -44,20 +43,7 @@ export function Storefront({
 }) {
   const orderedProducts = orderProducts(products, settings);
   return (
-    <main className="storefront">
-      <header className="store-nav store-nav-dark">
-        <Link href="/" className="store-brand" aria-label="AJAZZ JAPAN home">
-          <img src="/brand/ajazz-japan-logo-dark.png" alt="AJAZZ JAPAN" />
-        </Link>
-        <nav aria-label="Primary navigation">
-          <a href="#products">製品</a>
-          <a href="#performance">テクノロジー</a>
-          <a {...DRIVER_LINK_PROPS}>ドライバー</a>
-          <Link href="/about">ブランド</Link>
-        </nav>
-        <CartLink />
-      </header>
-
+    <StoreShell settings={settings} className="store-home">
       <section className="store-hero" aria-labelledby="hero-title">
         <div className="store-hero-media" aria-hidden="true">
           <img src={settings.homepage.heroMediaUrl} alt="" />
@@ -98,18 +84,6 @@ export function Storefront({
         </div>
       </section>
 
-      <footer className="store-footer">
-        <img src="/brand/ajazz-japan-logo-dark.png" alt="AJAZZ JAPAN" />
-        <p>{settings.footer.companyName}<br />{settings.footer.address}</p>
-        <div><a {...DRIVER_LINK_PROPS}>ドライバー</a></div>
-        <div className="store-footer-legal">{settings.footer.navigation.map((link) => <Link key={link.href} href={link.href}>{link.label}</Link>)}</div>
-        {settings.socialLinks.length > 0 ? <div>{settings.socialLinks.map((link) => <a
-          key={`${link.href}-${link.label}`}
-          href={link.href}
-          rel={link.href.startsWith("https:") ? "noopener noreferrer" : undefined}
-          target={link.href.startsWith("https:") ? "_blank" : undefined}
-        >{link.label}</a>)}</div> : null}
-      </footer>
-    </main>
+    </StoreShell>
   );
 }

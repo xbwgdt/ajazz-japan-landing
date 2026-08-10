@@ -3,7 +3,7 @@ import { describe, expect, it } from "vitest";
 
 const darkLogo = "/brand/ajazz-japan-logo-dark.png";
 const storefrontLogoFiles = [
-  "../../components/store/Storefront.tsx",
+  "../../components/store/StoreLogo.tsx",
   "../../components/store/CartPage.tsx",
   "../../app/about/page.tsx",
   "../../app/legal/page.tsx",
@@ -18,6 +18,11 @@ describe("AJAZZ JAPAN header logo", () => {
       const source = readFileSync(new URL(file, import.meta.url), "utf8");
       expect(source).toContain(darkLogo);
       expect(source).not.toContain("/brand/ajazz-japan-logo.jpg");
+    }
+
+    for (const file of ["../../components/store/StoreHeader.tsx", "../../components/store/StoreFooter.tsx"]) {
+      const source = readFileSync(new URL(file, import.meta.url), "utf8");
+      expect(source).toContain('import { StoreLogo } from "./StoreLogo"');
     }
   });
 

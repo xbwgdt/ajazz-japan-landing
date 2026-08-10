@@ -5,6 +5,7 @@ import { LegalContent } from "../../app/legal/page";
 import { PrivacyContent } from "../../app/privacy/page";
 import { TermsContent } from "../../app/terms/page";
 import { CartProvider } from "../../components/store/CartProvider";
+import { StoreFooter } from "../../components/store/StoreFooter";
 import { Storefront } from "../../components/store/Storefront";
 import { normalizeSiteSettings } from "../../lib/cms/site-settings";
 
@@ -62,6 +63,15 @@ describe("published site settings rendering", () => {
     expect(html).toContain('href="/about">会社案内</a>');
     expect(html).toContain('href="https://x.com/ajazz"');
     expect(html).toContain('class="store-hero"');
+  });
+
+  it("renders published company, navigation, and social data through the shared footer", () => {
+    const html = renderToStaticMarkup(<StoreFooter settings={settings} />);
+
+    expect(html).toContain("AJAZZ JAPAN TEST");
+    expect(html).toContain("埼玉県テスト住所");
+    expect(html).toContain('href="/about">会社案内</a>');
+    expect(html).toContain('href="https://x.com/ajazz"');
   });
 
   it("renders all three approved company sections and the protected company table", () => {
