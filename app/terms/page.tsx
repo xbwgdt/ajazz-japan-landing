@@ -1,6 +1,6 @@
-import Link from "next/link";
 import { DEFAULT_SITE_SETTINGS, type SiteSettingsViewModel } from "../../lib/cms/site-settings";
 import { getPublishedSiteSettings } from "../../lib/cms/site-settings-reader";
+import { StoreShell } from "../../components/store/StoreShell";
 
 export const metadata = { title: "利用規約 | AJAZZ JAPAN" };
 export const dynamic = "force-dynamic";
@@ -21,13 +21,12 @@ export function TermsContent({ settings = DEFAULT_SITE_SETTINGS }: { settings?: 
   const renderedSections = sections.map(([term, description]) => term === "お問い合わせ"
     ? [term, `${settings.footer.companyName}\nメール: ${settings.contact.email}\n電話: ${settings.contact.phone}`]
     : [term, description]);
-  return <main className="storefront store-legal-page">
-    <header className="store-nav"><Link href="/" className="store-brand" aria-label="AJAZZ JAPAN home"><img src="/brand/ajazz-japan-logo-dark.png" alt="AJAZZ JAPAN" /></Link><Link href="/">ストアへ戻る</Link></header>
-    <section className="store-legal"><p className="store-eyebrow">TERMS</p><h1>利用規約</h1>
-      <p>最終更新日: 2026年7月25日</p>
-      <dl>{renderedSections.map(([term, description]) => <div key={term}><dt>{term}</dt><dd>{description}</dd></div>)}</dl>
-    </section>
-  </main>;
+  return <StoreShell settings={settings} className="store-legal-page">
+    <article className="store-legal-document">
+      <header className="store-legal-header"><p className="store-eyebrow">TERMS</p><h1>利用規約</h1><p className="store-legal-revision">最終更新日: 2026年7月25日</p></header>
+      <dl className="store-legal-body store-legal-definitions">{renderedSections.map(([term, description]) => <div key={term}><dt>{term}</dt><dd>{description}</dd></div>)}</dl>
+    </article>
+  </StoreShell>;
 }
 
 export default async function TermsPage() {

@@ -47,6 +47,7 @@ const settings = normalizeSiteSettings({
 });
 
 describe("published site settings rendering", () => {
+  const renderWithCart = (content: React.ReactNode) => renderToStaticMarkup(<CartProvider>{content}</CartProvider>);
   it("edits homepage content and ordering without replacing the storefront template", () => {
     const html = renderToStaticMarkup(<CartProvider><Storefront settings={settings} products={[
       { slug: "keyboard", name: "Keyboard", category: "rapid-trigger-keyboard", tagline: "K", image: "/k.webp", points: 0, available: false, variants: [] },
@@ -75,7 +76,7 @@ describe("published site settings rendering", () => {
   });
 
   it("renders all three approved company sections and the protected company table", () => {
-    const html = renderToStaticMarkup(<AboutContent settings={settings} />);
+    const html = renderWithCart(<AboutContent settings={settings} />);
 
     expect(html).toContain("編集済みブランド");
     expect(html).toContain("編集済みサポート");
@@ -87,7 +88,7 @@ describe("published site settings rendering", () => {
   });
 
   it("keeps legal labels in code while using published legal values", () => {
-    const html = renderToStaticMarkup(<LegalContent settings={settings} />);
+    const html = renderWithCart(<LegalContent settings={settings} />);
 
     expect(html).toContain("販売業者");
     expect(html).toContain("運営責任者");
@@ -96,7 +97,7 @@ describe("published site settings rendering", () => {
   });
 
   it("uses the published contact destination in privacy and terms templates", () => {
-    expect(renderToStaticMarkup(<PrivacyContent settings={settings} />)).toContain("support@a-jazz.com");
-    expect(renderToStaticMarkup(<TermsContent settings={settings} />)).toContain("support@a-jazz.com");
+    expect(renderWithCart(<PrivacyContent settings={settings} />)).toContain("support@a-jazz.com");
+    expect(renderWithCart(<TermsContent settings={settings} />)).toContain("support@a-jazz.com");
   });
 });

@@ -1,9 +1,9 @@
-import Link from "next/link";
 import {
   DEFAULT_SITE_SETTINGS,
   type SiteSettingsViewModel,
 } from "../../lib/cms/site-settings";
 import { getPublishedSiteSettings } from "../../lib/cms/site-settings-reader";
+import { StoreShell } from "../../components/store/StoreShell";
 
 export const metadata = { title: "特定商取引法に基づく表記 | AJAZZ JAPAN" };
 export const dynamic = "force-dynamic";
@@ -27,12 +27,12 @@ function legalRows(settings: SiteSettingsViewModel): Array<[string, string]> {
 }
 
 export function LegalContent({ settings = DEFAULT_SITE_SETTINGS }: { settings?: SiteSettingsViewModel }) {
-  return <main className="storefront store-legal-page">
-    <header className="store-nav"><Link href="/" className="store-brand" aria-label="AJAZZ JAPAN home"><img src="/brand/ajazz-japan-logo-dark.png" alt="AJAZZ JAPAN" /></Link><Link href="/">ストアへ戻る</Link></header>
-    <section className="store-legal"><p className="store-eyebrow">LEGAL NOTICE</p><h1>特定商取引法に基づく表記</h1>
-      <dl>{legalRows(settings).map(([term, description]) => <div key={term}><dt>{term}</dt><dd>{description}</dd></div>)}</dl>
-    </section>
-  </main>;
+  return <StoreShell settings={settings} className="store-legal-page">
+    <article className="store-legal-document">
+      <header className="store-legal-header"><p className="store-eyebrow">LEGAL NOTICE</p><h1>特定商取引法に基づく表記</h1></header>
+      <dl className="store-legal-body store-legal-definitions">{legalRows(settings).map(([term, description]) => <div key={term}><dt>{term}</dt><dd>{description}</dd></div>)}</dl>
+    </article>
+  </StoreShell>;
 }
 
 export default async function LegalPage() {

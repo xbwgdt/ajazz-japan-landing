@@ -2,13 +2,7 @@ import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 
 const darkLogo = "/brand/ajazz-japan-logo-dark.png";
-const storefrontLogoFiles = [
-  "../../components/store/StoreLogo.tsx",
-  "../../app/about/page.tsx",
-  "../../app/legal/page.tsx",
-  "../../app/privacy/page.tsx",
-  "../../app/terms/page.tsx",
-];
+const storefrontLogoFiles = ["../../components/store/StoreLogo.tsx"];
 
 describe("AJAZZ JAPAN header logo", () => {
   it("uses the dark-surface logo throughout the storefront", () => {
@@ -23,7 +17,14 @@ describe("AJAZZ JAPAN header logo", () => {
       expect(source).toContain('import { StoreLogo } from "./StoreLogo"');
     }
 
-    for (const file of ["../../app/cart/page.tsx", "../../app/order/success/page.tsx"]) {
+    for (const file of [
+      "../../app/cart/page.tsx",
+      "../../app/order/success/page.tsx",
+      "../../app/about/page.tsx",
+      "../../app/legal/page.tsx",
+      "../../app/privacy/page.tsx",
+      "../../app/terms/page.tsx",
+    ]) {
       const source = readFileSync(new URL(file, import.meta.url), "utf8");
       expect(source).toContain("StoreShell");
       expect(source).not.toContain("/brand/ajazz-japan-logo.jpg");
