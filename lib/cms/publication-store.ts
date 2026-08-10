@@ -38,17 +38,31 @@ function transactionAdapter(database: TransactionDatabase): PublicationTransacti
   return {
     async assertSlugAvailable(slug, cmsProductId, operationalProductId) {
       const linkedProductId = positiveInteger(operationalProductId);
-      const rows = await query<{ id: number }>(sql`
-        SELECT id FROM public.products
-        WHERE slug = ${slug} AND cms_product_id IS DISTINCT FROM ${cmsProductId}
-          AND (${linkedProductId} IS NULL OR id <> ${linkedProductId})
-        LIMIT 1
-      `);
+      const rows = linkedProductId === null
+        ? await query<{ id: number }>(sql`
+            SELECT id FROM public.products
+            WHERE slug = ${slug} AND cms_product_id IS DISTINCT FROM ${cmsProductId}
+            LIMIT 1
+          `)
+        : await query<{ id: number }>(sql`
+            SELECT id FROM public.products
+            WHERE slug = ${slug} AND cms_product_id IS DISTINCT FROM ${cmsProductId}
+              AND id <> ${linkedProductId}
+            LIMIT 1
+          `);
       if (rows.length) throw new PublicationConflictError();
     },
 
     async upsertProduct(snapshot: PublishedProductSnapshot) {
       const linkedProductId = positiveInteger(snapshot.operationalProductId);
+      const linkedIdentity = linkedProductId === null ? sql`` : sql`id = ${linkedProductId} OR `;
+      const rmsIdentity = snapshot.rmsManageNumber === null
+        ? sql``
+        : sql` OR rms_manage_number = ${snapshot.rmsManageNumber}`;
+      const linkedOrder = linkedProductId === null ? sql`` : sql`(id = ${linkedProductId}) DESC, `;
+      const rmsOrder = snapshot.rmsManageNumber === null
+        ? sql``
+        : sql`, (rms_manage_number = ${snapshot.rmsManageNumber}) DESC`;
       const existing = await query<{
         cms_product_id: string | null;
         id: number;
@@ -57,13 +71,9 @@ function transactionAdapter(database: TransactionDatabase): PublicationTransacti
       }>(sql`
         SELECT id, cms_product_id, rms_manage_number, publication_revision
         FROM public.products
-        WHERE (${linkedProductId} IS NOT NULL AND id = ${linkedProductId})
-           OR cms_product_id = ${snapshot.cmsProductId}
-           OR (${snapshot.rmsManageNumber} IS NOT NULL AND rms_manage_number = ${snapshot.rmsManageNumber})
+        WHERE ${linkedIdentity}cms_product_id = ${snapshot.cmsProductId}${rmsIdentity}
         ORDER BY
-          (${linkedProductId} IS NOT NULL AND id = ${linkedProductId}) DESC,
-          (cms_product_id = ${snapshot.cmsProductId}) DESC,
-          (rms_manage_number = ${snapshot.rmsManageNumber}) DESC
+          ${linkedOrder}(cms_product_id = ${snapshot.cmsProductId}) DESC${rmsOrder}
         LIMIT 1
         FOR UPDATE
       `);
@@ -131,18 +141,22 @@ function transactionAdapter(database: TransactionDatabase): PublicationTransacti
       const activeIds: string[] = [];
       for (const variant of variants) {
         const operationalVariantId = positiveInteger(variant.operationalVariantId);
+        const operationalIdentity = operationalVariantId === null
+          ? sql``
+          : sql`id = ${operationalVariantId} OR `;
+        const operationalOrder = operationalVariantId === null
+          ? sql``
+          : sql`(id = ${operationalVariantId}) DESC, `;
         const existing = await query<{ id: number }>(sql`
           SELECT id FROM public.product_variants
           WHERE product_id = ${Number(productId)}
             AND (
-              (${operationalVariantId} IS NOT NULL AND id = ${operationalVariantId})
-              OR cms_variant_id = ${variant.cmsVariantId}
+              ${operationalIdentity}cms_variant_id = ${variant.cmsVariantId}
               OR rms_sku_number = ${variant.rmsSkuNumber}
               OR sku = ${variant.sku}
             )
           ORDER BY
-            (id = ${operationalVariantId}) DESC,
-            (cms_variant_id = ${variant.cmsVariantId}) DESC,
+            ${operationalOrder}(cms_variant_id = ${variant.cmsVariantId}) DESC,
             (rms_sku_number = ${variant.rmsSkuNumber}) DESC
           LIMIT 1
           FOR UPDATE

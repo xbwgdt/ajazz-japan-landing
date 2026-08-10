@@ -91,6 +91,7 @@ describe("PostgreSQL publication store", () => {
 
     const select = queries.find((query) => sqlText(query).includes("WHERE slug ="));
     expect(sqlText(select)).toContain("id <>");
+    expect(sqlText(select)).not.toContain("IS NULL");
     expect(sqlValues(select)).toEqual(expect.arrayContaining(["ak820", "product-1", 42]));
   });
 
@@ -135,6 +136,7 @@ describe("PostgreSQL publication store", () => {
     const select = queries.find((query) => sqlText(query).includes("SELECT id FROM public.product_variants"));
     expect(sqlText(select)).toContain("product_id =");
     expect(sqlText(select)).toContain("id =");
+    expect(sqlText(select)).not.toContain("IS NOT NULL");
     expect(sqlValues(select)).toEqual(expect.arrayContaining([42, 99, "RENAMED-SKU"]));
   });
 
