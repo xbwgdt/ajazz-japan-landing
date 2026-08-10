@@ -60,9 +60,9 @@ export function classifyProductCategory(input: {
     .replace(/<[^>]*>/g, " ")
     .toLowerCase();
   const keyboard = /キーボード|keyboard|\bak(?!p)[a-z0-9-]*/.test(text);
-  if (keyboard && /ラピッドトリガー|rapid\s*trigger|磁気(?:式|スイッチ)?|magnetic\s*switch|hall\s*effect/.test(text)) return "rapid-trigger-keyboard";
-  if (/ゲーミングマウス|\bmouse\b|マウス|\baj\d/.test(text)) return "mouse";
   if (/ストリームコントローラー|stream\s*(?:controller|deck)|\bakp\d/.test(text)) return "stream-controller";
+  if (keyboard && /ラピッドトリガー|rapid\s*trigger|磁気(?:軸|スイッチ)|magnetic\s*switch|hall\s*effect/.test(text)) return "rapid-trigger-keyboard";
+  if (/ゲーミングマウス|\bmouse\b|マウス|\baj\d/.test(text)) return "mouse";
   if (/ヘッドセット|ヘッドホン|headset|headphone/.test(text)) return "headset";
   if (keyboard && /メンブレン|membrane/.test(text)) return "membrane-keyboard";
   if (keyboard) return "mechanical-keyboard";

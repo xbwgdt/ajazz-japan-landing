@@ -21,6 +21,7 @@
     "cms:release:check": "node scripts/verify-cms-release-gate.mjs",
     "cms:migrate:create": "payload migrate:create",
     "cms:migrate-catalog": "tsx scripts/migrate-catalog-to-cms.ts",
+    "cms:hydrate-rms-media": "tsx scripts/hydrate-rms-product-media.ts",
     "cms:bootstrap-admin": "tsx scripts/bootstrap-admin.ts"
   },
   "dependencies": {

@@ -58,6 +58,22 @@ describe("product category classification", () => {
     expect(classifyProductCategory({ rmsManageNumber: "ak820-pro", name: "AK820 PRO", descriptionHtml: "75% keyboard" })).toBe("mechanical-keyboard");
     expect(classifyProductCategory({ rmsManageNumber: "ac-01", name: "USB Hub", descriptionHtml: "" })).toBe("other");
   });
+
+  it("does not mistake incidental magnetic wording for a rapid-trigger keyboard", () => {
+    expect(classifyProductCategory({
+      rmsManageNumber: "308i",
+      name: "AJAZZ 308I",
+      descriptionHtml: "磁気猫付き メンブレンキーボード",
+    })).toBe("membrane-keyboard");
+  });
+
+  it("classifies AKP stream controllers before incidental mouse copy", () => {
+    expect(classifyProductCategory({
+      rmsManageNumber: "akp05j",
+      name: "AJAZZ AKP05J",
+      descriptionHtml: "マウス操作にも対応するショートカットコントローラー",
+    })).toBe("stream-controller");
+  });
 });
 
 describe("RMS catalog images", () => {
