@@ -45,7 +45,7 @@ export function Storefront({
   const orderedProducts = orderProducts(products, settings);
   return (
     <main className="storefront">
-      <header className="store-nav">
+      <header className="store-nav store-nav-dark">
         <Link href="/" className="store-brand" aria-label="AJAZZ JAPAN home">
           <img src="/brand/ajazz-japan-logo.jpg" alt="AJAZZ JAPAN" />
         </Link>
@@ -59,6 +59,9 @@ export function Storefront({
       </header>
 
       <section className="store-hero" aria-labelledby="hero-title">
+        <div className="store-hero-media" aria-hidden="true">
+          <img src={settings.homepage.heroMediaUrl} alt="" />
+        </div>
         <div className="store-hero-copy">
           <p className="store-eyebrow">{settings.homepage.eyebrow}</p>
           <h1 id="hero-title">{withLineBreaks(settings.homepage.title)}</h1>
@@ -67,11 +70,6 @@ export function Storefront({
             <a className="store-button store-button-primary" href="#products">{settings.homepage.primaryCommandLabel}</a>
             <a className="store-button store-button-quiet" {...DRIVER_LINK_PROPS}>{settings.homepage.secondaryCommandLabel}</a>
           </div>
-        </div>
-        <div className="store-hero-image" aria-hidden="true">
-          <img src={settings.homepage.heroMediaUrl} alt="" />
-          <span className="store-hero-spec spec-one">0.01 mm</span>
-          <span className="store-hero-spec spec-two">8K READY</span>
         </div>
       </section>
 

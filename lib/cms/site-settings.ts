@@ -65,7 +65,7 @@ export const DEFAULT_SITE_SETTINGS: SiteSettingsViewModel = {
     copy: "ラピッドトリガーから高性能ワイヤレスまで。勝負を分ける一打のために設計されたAJAZZの入力デバイス。",
     primaryCommandLabel: "製品を見る",
     secondaryCommandLabel: "ドライバーを探す",
-    heroMediaUrl: "/images/ak820maxultra.webp",
+    heroMediaUrl: "/images/ajazz-gaming-desk-hero.webp",
     featuredCategoryOrder: [
       "rapid-trigger-keyboard",
       "mechanical-keyboard",

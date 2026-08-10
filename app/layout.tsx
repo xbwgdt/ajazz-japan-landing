@@ -22,10 +22,10 @@ export const metadata: Metadata = {
       "ラピッドトリガーキーボードから高性能ワイヤレスマウスまで。AJAZZ JAPAN公式オンラインストア。",
     images: [
       {
-        url: "/images/ak820maxultra.webp",
-        width: 800,
-        height: 800,
-        alt: "AJAZZ AK820 MAX ULTRA",
+        url: "/images/ajazz-gaming-desk-hero.webp",
+        width: 1672,
+        height: 941,
+        alt: "AJAZZ JAPAN gaming desk setup",
       },
     ],
   },
@@ -34,7 +34,7 @@ export const metadata: Metadata = {
     title: "AJAZZ JAPAN | 高性能ゲーミングデバイス",
     description:
       "ラピッドトリガーキーボードから高性能ワイヤレスマウスまで。AJAZZ JAPAN公式オンラインストア。",
-    images: ["/images/ak820maxultra.webp"],
+    images: ["/images/ajazz-gaming-desk-hero.webp"],
   },
   robots: { index: true, follow: true },
 };
