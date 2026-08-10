@@ -122,3 +122,46 @@ No files are staged.
 - `pnpm run lint`: exit 0; `tsc --noEmit` completed with no errors.
 - `git diff --check`: exit 0.
 - Local commit: `feat: add storefront visual foundation`.
+
+## Review Fixes: Public-Style Isolation And Accessibility
+
+### Fixes Applied
+
+- Removed the global `body` background, color, and font declarations from `app/storefront.css`; storefront styling remains on public storefront wrappers.
+- Restored `.store-admin`, `.store-admin__*`, `.store-shipment-form`, `.store-refund`, and `.store-restock` to `app/globals.css` with their exact pre-Task-1 light values.
+- Replaced negative logo offsets and absolute positioning with contained sizing for the cropped transparent PNG, and removed the white dark-nav logo backing.
+- Changed catalogue search, clear, and empty-state command controls to `--store-surface-raised` backgrounds with `--store-text` foregrounds.
+- Increased `.store-cart` and `.store-cart-quantity button` to explicit 44px minimum width and height.
+- Expanded the token and style tests to cover all nine required tokens, stylesheet isolation, restored admin styles, contrast, logo containment, and the two exact touch-target selectors.
+- Did not implement the reviewer’s shared header/footer finding because it is explicitly assigned to Task 2.
+
+### TDD Evidence
+
+#### RED
+
+Command:
+
+```powershell
+$env:Path='C:\Users\bwgd\.cache\codex-runtimes\codex-primary-runtime\dependencies\node\bin;'+$env:Path; pnpm exec vitest run tests/storefront/visual-tokens.test.ts tests/storefront/logo-asset.test.ts tests/storefront/logo-styling.test.ts
+```
+
+Result: exit 1. Two test files failed with four intended regression failures: legacy absolute logo positioning, missing exact cart touch targets, global `body` styling, and white catalogue-input background.
+
+#### GREEN
+
+Command:
+
+```powershell
+$env:Path='C:\Users\bwgd\.cache\codex-runtimes\codex-primary-runtime\dependencies\node\bin;'+$env:Path; pnpm exec vitest run tests/storefront/visual-tokens.test.ts tests/storefront/logo-asset.test.ts tests/storefront/logo-styling.test.ts
+```
+
+Result: exit 0; 3 test files passed, 8 tests passed, duration 2.41s.
+
+### Final Review Verification
+
+- `pnpm exec vitest run tests/storefront`: exit 0; 11 test files passed, 31 tests passed, duration 21.16s.
+- `pnpm run build`: exit 0; compiled successfully, TypeScript completed, and 16/16 static pages generated in 43.0s.
+- `pnpm run lint`: exit 0; `tsc --noEmit` completed with no errors.
+- `git diff --check`: exit 0.
+- An initial combined build/lint command exceeded its 120-second wrapper limit and ended with `EPIPE`; the standalone rerun above completed successfully.
+- Local fix commit: `fix: isolate storefront visual foundation`.

@@ -25,8 +25,10 @@ describe("AJAZZ JAPAN header logo", () => {
     const css = readFileSync(new URL("../../app/storefront.css", import.meta.url), "utf8");
 
     expect(css).not.toContain("transform:scale(1.6)");
-    expect(css).toMatch(/\.store-brand\s*\{[^}]*aspect-ratio:400\/147/);
-    expect(css).toMatch(/\.store-brand img\s*\{[^}]*position:absolute/);
+    expect(css).not.toMatch(/\.store-brand img\s*\{[^}]*position:absolute/);
+    expect(css).not.toMatch(/\.store-brand img\s*\{[^}]*\b(?:top|left):-/);
+    expect(css).not.toContain(".store-nav-dark .store-brand");
+    expect(css).toMatch(/\.store-brand img\s*\{[^}]*width:100%[^}]*height:100%[^}]*object-fit:contain/);
   });
 });
 
