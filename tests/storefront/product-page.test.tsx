@@ -96,6 +96,50 @@ describe("product detail", () => {
     window.localStorage.clear();
   });
 
+  it("clears the cart confirmation when selecting another color", async () => {
+    const container = document.createElement("div");
+    document.body.append(container);
+    const root = createRoot(container);
+
+    await act(async () => root.render(<CartProvider><ProductDetail product={{
+      name: "AK820 MAX", descriptionHtml: "", images: [],
+      variants: [
+        { id: "variant-black", rmsSkuNumber: "AK820-BLACK", colorName: "Black", priceJpy: 19980, availableQuantity: 4 },
+        { id: "variant-white", rmsSkuNumber: "AK820-WHITE", colorName: "White", priceJpy: 20980, availableQuantity: 3 },
+      ],
+    }} /></CartProvider>));
+
+    const addButton = container.querySelector<HTMLButtonElement>(".store-add-button");
+    const initialLabel = addButton?.textContent;
+    await act(async () => addButton?.click());
+    expect(addButton?.textContent).not.toBe(initialLabel);
+
+    const variants = container.querySelectorAll<HTMLButtonElement>(".store-variant-thumbnails button");
+    await act(async () => variants[1]?.click());
+
+    expect(container.querySelector<HTMLButtonElement>(".store-add-button")?.textContent).toBe(initialLabel);
+
+    await act(async () => root.unmount());
+    container.remove();
+    window.localStorage.clear();
+  });
+
+  it("constrains fixed-width RMS description media and tables", () => {
+    const html = renderToStaticMarkup(<CartProvider><ProductDetail product={{
+      name: "AK820 MAX",
+      descriptionHtml: '<img src="/wide.jpg" width="1200"><video width="1200"></video><iframe width="1200"></iframe><table width="1200"><tbody><tr><td>wide</td></tr></tbody></table><p>verylongcontent</p>',
+      images: [],
+      variants: [{ rmsSkuNumber: "AK820-BLACK", priceJpy: 19980, availableQuantity: 1 }],
+    }} /></CartProvider>);
+    const css = readFileSync(resolve(process.cwd(), "app/storefront.css"), "utf8");
+
+    expect(html).toContain('width="1200"');
+    expect(css).toMatch(/\.store-product-description\s*\{[^}]*min-width:0[^}]*max-width:100%[^}]*overflow-wrap:anywhere/);
+    expect(css).toMatch(/\.store-product-description\s+:is\(img,video\)\s*\{[^}]*max-width:100%[^}]*height:auto/);
+    expect(css).toMatch(/\.store-product-description\s+iframe\s*\{[^}]*max-width:100%/);
+    expect(css).toMatch(/\.store-product-description\s+table\s*\{[^}]*display:block[^}]*max-width:100%[^}]*overflow-x:auto/);
+  });
+
   it("uses the shared shell on the product route and keeps purchase controls touch friendly", () => {
     const route = readFileSync(resolve(process.cwd(), "app/products/[slug]/page.tsx"), "utf8");
     const css = readFileSync(resolve(process.cwd(), "app/storefront.css"), "utf8");

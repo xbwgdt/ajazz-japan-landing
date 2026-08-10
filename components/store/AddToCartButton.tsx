@@ -1,12 +1,16 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useCart } from "./CartProvider";
 
 export function AddToCartButton({ variantId, name, priceJpy, available, quantity = 1 }: { variantId?: string; name: string; priceJpy: number; available: boolean; quantity?: number }) {
   const { add } = useCart();
   const [added, setAdded] = useState(false);
   const canAdd = available && Boolean(variantId);
+
+  useEffect(() => {
+    setAdded(false);
+  }, [variantId]);
 
   return <button type="button" disabled={!canAdd} className="store-add-button" onClick={() => {
     if (!variantId) return;
