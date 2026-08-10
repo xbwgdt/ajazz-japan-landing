@@ -10,6 +10,20 @@ export function resolveRmsImportArguments(arguments_: string[]) {
   return { filePath: paths[0], dryRun };
 }
 
+export async function runCliAndExit(
+  operation: () => Promise<void>,
+  exit: (code: number) => void,
+  reportError: (error: unknown) => void = console.error,
+): Promise<void> {
+  try {
+    await operation();
+    exit(0);
+  } catch (error) {
+    reportError(error instanceof Error ? error.message : error);
+    exit(1);
+  }
+}
+
 async function main() {
   const { filePath, dryRun } = resolveRmsImportArguments(process.argv.slice(2));
   if (dryRun) {
@@ -28,8 +42,5 @@ async function main() {
 }
 
 if (process.argv[1]?.endsWith("import-rms-catalog-cli.ts")) {
-  main().catch((error) => {
-    console.error(error instanceof Error ? error.message : error);
-    process.exitCode = 1;
-  });
+  void runCliAndExit(main, (code) => process.exit(code));
 }

@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { resolveRmsImportArguments } from "../../scripts/import-rms-catalog-cli";
-import { destroyPayload, withPayloadCleanup } from "../../scripts/import-rms-catalog";
+import { resolveRmsImportArguments, runCliAndExit } from "../../scripts/import-rms-catalog-cli";
+import { withPayloadCleanup } from "../../scripts/import-rms-catalog";
 
 describe("RMS import CLI", () => {
   it("accepts one workbook path and an optional dry-run flag", () => {
@@ -30,14 +30,11 @@ describe("RMS import CLI", () => {
     expect(destroyed).toBe(true);
   });
 
-  it("closes the PostgreSQL pool after destroying Payload", async () => {
-    const calls: string[] = [];
+  it("exits the one-time process after a completed import", async () => {
+    let exitCode: number | undefined;
 
-    await destroyPayload({
-      destroy: async () => { calls.push("payload"); },
-      db: { pool: { end: async () => { calls.push("pool"); } } },
-    });
+    await runCliAndExit(async () => undefined, (code) => { exitCode = code; });
 
-    expect(calls).toEqual(["payload", "pool"]);
+    expect(exitCode).toBe(0);
   });
 });
