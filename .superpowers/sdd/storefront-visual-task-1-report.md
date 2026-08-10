@@ -19,7 +19,7 @@ The Task 1 implementation was independently reviewed, corrected where needed, ve
   - `--store-success:#65c987`
   - `--store-danger:#ff626b`
 - Added the 760px and 1024px responsive breakpoints, 44px control sizing, shared `:focus-visible` treatment, and reduced-motion handling.
-- Moved the complete existing `.store*` CSS region from `app/globals.css` to `app/storefront.css`; no `.store*` selectors remain in `app/globals.css`.
+- Moved public storefront CSS to `app/storefront.css` while retaining the existing global light baseline and administrative `.store-admin*` rules in `app/globals.css`.
 - Replaced the migrated cream-era storefront palette with the approved dark tokens while retaining the existing selector contracts.
 - Configured `Barlow_Condensed` and `Noto_Sans_JP` through `next/font/google`, with `display: "swap"`, CSS variables `--font-store-display` and `--font-store-body`, and both variables applied to `<body>`.
 - Derived `public/brand/ajazz-japan-logo-dark.png` from the existing JPEG with Sharp. The source JPEG remains tracked and unmodified. The PNG is 414x161 RGBA with a transparent canvas, retained red symbol, and white lettering.
@@ -27,7 +27,7 @@ The Task 1 implementation was independently reviewed, corrected where needed, ve
 - Updated `tests/storefront/logo-styling.test.ts` to read `app/storefront.css`.
 - Added the required visual-token and logo-asset tests.
 
-## TDD Evidence
+## Historical Original TDD Evidence
 
 ### Initial environment invocation
 
@@ -66,7 +66,7 @@ $env:Path='C:\Users\bwgd\.cache\codex-runtimes\codex-primary-runtime\dependencie
 
 Result: exit 0; 3 test files passed, 5 tests passed, duration 1.03s.
 
-## Additional Verification
+## Historical Additional Verification
 
 - `pnpm exec vitest run tests/storefront`: exit 0; 11 test files passed, 28 tests passed, duration 8.41s. This included `product-card.test.tsx`.
 - `pnpm run build`: exit 0; Next.js 16.2.10 production build compiled successfully, TypeScript completed, and 16/16 static pages generated. `scripts/prepare-standalone-assets.mjs` also completed.
@@ -76,43 +76,6 @@ Result: exit 0; 3 test files passed, 5 tests passed, duration 1.03s.
 - Visual inspection confirmed transparent background, red symbol, white `AJAZZ JAPAN` lettering, and preserved source geometry.
 - Repository-wide `pnpm test`, attempt 1: exit 124 after 123.3s because the command exceeded its 120-second limit; no Vitest result was returned.
 - Repository-wide `pnpm test`, attempt 2: interrupted by the user before completion; no result is claimed. The process was stopped and a process check returned `Remaining matching processes: 0`.
-
-## Files Changed
-
-Task files currently modified or untracked:
-
-- `app/globals.css`
-- `app/layout.tsx`
-- `app/storefront.css`
-- `public/brand/ajazz-japan-logo-dark.png`
-- `tests/storefront/logo-asset.test.ts`
-- `tests/storefront/logo-styling.test.ts`
-- `tests/storefront/visual-tokens.test.ts`
-- `.superpowers/sdd/storefront-visual-task-1-report.md`
-
-`tests/storefront/product-card.test.tsx` is unchanged because the base-commit version contains no `globals.css` stylesheet read to redirect. It passed in the complete storefront test run.
-
-Pre-existing protected changes remain present and were not modified, staged, or reverted for this task:
-
-- `.superpowers/sdd/product-admin-task-4-report.md`
-- `.superpowers/sdd/product-admin-task-5-report.md`
-
-No files are staged.
-
-## Self-Review
-
-- Confirmed `HEAD` remains `d95ff61bb4fa0d1cc2918316af4c8aacb78dff83` and the branch remains `feat/ajazz-japan-store`.
-- Confirmed the source logo is not listed as modified.
-- Confirmed all nine exact approved tokens are present.
-- Confirmed the storefront CSS migration did not move legacy landing, survey, Payload, or other unrelated global rules.
-- Confirmed all focused tests, all storefront tests, production build, type check, and whitespace validation pass.
-- Confirmed the report and Task 1 files are uncommitted and unstaged.
-
-## Concerns And Blocking Items
-
-1. The requested local Task 1 commit has not been created because the user instructed the current command to stop and requested an immediate partial report.
-2. The repository-wide full Vitest suite has no completed result. This check was broader than the brief's required focused tests, but its interrupted state must not be represented as passing.
-3. The brief lists `tests/storefront/product-card.test.tsx` as a file to update, but the base-commit file has no stylesheet read. No artificial no-op change was made; the test passed in the 28-test storefront run.
 
 ## Final Verification And Commit
 
@@ -165,3 +128,41 @@ Result: exit 0; 3 test files passed, 8 tests passed, duration 2.41s.
 - `git diff --check`: exit 0.
 - An initial combined build/lint command exceeded its 120-second wrapper limit and ended with `EPIPE`; the standalone rerun above completed successfully.
 - Local fix commit: `fix: isolate storefront visual foundation`.
+
+## Final Baseline Preservation Fix
+
+### Fix Applied
+
+- Restored the exact pre-Task-1 global baseline declaration, `body { background:#f7f5f0; color:#181818; }`, in `app/globals.css` outside `app/storefront.css`.
+- Strengthened `visual-tokens.test.ts` to prove that `globals.css` owns the light application baseline while `storefront.css` owns `--store-bg:#07080c` and contains no `body` selector.
+- Removed stale pre-commit status and blocking sections from this report; historical original verification is now explicitly labeled.
+
+### TDD Evidence
+
+#### RED
+
+Command:
+
+```powershell
+$env:Path='C:\Users\bwgd\.cache\codex-runtimes\codex-primary-runtime\dependencies\node\bin;'+$env:Path; pnpm exec vitest run tests/storefront/visual-tokens.test.ts --maxWorkers=1 --minWorkers=1 --no-file-parallelism
+```
+
+Result: exit 1; `keeps storefront visuals scoped and preserves the light administration styles` failed because `globals.css` did not contain `body { background:#f7f5f0; color:#181818; }`.
+
+#### GREEN
+
+Command:
+
+```powershell
+$env:Path='C:\Users\bwgd\.cache\codex-runtimes\codex-primary-runtime\dependencies\node\bin;'+$env:Path; pnpm exec vitest run tests/storefront/visual-tokens.test.ts tests/storefront/logo-asset.test.ts tests/storefront/logo-styling.test.ts --maxWorkers=1 --minWorkers=1 --no-file-parallelism
+```
+
+Result: exit 0; 3 test files passed, 8 tests passed, duration 0.99s.
+
+### Final Verification
+
+- `pnpm exec vitest run tests/storefront --maxWorkers=1 --minWorkers=1 --no-file-parallelism`: exit 0; 11 test files passed, 31 tests passed, duration 7.19s.
+- `pnpm run build`: exit 0; compiled successfully, TypeScript completed, and 16/16 static pages generated in 40.8s.
+- `pnpm run lint`: exit 0; `tsc --noEmit` completed with no errors.
+- `git diff --check`: exit 0.
+- Local fix commit: `fix: preserve global application baseline`.

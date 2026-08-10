@@ -29,6 +29,8 @@ describe("storefront visual system", () => {
   it("keeps storefront visuals scoped and preserves the light administration styles", () => {
     expect(css).not.toMatch(/^body\s*\{/m);
     expect(css).not.toContain(".store-admin");
+    expect(globalCss).toContain("body { background:#f7f5f0; color:#181818; }");
+    expect(css).toContain("--store-bg:#07080c");
     expect(globalCss).toMatch(/\.store-admin\s*\{[^}]*background:#f7f5f0[^}]*color:#171719/);
     expect(globalCss).toMatch(/\.store-shipment-form input\s*\{[^}]*border:1px solid #bcb6ae[^}]*background:white/);
     expect(globalCss).toMatch(/\.store-refund button\s*\{[^}]*border:1px solid #a12c33/);
