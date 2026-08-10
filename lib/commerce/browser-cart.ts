@@ -1,6 +1,8 @@
 export interface BrowserCartLine {
   variantId: string;
   name: string;
+  colorName?: string;
+  imageUrl?: string;
   priceJpy: number;
   quantity: number;
 }

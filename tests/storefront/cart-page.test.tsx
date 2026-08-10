@@ -27,7 +27,9 @@ describe("cart checkout notice", () => {
   it("renders line item controls, order summary, and removal in the cart content", async () => {
     window.localStorage.setItem("ajazz-japan-cart", JSON.stringify([{
       variantId: "variant-blue",
-      name: "AJ159 APEX / ブルー",
+      name: "AJ159 APEX",
+      colorName: "ブルー",
+      imageUrl: "/media/aj159-blue.jpg",
       priceJpy: 12980,
       quantity: 2,
     }]));
@@ -38,22 +40,24 @@ describe("cart checkout notice", () => {
     await act(async () => root.render(<CartProvider><CartPage /></CartProvider>));
 
     expect(container.querySelector(".store-cart-layout")).not.toBeNull();
-    expect(container.querySelector(".store-cart-line-item")?.textContent).toContain("AJ159 APEX / ブルー");
+    expect(container.querySelector(".store-cart-line-item")?.textContent).toContain("AJ159 APEX");
+    expect(container.querySelector(".store-cart-line-variant")?.textContent).toContain("ブルー");
+    expect(container.querySelector<HTMLImageElement>(".store-cart-line-image")?.src).toContain("/media/aj159-blue.jpg");
     expect(container.querySelector(".store-cart-line-price")?.textContent).toContain("25,960");
-    expect(container.querySelector('[aria-label="AJ159 APEX / ブルー の数量を減らす"]')).not.toBeNull();
-    expect(container.querySelector('[aria-label="AJ159 APEX / ブルー の数量を増やす"]')).not.toBeNull();
-    expect(container.querySelector('[aria-label="AJ159 APEX / ブルー を削除"]')).not.toBeNull();
+    expect(container.querySelector('[aria-label="AJ159 APEX の数量を減らす"]')).not.toBeNull();
+    expect(container.querySelector('[aria-label="AJ159 APEX の数量を増やす"]')).not.toBeNull();
+    expect(container.querySelector('[aria-label="AJ159 APEX を削除"]')).not.toBeNull();
     expect(container.querySelector(".store-cart-order-summary")?.textContent).toContain("送料無料");
     expect(container.querySelector(".store-cart-order-total")?.textContent).toContain("25,960");
     expect(container.querySelector(".store-cart-legal")?.compareDocumentPosition(
       container.querySelector<HTMLButtonElement>(".store-cart-checkout")!,
     )).toBe(Node.DOCUMENT_POSITION_FOLLOWING);
 
-    await act(async () => container.querySelector<HTMLButtonElement>('[aria-label="AJ159 APEX / ブルー の数量を減らす"]')?.click());
+    await act(async () => container.querySelector<HTMLButtonElement>('[aria-label="AJ159 APEX の数量を減らす"]')?.click());
     expect(container.querySelector(".store-cart-quantity span")?.textContent).toBe("1");
-    await act(async () => container.querySelector<HTMLButtonElement>('[aria-label="AJ159 APEX / ブルー の数量を増やす"]')?.click());
+    await act(async () => container.querySelector<HTMLButtonElement>('[aria-label="AJ159 APEX の数量を増やす"]')?.click());
     expect(container.querySelector(".store-cart-quantity span")?.textContent).toBe("2");
-    await act(async () => container.querySelector<HTMLButtonElement>('[aria-label="AJ159 APEX / ブルー を削除"]')?.click());
+    await act(async () => container.querySelector<HTMLButtonElement>('[aria-label="AJ159 APEX を削除"]')?.click());
     expect(container.querySelector(".store-cart-empty")?.textContent).toContain("カートに商品はありません");
 
     await act(async () => root.unmount());

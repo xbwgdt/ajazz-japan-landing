@@ -89,9 +89,13 @@ export function CartPage() {
       <section className="store-cart-lines" aria-label="カートの商品">
         {lines.map((line) => <article className="store-cart-line-item" key={line.variantId}>
           <div className="store-cart-line-identity">
-            <p className="store-cart-line-label">SELECTED PRODUCT</p>
-            <h2>{line.name}</h2>
-            <p>単価 ¥{line.priceJpy.toLocaleString("ja-JP")}</p>
+            {line.imageUrl ? <img className="store-cart-line-image" src={line.imageUrl} alt="" /> : null}
+            <div>
+              <p className="store-cart-line-label">SELECTED PRODUCT</p>
+              <h2>{line.name}</h2>
+              {line.colorName ? <p className="store-cart-line-variant">カラー：{line.colorName}</p> : null}
+              <p>単価 ¥{line.priceJpy.toLocaleString("ja-JP")}</p>
+            </div>
           </div>
           <div className="store-cart-quantity" aria-label={`${line.name} の数量`}>
             <button type="button" onClick={() => setQuantity(line.variantId, line.quantity - 1)} aria-label={`${line.name} の数量を減らす`}>−</button>

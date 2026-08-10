@@ -80,7 +80,7 @@ export function VariantPurchasePanel({
         <output aria-live="polite">{quantity}</output>
         <button type="button" aria-label="数量を増やす" disabled={!available || quantity >= selected.availableQuantity} onClick={() => setQuantity((value) => Math.min(selected.availableQuantity, value + 1))}>＋</button>
       </div>
-      <AddToCartButton variantId={selected.id} name={name} priceJpy={selected.priceJpy} available={available} quantity={quantity} />
+      <AddToCartButton variantId={selected.id} name={name} colorName={selected.colorName} imageUrl={selected.imageUrl} priceJpy={selected.priceJpy} available={available} quantity={quantity} />
     </div>
   </>;
 }
