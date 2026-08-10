@@ -16,6 +16,7 @@ export interface HydrateRmsMediaDependencies {
   apply: boolean;
   confirmation?: string;
   draftSaveContext: Record<PropertyKey, unknown>;
+  sourceIngestionContext: Record<PropertyKey, unknown>;
   payload: PayloadLike;
   rmsManageNumber: string;
   uploadImage: (url: string, alt: string) => Promise<string>;
@@ -106,7 +107,11 @@ export async function hydrateRmsProductMedia(dependencies: HydrateRmsMediaDepend
 
   await dependencies.payload.update({
     collection: "products",
-    context: { expectedRevision: Number(product.editorialRevision ?? 0), ...dependencies.draftSaveContext },
+    context: {
+      expectedRevision: Number(product.editorialRevision ?? 0),
+      ...dependencies.draftSaveContext,
+      ...dependencies.sourceIngestionContext,
+    },
     data: {
       primaryImageId: mediaByUrl.get(source.images[0]),
       galleryImageIds: source.images.slice(1).map((url) => mediaByUrl.get(url)).filter(Boolean),
@@ -160,6 +165,7 @@ async function run() {
     apply,
     confirmation: process.env.RMS_MEDIA_CONFIRM,
     draftSaveContext: contexts.productDraftSaveContext,
+    sourceIngestionContext: contexts.productRmsSourceIngestionContext,
     payload,
     rmsManageNumber,
     uploadImage: (url, alt) => uploadImage(payload, url, alt),

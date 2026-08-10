@@ -28,6 +28,7 @@ describe("RMS product media hydration", () => {
     const result = await hydrateRmsProductMedia({
       apply: false,
       draftSaveContext: {},
+      sourceIngestionContext: {},
       payload: client,
       rmsManageNumber: "ak820v2-rt",
       uploadImage,
@@ -44,13 +45,14 @@ describe("RMS product media hydration", () => {
       apply: true,
       confirmation: "AJAZZ_RMS_MEDIA_2026",
       draftSaveContext: { draftSave: true },
+      sourceIngestionContext: { sourceIngestion: true },
       payload: client,
       rmsManageNumber: "ak820v2-rt",
       uploadImage,
     });
     expect(result.applied).toBe(true);
     expect(client.update).toHaveBeenCalledWith(expect.objectContaining({
-      context: expect.objectContaining({ expectedRevision: 2, draftSave: true }),
+      context: expect.objectContaining({ expectedRevision: 2, draftSave: true, sourceIngestion: true }),
       data: expect.objectContaining({
         primaryImageId: "media:main.jpg",
         galleryImageIds: ["media:gallery.jpg"],
@@ -64,6 +66,7 @@ describe("RMS product media hydration", () => {
     await expect(hydrateRmsProductMedia({
       apply: false,
       draftSaveContext: {},
+      sourceIngestionContext: {},
       payload: client,
       rmsManageNumber: "ak820v2-rt",
       uploadImage: vi.fn(),
