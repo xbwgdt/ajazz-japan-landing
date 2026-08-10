@@ -14,7 +14,7 @@ describe("CMS product specifications", () => {
     expect(source).toContain("cms.products_specifications_connection_modes");
     expect(source).toContain("cms.products_specifications_headset_connection");
     expect(source).toContain("cms.products_specifications_supported_applications");
-    expect(source).toContain("cms._supported_os_v");
+    expect(source).toContain("cms._product_os_v");
     expect(source).toContain("cms._products_v");
   });
 

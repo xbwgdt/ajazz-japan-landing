@@ -1,4 +1,6 @@
 import type { Field } from "payload";
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
 import { describe, expect, it, vi } from "vitest";
 import { Media } from "../../cms/collections/Media";
 import { Products, updateProductWithRevision } from "../../cms/collections/Products";
@@ -54,14 +56,29 @@ describe("Products collection", () => {
     expect(await access?.({ req: { user: { id: 1 } } } as never)).toBe(false);
   });
 
-  it("uses a bounded database name for versioned specification enums", () => {
+  it("uses distinct bounded names for the supported-OS enum and relation table", () => {
     expect(productSpecifications.type).toBe("group");
     if (productSpecifications.type !== "group") return;
 
     const operatingSystems = productSpecifications.fields.find(
       (field) => "name" in field && field.name === "supportedOperatingSystems",
     );
-    expect(operatingSystems).toMatchObject({ dbName: "supported_os" });
+    expect(operatingSystems).toMatchObject({
+      dbName: "product_os",
+      enumName: "supported_os",
+    });
+  });
+
+  it("migrates the existing supported-OS version table without dropping its data", () => {
+    const migration = readFileSync(
+      join(process.cwd(), "cms/migrations/20260810_160407.ts"),
+      "utf8",
+    );
+
+    expect(migration).toContain(
+      'ALTER TABLE "cms"."_supported_os_v" RENAME TO "_product_os_v"',
+    );
+    expect(migration).not.toContain('DROP TABLE "cms"."_supported_os_v"');
   });
 
   it("marks the operational product linkage read-only in admin", () => {

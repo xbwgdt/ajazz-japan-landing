@@ -44,7 +44,8 @@ export const productSpecifications: Field = {
     {
       name: "supportedOperatingSystems",
       type: "select",
-      dbName: "supported_os",
+      dbName: "product_os",
+      enumName: "supported_os",
       hasMany: true,
       options: operatingSystemOptions,
     },

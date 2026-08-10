@@ -59,7 +59,7 @@ export async function getStorefrontDatabaseProduct(slug: string): Promise<Storef
       ), ARRAY[]::text[]) AS supported_applications,
       COALESCE((
         SELECT array_agg(os.value::text ORDER BY os."order")
-        FROM cms._supported_os_v os
+        FROM cms._product_os_v os
         JOIN cms._products_v version ON version.id = os.parent_id
         WHERE version.id = (
           SELECT published_version.id
