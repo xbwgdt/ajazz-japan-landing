@@ -62,6 +62,16 @@ export async function withPayloadCleanup<T>(
   }
 }
 
+type DestroyablePayload = {
+  destroy(): Promise<void>;
+  db: { pool?: { end(): Promise<void> } };
+};
+
+export async function destroyPayload(payload: DestroyablePayload): Promise<void> {
+  await payload.destroy();
+  await payload.db.pool?.end();
+}
+
 export async function importRmsWorkbookWithCms(filePath: string) {
   const rows = await readRmsWorkbook(filePath);
   const [{ getPayload }, { default: config }, { upsertRmsEditorialDraft }] = await Promise.all([
@@ -95,6 +105,6 @@ export async function importRmsWorkbookWithCms(filePath: string) {
         return upsertRmsEditorialDraft(product, payload);
       },
     }),
-    () => payload.destroy(),
+    () => destroyPayload(payload as unknown as DestroyablePayload),
   );
 }
