@@ -170,7 +170,7 @@ export async function upsertRmsEditorialDraft(
   if (!existing) {
     const created = await payload.create({
       collection: "products",
-      context: productRmsSourceIngestionContext,
+      context: { ...productRmsSourceIngestionContext },
       data: initialDraft(source, now),
       draft: true,
       overrideAccess: true,

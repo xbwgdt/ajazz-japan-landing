@@ -78,7 +78,10 @@ describe("RMS editorial draft ingestion", () => {
           ? [{ id: 1, email: "xiet@a-jazz.com", role: "administrator", collection: "admins" }]
           : [],
       })),
-      create: vi.fn(async (args: Record<string, unknown>) => ({ id: 7, ...args.data as object })),
+      create: vi.fn(async (args: Record<string, unknown>) => {
+        (args.context as Record<string, unknown>).internal = true;
+        return { id: 7, ...args.data as object };
+      }),
       update: vi.fn(),
     };
 
