@@ -321,6 +321,27 @@ describe("protectSourceFields", () => {
     });
   });
 
+  it("accepts equivalent numeric RMS identities normalized by Payload", async () => {
+    const result = await protectSourceFields({
+      context: productPublicationContext,
+      data: {
+        _status: "published",
+        rmsManageNumber: "ak820",
+        variants: [{ operationalVariantId: 99, rmsSkuNumber: 6972184180059, sku: 6972184180059 }],
+      },
+      operation: "update",
+      originalDoc: {
+        _status: "draft",
+        editorialRevision: 4,
+        rmsManageNumber: "ak820",
+        sourceType: "rms",
+        variants: [{ operationalVariantId: "99", rmsSkuNumber: "6972184180059", sku: "6972184180059" }],
+      },
+    } as never);
+
+    expect(result).toMatchObject({ _status: "published", editorialRevision: 4 });
+  });
+
   it("rejects changes to RMS product and variant identities", async () => {
     await expect(protectSourceFields({
       context: {},

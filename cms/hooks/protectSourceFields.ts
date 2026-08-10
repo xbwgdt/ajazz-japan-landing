@@ -65,6 +65,10 @@ function changed(incoming: unknown, original: unknown): boolean {
   return incoming !== undefined && incoming !== original;
 }
 
+function normalizedIdentity(value: unknown): string | null {
+  return value === null || value === undefined ? null : String(value);
+}
+
 function isTrustedProductPublicationContext(context: unknown): boolean {
   return Boolean(
     context
@@ -115,15 +119,20 @@ function variantIdentityChanged(
   if (incomingVariants.length !== originalVariants.length) return true;
 
   return incomingVariants.some((incoming, index) => {
-    const original = incoming.operationalVariantId
-      ? originalVariants.find((variant) => variant.operationalVariantId === incoming.operationalVariantId)
-      : incoming.rmsSkuNumber
-        ? originalVariants.find((variant) => variant.rmsSkuNumber === incoming.rmsSkuNumber)
+    const operationalVariantId = normalizedIdentity(incoming.operationalVariantId);
+    const rmsSkuNumber = normalizedIdentity(incoming.rmsSkuNumber);
+    const original = operationalVariantId
+      ? originalVariants.find((variant) => normalizedIdentity(variant.operationalVariantId) === operationalVariantId)
+      : rmsSkuNumber
+        ? originalVariants.find((variant) => normalizedIdentity(variant.rmsSkuNumber) === rmsSkuNumber)
         : originalVariants[index];
     if (!original) return true;
-    return changed(incoming.operationalVariantId, original.operationalVariantId)
-      || changed(incoming.rmsSkuNumber, original.rmsSkuNumber)
-      || changed(incoming.sku, original.sku);
+    return (incoming.operationalVariantId !== undefined
+        && normalizedIdentity(incoming.operationalVariantId) !== normalizedIdentity(original.operationalVariantId))
+      || (incoming.rmsSkuNumber !== undefined
+        && normalizedIdentity(incoming.rmsSkuNumber) !== normalizedIdentity(original.rmsSkuNumber))
+      || (incoming.sku !== undefined
+        && normalizedIdentity(incoming.sku) !== normalizedIdentity(original.sku));
   });
 }
 
