@@ -1,4 +1,4 @@
-import { mkdtemp, rm } from "node:fs/promises";
+import { mkdtemp, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import ExcelJS from "exceljs";
@@ -12,6 +12,30 @@ afterEach(async () => {
 });
 
 describe("RMS workbook reader", () => {
+  it("reads Shift-JIS RMS CSV exports", async () => {
+    const directory = await mkdtemp(join(tmpdir(), "ajazz-rms-csv-"));
+    temporaryDirectories.push(directory);
+    const filePath = join(directory, "catalog.csv");
+    const csvBase64 = "j6SVaYrHl52U1I2GgWmPpJVpVVJMgWosj6SVaZa8LFBDl3CPpJVpkOCWvpW2LI+klWmJ5pGcg3CDWDEsU0tViseXnZTUjYYsksqP7Y13k/yUzJSEib+KaSyN3YzJkJQKYWs4MjAtbWF4LEFLODIwIE1BWCw8cD5SYXBpZCB0cmlnZ2VyIGtleWJvYXJkPC9wPiwvMTI0Mzc0MTMvYWs4MjAvaGVyby5qcGcsLCwKYWs4MjAtbWF4LCwsLEFLODIwLUJMQUNLLDE5OTgwLDQ=";
+    await writeFile(filePath, Buffer.from(csvBase64, "base64"));
+
+    await expect(readRmsWorkbook(filePath)).resolves.toEqual([
+      {
+        rmsManageNumber: "ak820-max",
+        name: "AK820 MAX",
+        descriptionHtml: "<p>Rapid trigger keyboard</p>",
+        imagePaths: ["/12437413/ak820/hero.jpg"],
+      },
+      {
+        rmsManageNumber: "ak820-max",
+        rmsSkuNumber: "AK820-BLACK",
+        salePriceJpy: 19980,
+        stockQuantity: 4,
+        imagePaths: [],
+      },
+    ]);
+  });
+
   it("reads parent product rows and their SKU rows", async () => {
     const directory = await mkdtemp(join(tmpdir(), "ajazz-rms-"));
     temporaryDirectories.push(directory);

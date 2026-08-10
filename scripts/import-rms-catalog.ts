@@ -1,3 +1,6 @@
+import { readFile } from "node:fs/promises";
+import { extname } from "node:path";
+import { Readable } from "node:stream";
 import ExcelJS from "exceljs";
 import {
   parseRmsWorksheetRows,
@@ -7,9 +10,12 @@ import {
 
 export async function readRmsWorkbook(filePath: string): Promise<RmsCatalogRow[]> {
   const workbook = new ExcelJS.Workbook();
-  await workbook.xlsx.readFile(filePath);
-
-  const worksheet = workbook.worksheets[0];
+  const worksheet = extname(filePath).toLowerCase() === ".csv"
+    ? await workbook.csv.read(
+      Readable.from([new TextDecoder("shift_jis").decode(await readFile(filePath))]),
+      { sheetName: "items" },
+    )
+    : await workbook.xlsx.readFile(filePath).then(() => workbook.worksheets[0]);
   if (!worksheet) {
     throw new Error("The RMS workbook does not contain a worksheet");
   }
