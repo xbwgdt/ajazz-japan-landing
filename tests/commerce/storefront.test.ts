@@ -9,17 +9,36 @@ describe("storefront cards", () => {
     expect(toStorefrontCards([{
       slug: "ak820", name: "AK820", image: "https://example.test/ak820.jpg", category: "mouse",
       variants: [
-        { priceJpy: 19980, availableQuantity: 0, colorName: "ブラック", imageUrl: "https://example.test/black.jpg" },
-        { priceJpy: 17980, availableQuantity: 2, colorName: "ホワイト", imageUrl: "https://example.test/white.jpg" },
+        { priceJpy: 19980, compareAtPriceJpy: 22980, availableQuantity: 0, colorName: "ブラック", imageUrl: "https://example.test/black.jpg" },
+        { priceJpy: 17980, compareAtPriceJpy: 20980, availableQuantity: 2, colorName: "ホワイト", imageUrl: "https://example.test/white.jpg" },
+        { priceJpy: 0, compareAtPriceJpy: 99999, availableQuantity: 0, colorName: "未販売" },
       ],
     }])).toEqual([{
       slug: "ak820", name: "AK820", image: "https://example.test/ak820.jpg", category: "mouse",
-      tagline: "¥17,980から", available: true,
+      tagline: "¥17,980から",
+      priceJpy: 17980,
+      compareAtPriceJpy: 20980,
+      points: 179,
+      available: true,
       variants: [
-        { priceJpy: 19980, availableQuantity: 0, colorName: "ブラック", imageUrl: "https://example.test/black.jpg" },
-        { priceJpy: 17980, availableQuantity: 2, colorName: "ホワイト", imageUrl: "https://example.test/white.jpg" },
+        { priceJpy: 19980, compareAtPriceJpy: 22980, availableQuantity: 0, colorName: "ブラック", imageUrl: "https://example.test/black.jpg" },
+        { priceJpy: 17980, compareAtPriceJpy: 20980, availableQuantity: 2, colorName: "ホワイト", imageUrl: "https://example.test/white.jpg" },
+        { priceJpy: 0, compareAtPriceJpy: 99999, availableQuantity: 0, colorName: "未販売" },
       ],
     }]);
+  });
+
+  it("keeps commerce metadata empty when there is no positive variant price", () => {
+    expect(toStorefrontCards([{
+      slug: "draft", name: "Draft", image: "/draft.jpg",
+      variants: [{ priceJpy: 0, compareAtPriceJpy: 1000, availableQuantity: 0 }],
+    }])[0]).toMatchObject({
+      tagline: "価格準備中",
+      priceJpy: undefined,
+      compareAtPriceJpy: undefined,
+      points: 0,
+      available: false,
+    });
   });
 
   it("normalizes an unknown category to other", () => {
@@ -40,6 +59,7 @@ describe("sellable inventory", () => {
     const source = readFileSync(resolve(process.cwd(), "lib/commerce/storefront-db.ts"), "utf8");
     expect(source).toContain("AND active = TRUE");
     expect(source).toContain("SELECT id, COALESCE(rms_sku_number, sku) AS rms_sku_number");
+    expect(source).toContain("CASE WHEN compare_at_price_approved THEN compare_at_price_jpy ELSE NULL END AS compare_at_price_jpy");
   });
 });
 

@@ -71,17 +71,20 @@ export async function listStorefrontDatabaseCards(): Promise<StorefrontCard[]> {
   `;
   if (!products.length) return [];
 
-  const variants = await commerceSql()<Array<{ product_id: number; price_jpy: number; color_name: string | null; image_url: string | null; available_quantity: number; reserved_quantity: number }>>`
-    SELECT product_id, price_jpy, color_name, image_url, available_quantity, reserved_quantity
+  const variants = await commerceSql()<Array<{ product_id: number; price_jpy: number; compare_at_price_jpy: number | null; color_name: string | null; image_url: string | null; available_quantity: number; reserved_quantity: number }>>`
+    SELECT product_id, price_jpy,
+      CASE WHEN compare_at_price_approved THEN compare_at_price_jpy ELSE NULL END AS compare_at_price_jpy,
+      color_name, image_url, available_quantity, reserved_quantity
     FROM product_variants
     WHERE product_id IN ${commerceSql()(products.map((product) => product.id))}
       AND active = TRUE
   `;
-  const variantsByProduct = new Map<number, Array<{ priceJpy: number; availableQuantity: number; colorName?: string; imageUrl?: string }>>();
+  const variantsByProduct = new Map<number, Array<{ priceJpy: number; compareAtPriceJpy?: number; availableQuantity: number; colorName?: string; imageUrl?: string }>>();
   for (const variant of variants) {
     const entries = variantsByProduct.get(variant.product_id) ?? [];
     entries.push({
       priceJpy: Number(variant.price_jpy),
+      compareAtPriceJpy: variant.compare_at_price_jpy === null ? undefined : Number(variant.compare_at_price_jpy),
       availableQuantity: getSellableQuantity(Number(variant.available_quantity), Number(variant.reserved_quantity)),
       colorName: variant.color_name ?? undefined,
       imageUrl: variant.image_url ?? undefined,

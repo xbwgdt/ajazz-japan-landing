@@ -43,9 +43,16 @@ describe("AJAZZ JAPAN catalogue discovery controls", () => {
 
     expect(css).toMatch(/\.store-catalogue-controls\s*\{[^}]*grid-template-areas:\s*"search count clear"\s*"categories categories categories"/);
     expect(css).toMatch(/\.store-catalogue-search\s*\{[^}]*grid-area:\s*search/);
-    expect(css).toMatch(/\.store-catalogue-controls\s*\[role="group"\]\s*\{[^}]*overflow-x:\s*auto/);
-    expect(css).toMatch(/\.store-catalogue-controls\s*\[role="group"\]\s*button\[aria-pressed="true"\]\s*\{[^}]*background:\s*var\(--aj-red\)/);
+    expect(css).toMatch(/\.store-catalogue-categories\s*\{[^}]*overflow-x:\s*auto/);
+    expect(css).toMatch(/\.store-catalogue-categories\s*button\[aria-pressed="true"\]\s*\{[^}]*background:\s*var\(--aj-red\)/);
     expect(css).toMatch(/\.store-catalogue-controls\s*button:focus-visible\s*\{[^}]*outline:\s*2px solid var\(--aj-red\)/);
     expect(css).toMatch(/@media \(max-width:760px\)\s*\{[\s\S]*?\.store-catalogue-controls\s*\{[^}]*grid-template-areas:/);
+  });
+
+  it("keeps unused catalogue grid cells dark while cards draw their own separators", () => {
+    const css = readFileSync(new URL("../../app/storefront.css", import.meta.url), "utf8");
+
+    expect(css).toMatch(/\.store-product-grid\s*\{[^}]*background:transparent/);
+    expect(css).toMatch(/\.store-card\s*\{[^}]*border-right:1px solid var\(--store-line\)[^}]*border-bottom:1px solid var\(--store-line\)/);
   });
 });

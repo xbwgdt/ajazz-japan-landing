@@ -19,6 +19,9 @@ describe("product card color previews", () => {
         tagline="8K mouse"
         image="/main.jpg"
         index={0}
+        priceJpy={8980}
+        points={89}
+        available
         variants={[
           { colorName: "ブルー", imageUrl: "/blue.jpg", availableQuantity: 2 },
           { colorName: "ホワイト", imageUrl: "/white.jpg", availableQuantity: 1 },

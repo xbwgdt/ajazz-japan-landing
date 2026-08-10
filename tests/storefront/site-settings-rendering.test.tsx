@@ -49,8 +49,8 @@ const settings = normalizeSiteSettings({
 describe("published site settings rendering", () => {
   it("edits homepage content and ordering without replacing the storefront template", () => {
     const html = renderToStaticMarkup(<CartProvider><Storefront settings={settings} products={[
-      { slug: "keyboard", name: "Keyboard", category: "rapid-trigger-keyboard", tagline: "K", image: "/k.webp" },
-      { slug: "featured-mouse", name: "Featured Mouse", category: "mouse", tagline: "M", image: "/m.webp" },
+      { slug: "keyboard", name: "Keyboard", category: "rapid-trigger-keyboard", tagline: "K", image: "/k.webp", points: 0, available: false, variants: [] },
+      { slug: "featured-mouse", name: "Featured Mouse", category: "mouse", tagline: "M", image: "/m.webp", points: 0, available: false, variants: [] },
     ]} /></CartProvider>);
 
     expect(html).toContain("AJAZZ TEST EDITION");

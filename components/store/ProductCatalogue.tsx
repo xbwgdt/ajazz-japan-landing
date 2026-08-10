@@ -29,7 +29,7 @@ export function ProductCatalogue({ products }: { products: ProductCatalogueCard[
           onChange={(event) => setQuery(event.target.value)}
         />
       </div>
-      <div role="group" aria-label="製品カテゴリ">
+      <div className="store-catalogue-categories" role="group" aria-label="製品カテゴリ">
         <button type="button" aria-pressed={category === "all"} onClick={() => setCategory("all")}>すべて</button>
         {PRODUCT_CATEGORIES.map((item) => (
           <button
@@ -42,14 +42,14 @@ export function ProductCatalogue({ products }: { products: ProductCatalogueCard[
           </button>
         ))}
       </div>
-      <p aria-live="polite">{filtered.length}件の製品</p>
-      {hasActiveFilters && filtered.length ? <button type="button" onClick={clearFilters}>条件をクリア</button> : null}
+      <p className="store-catalogue-count" aria-live="polite">{filtered.length}件の製品</p>
+      {hasActiveFilters && filtered.length ? <button className="store-catalogue-clear" type="button" onClick={clearFilters}>条件をクリア</button> : null}
     </div>
     {filtered.length ? <div className="store-product-grid">
       {filtered.map((product, index) => <ProductCard {...product} index={index} key={product.slug} />)}
-    </div> : <div>
+    </div> : <div className="store-catalogue-empty">
       <p>条件に一致する製品がありません。</p>
-      {hasActiveFilters ? <button type="button" onClick={clearFilters}>条件をクリア</button> : null}
+      {hasActiveFilters ? <button className="store-catalogue-clear" type="button" onClick={clearFilters}>条件をクリア</button> : null}
     </div>}
   </>;
 }

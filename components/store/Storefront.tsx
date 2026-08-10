@@ -1,4 +1,5 @@
 import type { ProductCategoryKey } from "../../lib/commerce/product-categories";
+import { toStorefrontCards, type StorefrontCard as CommerceStorefrontCard } from "../../lib/commerce/storefront";
 import { storefrontProducts } from "./catalogue";
 import { ProductCatalogue } from "./ProductCatalogue";
 import { StoreShell } from "./StoreShell";
@@ -8,14 +9,7 @@ import {
   type SiteSettingsViewModel,
 } from "../../lib/cms/site-settings";
 
-interface StorefrontCard {
-  slug: string;
-  name: string;
-  category: ProductCategoryKey;
-  tagline: string;
-  image: string;
-  variants?: Array<{ colorName?: string; imageUrl?: string; availableQuantity: number }>;
-}
+type StorefrontCard = CommerceStorefrontCard & { category: ProductCategoryKey };
 
 function withLineBreaks(value: string) {
   return value.split("\n").map((line, index) => <span key={`${line}-${index}`}>{index > 0 ? <br /> : null}{line}</span>);
@@ -35,7 +29,7 @@ function orderProducts(products: StorefrontCard[], settings: SiteSettingsViewMod
 }
 
 export function Storefront({
-  products = storefrontProducts,
+  products = toStorefrontCards(storefrontProducts),
   settings = DEFAULT_SITE_SETTINGS,
 }: {
   products?: StorefrontCard[];

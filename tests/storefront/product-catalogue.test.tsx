@@ -14,6 +14,9 @@ const products = [
     category: "mouse" as const,
     tagline: "8K Wireless Gaming Mouse",
     image: "/images/aj159.webp",
+    priceJpy: 8980,
+    points: 89,
+    available: true,
   },
   {
     slug: "ak820",
@@ -21,6 +24,9 @@ const products = [
     category: "mechanical-keyboard" as const,
     tagline: "Tri-mode 75% Keyboard",
     image: "/images/ak820.webp",
+    priceJpy: 12980,
+    points: 129,
+    available: true,
   },
 ];
 
@@ -45,6 +51,8 @@ describe("ProductCatalogue", () => {
 
     const categoryGroup = container.querySelector<HTMLElement>('[role="group"][aria-label="製品カテゴリ"]');
     expect(categoryGroup).not.toBeNull();
+    expect(categoryGroup?.classList.contains("store-catalogue-categories")).toBe(true);
+    expect(container.querySelector(".store-catalogue-count")?.textContent).toContain("2件の製品");
 
     const search = container.querySelector<HTMLInputElement>("#store-product-search");
     const mouse = buttonByText(container, "マウス");
@@ -67,6 +75,7 @@ describe("ProductCatalogue", () => {
     });
 
     expect(container.textContent).toContain("条件に一致する製品がありません。");
+    expect(container.querySelector(".store-catalogue-empty")).not.toBeNull();
     const clear = buttonByText(container, "条件をクリア");
     expect(clear).toBeDefined();
 
