@@ -25,18 +25,22 @@ export function VariantPurchasePanel({
   onSelect?: (index: number) => void;
 }) {
   const [internalIndex, setInternalIndex] = useState(0);
+  const [quantity, setQuantity] = useState(1);
   const selectedIndex = controlledIndex ?? internalIndex;
   const selected = variants[selectedIndex];
   if (!selected) return null;
   const available = selected.availableQuantity > 0;
   const price = new Intl.NumberFormat("ja-JP", { style: "currency", currency: "JPY", maximumFractionDigits: 0 }).format(selected.priceJpy);
-  const compareAtPrice = selected.compareAtPriceJpy && selected.compareAtPriceJpy > selected.priceJpy
+  const compareAtPrice = typeof selected.compareAtPriceJpy === "number"
+    && Number.isFinite(selected.compareAtPriceJpy)
+    && selected.compareAtPriceJpy > selected.priceJpy
     ? new Intl.NumberFormat("ja-JP", { style: "currency", currency: "JPY", maximumFractionDigits: 0 }).format(selected.compareAtPriceJpy)
     : undefined;
   const points = Math.floor(selected.priceJpy / 100);
 
   const selectVariant = (index: number) => {
     setInternalIndex(index);
+    setQuantity(1);
     onSelect?.(index);
   };
 
@@ -51,6 +55,7 @@ export function VariantPurchasePanel({
             aria-label={`${variant.colorName ?? variant.rmsSkuNumber}を選択`}
             aria-pressed={index === selectedIndex}
             className={index === selectedIndex ? "is-selected" : undefined}
+            disabled={variant.availableQuantity <= 0}
             onClick={() => selectVariant(index)}
           >
             {variant.imageUrl
@@ -60,13 +65,22 @@ export function VariantPurchasePanel({
         ))}
       </div>
     </fieldset>
-    <div className="store-price-row">
-      <p className="store-price">{price}<small>税込</small></p>
-      {compareAtPrice ? <p className="store-compare-price"><span>通常価格</span><s>{compareAtPrice}</s></p> : null}
+    <div className="store-product-price-block">
+      <div className="store-price-row">
+        <p className="store-price">{price}<small>税込</small></p>
+        {compareAtPrice ? <p className="store-compare-price"><span>通常価格</span><s>{compareAtPrice}</s></p> : null}
+      </div>
+      <p className="store-points"><strong>{points}ポイント</strong>獲得予定</p>
     </div>
-    <p className="store-points"><strong>{points}ポイント</strong>獲得予定</p>
     <p className={available ? "store-stock is-available" : "store-stock is-unavailable"}>{available ? "在庫あり" : "在庫切れ"}</p>
     <p className="store-selected-sku">SKU {selected.rmsSkuNumber}</p>
-    <AddToCartButton variantId={selected.id} name={name} priceJpy={selected.priceJpy} available={available} />
+    <div className="store-product-purchase-controls">
+      <div className="store-product-quantity" aria-label="数量">
+        <button type="button" aria-label="数量を減らす" disabled={quantity <= 1} onClick={() => setQuantity((value) => Math.max(1, value - 1))}>−</button>
+        <output aria-live="polite">{quantity}</output>
+        <button type="button" aria-label="数量を増やす" disabled={!available || quantity >= selected.availableQuantity} onClick={() => setQuantity((value) => Math.min(selected.availableQuantity, value + 1))}>＋</button>
+      </div>
+      <AddToCartButton variantId={selected.id} name={name} priceJpy={selected.priceJpy} available={available} quantity={quantity} />
+    </div>
   </>;
 }

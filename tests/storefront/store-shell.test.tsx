@@ -49,6 +49,20 @@ describe("shared public storefront shell", () => {
     expect(html.match(/<footer\b/g)).toHaveLength(1);
   });
 
+  it("supports the product route class without duplicating shell landmarks", () => {
+    const html = renderToStaticMarkup(
+      <CartProvider>
+        <StoreShell settings={DEFAULT_SITE_SETTINGS} className="store-product-route">
+          <div>product</div>
+        </StoreShell>
+      </CartProvider>,
+    );
+
+    expect(html).toContain('class="storefront store-shell store-product-route"');
+    expect(html.match(/<header\b/g)).toHaveLength(1);
+    expect(html.match(/<footer\b/g)).toHaveLength(1);
+  });
+
   it("operates the mobile menu by button, Escape, and link activation", async () => {
     const container = document.createElement("div");
     document.body.append(container);
