@@ -1,4 +1,5 @@
 import { APIError, type CollectionBeforeChangeHook } from "payload";
+import { isDeepStrictEqual } from "node:util";
 
 type SourceVariant = {
   id?: string | null;
@@ -62,7 +63,7 @@ function statusTransitionError(): APIError {
 }
 
 function changed(incoming: unknown, original: unknown): boolean {
-  return incoming !== undefined && incoming !== original;
+  return incoming !== undefined && !isDeepStrictEqual(incoming, original);
 }
 
 function normalizedIdentity(value: unknown): string | null {

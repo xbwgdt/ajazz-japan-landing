@@ -395,6 +395,25 @@ describe("protectSourceFields", () => {
     });
   });
 
+  it("accepts a structurally equal RMS source snapshot during publication", async () => {
+    const sourceSnapshot = { images: ["https://example.test/ak820.jpg"], name: "AK820" };
+    const result = await protectSourceFields({
+      context: productPublicationContext,
+      data: { _status: "published", sourceSnapshot: structuredClone(sourceSnapshot) },
+      operation: "update",
+      originalDoc: {
+        _status: "draft",
+        editorialRevision: 4,
+        rmsManageNumber: "ak820",
+        sourceSnapshot,
+        sourceType: "rms",
+        variants: [],
+      },
+    } as never);
+
+    expect(result).toMatchObject({ _status: "published", editorialRevision: 4 });
+  });
+
   it("rejects an RMS variant identity-set change even when product identity is unchanged", async () => {
     await expect(protectSourceFields({
       context: {},
