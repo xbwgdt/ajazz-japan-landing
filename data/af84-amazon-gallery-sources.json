@@ -1,0 +1,38 @@
+{
+  "productId": 7,
+  "slug": "af84",
+  "reviewedAt": "2026-09-27",
+  "scope": "staging-draft-only",
+  "variants": [
+    {
+      "sku": "6976412988448",
+      "color": "green",
+      "asin": "B0H4LT2P97",
+      "sourceUrl": "https://www.amazon.co.jp/gp/product/B0H4LT2P97?th=1",
+      "imageIds": ["71dYWnWQ6jL", "71Pe2ZeACEL", "71oV8Kt4ruL", "71OtbmiDRVL", "71funMGe3AL", "81dX6u3pCTL", "71e5+MfdleL", "71-YdF7frYL", "71kr-u380cL"]
+    },
+    {
+      "sku": "6976412985997",
+      "color": "gray",
+      "asin": "B0H4LDGK69",
+      "sourceUrl": "https://www.amazon.co.jp/gp/product/B0H4LDGK69?th=1",
+      "imageIds": ["71jtvRM90SL", "71HiqkChgAL", "71uNJqjGD7L", "716QACRYgjL", "81UXUkF3RPL", "71d4siS7A5L", "71LhJLR9DwL", "71pqHJr5fiL", "7180b2JzsdL"]
+    },
+    {
+      "sku": "6976412988455",
+      "color": "rose-red",
+      "asin": "B0H4LYK2NS",
+      "sourceUrl": "https://www.amazon.co.jp/gp/product/B0H4LYK2NS?th=1",
+      "note": "Amazon label is pink, but actual image matches RMS rose-red, not the pale pink SKU.",
+      "imageIds": ["71rlb52ftEL", "71MsGWB7fQL", "71zaHh4bTLL", "71lumjdb1OL", "71DEq3gedZL", "81QPTjcjsSL", "71pGhajJP+L", "71Otom4XUPL", "71+mBgBi9aL"]
+    },
+    {
+      "sku": "6976412986000",
+      "color": "black-red",
+      "asin": "B0H2DLRPY4",
+      "sourceUrl": "https://www.amazon.co.jp/gp/product/B0H2DLRPY4?th=1",
+      "imageIds": ["71bnRmoKr7L", "71aGEI1ZoGL", "71lxUwTnMoL", "71GfMP6B+lL", "71KEuVoea7L", "71Iv2peiNkL", "81kg38PEbKL", "71Bs7GkUtQL", "71pNKgPdeoL"]
+    }
+  ],
+  "preserveExistingMainOnly": ["6976412985973", "6976412985980"]
+}
