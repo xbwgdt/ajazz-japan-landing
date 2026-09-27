@@ -68,6 +68,9 @@ export function adaptDraftProduct(product: Product): StorefrontDatabaseProduct {
           : undefined,
         colorName: variant.colorName || undefined,
         imageUrl: relationMediaURL(variant.imageId, `variant ${index + 1}`),
+        galleryImages: [...new Set((variant.galleryImageIds ?? [])
+          .map((value, imageIndex) => relationMediaURL(value, `variant ${index + 1} gallery ${imageIndex + 1}`))
+          .filter((value): value is string => Boolean(value)))],
         availableQuantity: 0,
       };
     });
@@ -97,6 +100,7 @@ export function adaptDraftProduct(product: Product): StorefrontDatabaseProduct {
 
   return {
     isPreview: true,
+    galleryMode: product.galleryMode ?? "shared",
     name: product.name,
     descriptionHtml: descriptionHTML(product.description),
     images: [...new Set(images)],

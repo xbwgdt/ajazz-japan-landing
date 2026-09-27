@@ -12,6 +12,9 @@ export const productVariants: Field = {
     { name: "colorSwatch", type: "text" },
     { name: "thumbnailId", type: "relationship", relationTo: "media" },
     { name: "imageId", type: "relationship", relationTo: "media" },
+    { name: "galleryImageIds", label: "Color gallery (ordered)", type: "relationship", relationTo: "media", hasMany: true },
+    { name: "imageSourceUrl", label: "Image source product URL", type: "text" },
+    { name: "amazonAsin", label: "Amazon ASIN", type: "text" },
     { name: "salePriceJpy", type: "number", min: 1, required: true },
     { name: "compareAtPriceJpy", type: "number", min: 1 },
     {

@@ -140,7 +140,7 @@ function productMediaIds(product: PayloadProduct): string[] {
     ...relationIds(product.seoImageId),
     ...variants.flatMap((variant) => {
       const record = variant && typeof variant === "object" ? variant as Record<string, unknown> : {};
-      return [...relationIds(record.thumbnailId), ...relationIds(record.imageId)];
+      return [...relationIds(record.thumbnailId), ...relationIds(record.imageId), ...relationIds(record.galleryImageIds)];
     }),
   ])];
 }

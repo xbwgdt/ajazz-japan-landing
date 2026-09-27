@@ -9,6 +9,7 @@ type ProductMediaData = {
   seoImageId?: Relation;
   variants?: Array<{
     imageId?: Relation;
+    galleryImageIds?: Relation[] | null;
     thumbnailId?: Relation;
   }> | null;
 };
@@ -25,7 +26,7 @@ function collectMediaIDs(data: ProductMediaData): Array<number | string> {
     ...(data.galleryImageIds ?? []),
     ...(data.sceneImageIds ?? []),
     data.seoImageId,
-    ...(data.variants ?? []).flatMap((variant) => [variant.thumbnailId, variant.imageId]),
+    ...(data.variants ?? []).flatMap((variant) => [variant.thumbnailId, variant.imageId, ...(variant.galleryImageIds ?? [])]),
   ];
   const unique = new Map<string, number | string>();
   for (const value of values) {

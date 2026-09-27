@@ -7,6 +7,7 @@ export interface StorefrontDatabaseProduct {
   name: string;
   descriptionHtml: string;
   images: string[];
+  galleryMode?: "shared" | "color";
   specifications?: ProductSpecifications;
   variants: Array<{
     id: string;
@@ -15,6 +16,7 @@ export interface StorefrontDatabaseProduct {
     compareAtPriceJpy?: number;
     colorName?: string;
     imageUrl?: string;
+    galleryImages?: string[];
     availableQuantity: number;
   }>;
 }
@@ -25,8 +27,8 @@ export function getSellableQuantity(availableQuantity: number, reservedQuantity:
 
 export async function getStorefrontDatabaseProduct(slug: string): Promise<StorefrontDatabaseProduct | undefined> {
   await ensureCommerceSchema();
-  const [product] = await commerceSql()<Array<{ id: number; name: string; description_html: string } & CmsSpecificationRow>>`
-    SELECT p.id, p.name, p.description_html,
+  const [product] = await commerceSql()<Array<{ id: number; name: string; description_html: string; gallery_mode: "shared" | "color" } & CmsSpecificationRow>>`
+    SELECT p.id, p.name, p.description_html, p.gallery_mode,
       cp.specifications_keyboard_layout AS keyboard_layout,
       cp.specifications_size AS size,
       cp.specifications_switch_type AS switch_type,
@@ -81,11 +83,13 @@ export async function getStorefrontDatabaseProduct(slug: string): Promise<Storef
     commerceSql()<Array<{ url: string }>>`
       SELECT url FROM product_images WHERE product_id = ${product.id} ORDER BY position
     `,
-    commerceSql()<Array<{ id: number; rms_sku_number: string; price_jpy: number; compare_at_price_jpy: number | null; color_name: string | null; image_url: string | null; available_quantity: number; reserved_quantity: number }>>`
+    commerceSql()<Array<{ id: number; rms_sku_number: string; price_jpy: number; compare_at_price_jpy: number | null; color_name: string | null; image_url: string | null; gallery_images: string[]; available_quantity: number; reserved_quantity: number }>>`
       SELECT id, COALESCE(rms_sku_number, sku) AS rms_sku_number, price_jpy,
         CASE WHEN compare_at_price_approved THEN compare_at_price_jpy ELSE NULL END AS compare_at_price_jpy,
-        color_name, image_url, available_quantity, reserved_quantity
-      FROM product_variants
+        color_name, image_url, available_quantity, reserved_quantity,
+        COALESCE((SELECT array_agg(image.url ORDER BY image.position)
+          FROM public.product_variant_images image WHERE image.variant_id = variant.id), ARRAY[]::text[]) AS gallery_images
+      FROM product_variants variant
       WHERE product_id = ${product.id} AND active = TRUE
       ORDER BY id
     `,
@@ -93,6 +97,7 @@ export async function getStorefrontDatabaseProduct(slug: string): Promise<Storef
 
   return {
     name: product.name,
+    galleryMode: product.gallery_mode ?? "shared",
     descriptionHtml: product.description_html,
     images: images.map((image) => image.url),
     specifications: mapCmsSpecifications(product),
@@ -103,6 +108,7 @@ export async function getStorefrontDatabaseProduct(slug: string): Promise<Storef
       compareAtPriceJpy: variant.compare_at_price_jpy ? Number(variant.compare_at_price_jpy) : undefined,
       colorName: variant.color_name ?? undefined,
       imageUrl: variant.image_url ?? undefined,
+      galleryImages: variant.gallery_images ?? [],
       availableQuantity: getSellableQuantity(Number(variant.available_quantity), Number(variant.reserved_quantity)),
     })),
   };

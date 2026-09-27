@@ -61,6 +61,21 @@ const variant = {
 } as const;
 
 describe("PostgreSQL publication store", () => {
+  it("replaces only the target variant gallery inside the existing transaction", async () => {
+    const { store, queries } = fixture();
+    await store.transaction((tx) => tx.upsertVariants("42", [{ ...variant, images: [
+      { mediaId: "green", url: "/green.jpg", position: 0 },
+      { mediaId: "detail", url: "/detail.jpg", position: 1 },
+    ] }]));
+    const deletes = queries.filter((query) => sqlText(query).includes("DELETE FROM public.product_variant_images"));
+    const inserts = queries.filter((query) => sqlText(query).includes("INSERT INTO public.product_variant_images"));
+    expect(deletes).toHaveLength(1);
+    expect(sqlValues(deletes[0])).toContain(99);
+    expect(inserts).toHaveLength(2);
+    expect(sqlValues(inserts[0])).toEqual(expect.arrayContaining([99, "green", "/green.jpg", 0]));
+    expect(sqlValues(inserts[1])).toEqual(expect.arrayContaining([99, "detail", "/detail.jpg", 1]));
+  });
+
   beforeEach(() => vi.clearAllMocks());
 
   it("reuses the active Payload transaction and permits same-revision recovery", async () => {

@@ -5,6 +5,7 @@ import * as migration_20260809_022600_task5_publication_metadata from './2026080
 import * as migration_20260809_053900_task7_rms_source_snapshot from './20260809_053900_task7_rms_source_snapshot';
 import * as migration_20260809_060000_task9_site_settings from './20260809_060000_task9_site_settings';
 import * as migration_20260810_160407 from './20260810_160407';
+import * as migration_20260927_141458_color_galleries from './20260927_141458_color_galleries';
 
 export const migrations = [
   {
@@ -40,6 +41,11 @@ export const migrations = [
   {
     up: migration_20260810_160407.up,
     down: migration_20260810_160407.down,
-    name: '20260810_160407'
+    name: '20260810_160407',
+  },
+  {
+    up: migration_20260927_141458_color_galleries.up,
+    down: migration_20260927_141458_color_galleries.down,
+    name: '20260927_141458_color_galleries'
   },
 ];

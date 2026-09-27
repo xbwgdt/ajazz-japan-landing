@@ -16,6 +16,7 @@ export type PublishedImage = {
 };
 
 export type PublishedVariant = {
+  images?: PublishedImage[];
   active: boolean;
   cmsVariantId: string;
   colorName: string;
@@ -35,6 +36,7 @@ export type PublishedVariant = {
 };
 
 export type PublishedProductSnapshot = {
+  galleryMode?: "shared" | "color";
   category: string;
   cmsProductId: string;
   correlationId: string;
@@ -89,6 +91,7 @@ export interface PublicationDraft extends EditorialProductInput {
   variants: Array<EditorialProductInput["variants"][number] & {
     cmsVariantId: string;
     imageUrl?: string;
+    images?: PublishedImage[];
     thumbnailUrl?: string;
   }>;
 }
@@ -151,6 +154,16 @@ function publicationIssues(draft: PublicationDraft): ValidationIssue[] {
     seenPositions.add(image.position);
   }
   for (const [index, variant] of draft.variants.entries()) {
+    const positions = new Set<number>();
+    for (const [imageIndex, image] of (variant.images ?? []).entries()) {
+      if (!image.mediaId?.trim() || !image.url?.trim()) {
+        issues.push({ path: `variants.${index}.images.${imageIndex}`, code: "media_url_unresolved", message: "Color images must resolve to active media." });
+      }
+      if (!Number.isInteger(image.position) || image.position < 0 || positions.has(image.position)) {
+        issues.push({ path: `variants.${index}.images.${imageIndex}.position`, code: "invalid_image_position", message: "Color image positions must be unique non-negative integers." });
+      }
+      positions.add(image.position);
+    }
     if (!variant.cmsVariantId?.trim()) {
       issues.push({ path: `variants.${index}.cmsVariantId`, code: "cms_variant_id_required", message: "Every variant requires a stable CMS identifier." });
     }
@@ -167,6 +180,7 @@ export async function publishProduct(
   if (issues.length) throw new PublicationValidationError(issues);
 
   const snapshot: PublishedProductSnapshot = {
+    galleryMode: input.draft.galleryMode ?? "shared",
     category: input.draft.category,
     cmsProductId: input.cmsProductId,
     correlationId: input.correlationId,
@@ -184,6 +198,7 @@ export async function publishProduct(
     sourceType: input.draft.sourceType,
   };
   const variants: PublishedVariant[] = input.draft.variants.filter((variant) => variant.active).map((variant) => ({
+    images: variant.images ?? [],
     active: variant.active,
     cmsVariantId: variant.cmsVariantId,
     colorName: variant.colorName,

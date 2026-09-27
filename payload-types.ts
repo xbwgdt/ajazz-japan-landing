@@ -225,6 +225,7 @@ export interface Product {
   lifecycle: 'active' | 'unpublished' | 'archived';
   featured?: boolean | null;
   merchandisingOrder?: number | null;
+  galleryMode: 'shared' | 'color';
   primaryImageId?: (number | null) | Media;
   galleryImageIds?: (number | Media)[] | null;
   sceneImageIds?: (number | Media)[] | null;
@@ -237,6 +238,9 @@ export interface Product {
         colorSwatch?: string | null;
         thumbnailId?: (number | null) | Media;
         imageId?: (number | null) | Media;
+        galleryImageIds?: (number | Media)[] | null;
+        imageSourceUrl?: string | null;
+        amazonAsin?: string | null;
         salePriceJpy: number;
         compareAtPriceJpy?: number | null;
         comparisonEvidenceType?: ('manufacturer_price' | 'recent_price' | 'market_price') | null;
@@ -468,6 +472,7 @@ export interface ProductsSelect<T extends boolean = true> {
   lifecycle?: T;
   featured?: T;
   merchandisingOrder?: T;
+  galleryMode?: T;
   primaryImageId?: T;
   galleryImageIds?: T;
   sceneImageIds?: T;
@@ -481,6 +486,9 @@ export interface ProductsSelect<T extends boolean = true> {
         colorSwatch?: T;
         thumbnailId?: T;
         imageId?: T;
+        galleryImageIds?: T;
+        imageSourceUrl?: T;
+        amazonAsin?: T;
         salePriceJpy?: T;
         compareAtPriceJpy?: T;
         comparisonEvidenceType?: T;

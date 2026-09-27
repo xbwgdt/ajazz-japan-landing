@@ -6,6 +6,22 @@ function text(value: string) {
 }
 
 describe("publication draft conversion", () => {
+  it("resolves color media in order, deduplicates IDs and rejects retired gallery media", async () => {
+    const payload = {
+      find: vi.fn().mockResolvedValue({ docs: [] }),
+      findByID: vi.fn(async ({ id }: { id: string }) => ({ id, url: `/api/cms/media/file/${id}.jpg` })),
+    };
+    const product = { id: 7, galleryMode: "color", variants: [{ id: "green", imageId: 2, galleryImageIds: [2, 3, 2] }] };
+    const result = await buildPublicationDraft(payload as never, product);
+    expect(result.galleryMode).toBe("color");
+    expect(result.variants[0].images).toEqual([
+      { mediaId: "2", position: 0, url: "/api/cms/media/file/2.jpg" },
+      { mediaId: "3", position: 1, url: "/api/cms/media/file/3.jpg" },
+    ]);
+    payload.findByID.mockResolvedValueOnce({ id: "2", url: "" });
+    await expect(buildPublicationDraft(payload as never, product)).rejects.toThrow(/publishable/);
+  });
+
   it("preserves Lexical headings, lists, and links as structured HTML", async () => {
     const payload = {
       find: vi.fn().mockResolvedValue({ docs: [] }),

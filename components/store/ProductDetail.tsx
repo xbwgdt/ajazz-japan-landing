@@ -15,6 +15,7 @@ interface StoreProduct {
   name: string;
   sanitizedDescriptionHtml: string;
   images: string[];
+  galleryMode?: "shared" | "color";
   specifications?: ProductSpecifications;
   variants: StoreVariant[];
 }
@@ -24,8 +25,11 @@ export function ProductDetail({ product }: { product: StoreProduct }) {
   const [selectedIndex, setSelectedIndex] = useState(0);
   const selected = product.variants[selectedIndex];
   const gallery = useMemo(
-    () => [...new Set([selected?.imageUrl, ...product.images].filter((image): image is string => Boolean(image)))],
-    [product.images, selected?.imageUrl],
+    () => [...new Set([
+      selected?.imageUrl,
+      ...(product.galleryMode === "color" ? selected?.galleryImages ?? [] : product.images),
+    ].filter((image): image is string => Boolean(image)))],
+    [product.galleryMode, product.images, selected?.imageUrl, selected?.galleryImages],
   );
   const [galleryIndex, setGalleryIndex] = useState(0);
   const activeImage = gallery[galleryIndex] ?? gallery[0];

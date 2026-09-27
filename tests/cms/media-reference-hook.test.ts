@@ -45,7 +45,7 @@ describe("retired media product reference protection", () => {
         primaryImageId: 1,
         sceneImageIds: [{ id: 3 }],
         seoImageId: 4,
-        variants: [{ imageId: { id: 6 }, thumbnailId: 5 }],
+        variants: [{ imageId: { id: 6 }, thumbnailId: 5, galleryImageIds: [7, { id: 8 }] }],
       },
       operation: "create",
       originalDoc: undefined,
@@ -60,7 +60,7 @@ describe("retired media product reference protection", () => {
       overrideAccess: true,
       where: {
         and: [
-          { id: { in: [1, 2, 3, 4, 5, 6] } },
+          { id: { in: [1, 2, 3, 4, 5, 6, 7, 8] } },
           { retiredAt: { exists: true } },
         ],
       },

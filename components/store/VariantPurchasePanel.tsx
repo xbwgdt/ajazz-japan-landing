@@ -10,6 +10,7 @@ export interface PurchasableVariant {
   compareAtPriceJpy?: number;
   colorName?: string;
   imageUrl?: string;
+  galleryImages?: string[];
   availableQuantity: number;
 }
 

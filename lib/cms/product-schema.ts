@@ -29,6 +29,7 @@ export interface EditorialVariantInput {
   colorSwatch?: string;
   thumbnailId?: string;
   imageId?: string;
+  galleryImageIds?: string[];
   salePriceJpy: number;
   compareAtPriceJpy?: number;
   comparisonEvidenceType?: ComparisonEvidenceType;
@@ -49,6 +50,7 @@ export interface EditorialProductInput {
   shortStatement?: string;
   category: ProductCategoryKey;
   primaryImageId?: string;
+  galleryMode?: "shared" | "color";
   featured?: boolean;
   merchandisingOrder?: number;
   lifecycle?: ProductLifecycle;

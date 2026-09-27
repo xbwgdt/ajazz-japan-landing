@@ -12,6 +12,48 @@ import { ProductDetail } from "../../components/store/ProductDetail";
 (globalThis as typeof globalThis & { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
 
 describe("product detail", () => {
+  it("switches the entire color gallery, deduplicates the main image and resets its position", async () => {
+    const container = document.createElement("div");
+    const root = createRoot(container);
+    await act(async () => root.render(<CartProvider><ProductDetail product={{
+      name: "AF84", galleryMode: "color", isPreview: true,
+      sanitizedDescriptionHtml: "", images: ["/mixed.jpg"],
+      variants: [
+        { rmsSkuNumber: "GREEN", colorName: "Green", priceJpy: 10000, availableQuantity: 0,
+          imageUrl: "/green.jpg", galleryImages: ["/green.jpg", "/green-detail.jpg", "/green-scene.jpg"] },
+        { rmsSkuNumber: "RED", colorName: "Red", priceJpy: 11000, availableQuantity: 0,
+          imageUrl: "/red.jpg", galleryImages: ["/red-detail.jpg"] },
+        { rmsSkuNumber: "EMPTY", colorName: "Empty", priceJpy: 11000, availableQuantity: 0 },
+      ],
+    }} /></CartProvider>));
+    const sources = () => Array.from(container.querySelectorAll(".store-product-gallery img"), (img) => img.getAttribute("src"));
+    try {
+      expect(sources()).toEqual(["/green.jpg", "/green-detail.jpg", "/green-scene.jpg"]);
+      await act(async () => container.querySelectorAll<HTMLButtonElement>(".store-product-gallery button")[2].click());
+      await act(async () => container.querySelector<HTMLButtonElement>('[aria-label="Redを選択"]')!.click());
+      expect(sources()).toEqual(["/red.jpg", "/red-detail.jpg"]);
+      expect(container.querySelector(".store-product-active-image")?.getAttribute("src")).toBe("/red.jpg");
+      expect(container.querySelector(".store-product-gallery button")?.getAttribute("aria-pressed")).toBe("true");
+      expect(container.querySelector(".store-selected-sku")?.textContent).toContain("RED");
+      expect(container.querySelector<HTMLButtonElement>(".store-add-button")?.disabled).toBe(true);
+      await act(async () => container.querySelector<HTMLButtonElement>('[aria-label="Emptyを選択"]')!.click());
+      expect(container.querySelector(".store-product-active-image")).toBeNull();
+      expect(container.querySelector(".store-product-placeholder")).not.toBeNull();
+      expect(sources()).toEqual([]);
+    } finally {
+      await act(async () => root.unmount());
+    }
+  });
+
+  it("uses only the main image when a color has no gallery", () => {
+    const html = renderToStaticMarkup(<CartProvider><ProductDetail product={{
+      name: "AF84", galleryMode: "color", sanitizedDescriptionHtml: "", images: ["/mixed.jpg"],
+      variants: [{ rmsSkuNumber: "GREEN", priceJpy: 10000, availableQuantity: 0, imageUrl: "/green.jpg" }],
+    }} /></CartProvider>);
+    expect(html).toContain("/green.jpg");
+    expect(html).not.toContain("/mixed.jpg");
+  });
+
   it("shows an available RMS product with price, image, shipping, and returns terms", () => {
     const html = renderToStaticMarkup(<CartProvider><ProductDetail product={{
       name: "AK820 MAX", sanitizedDescriptionHtml: "<p>Rapid trigger keyboard</p>",

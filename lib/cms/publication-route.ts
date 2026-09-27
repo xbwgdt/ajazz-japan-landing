@@ -57,6 +57,7 @@ export async function buildPublicationDraft(payload: Payload, product: PayloadPr
   const variantMedia = variants.flatMap((variant) => [
     relationId(variant.thumbnailId as Relation),
     relationId(variant.imageId as Relation),
+    ...(Array.isArray(variant.galleryImageIds) ? variant.galleryImageIds.map((value) => relationId(value as Relation)) : []),
   ].filter(Boolean) as string[]);
   const orderedImages = [primary, ...gallery, ...scenes].filter(Boolean) as string[];
   const media = await loadMedia(payload, [...orderedImages, ...variantMedia], req);
@@ -81,6 +82,7 @@ export async function buildPublicationDraft(payload: Payload, product: PayloadPr
     descriptionHtml: descriptionHtml(product.description),
     category: product.category as PublicationDraft["category"],
     primaryImageId: primary,
+    galleryMode: product.galleryMode === "color" ? "color" : "shared",
     featured: product.featured === true,
     merchandisingOrder: Number(product.merchandisingOrder ?? 0),
     lifecycle: product.lifecycle as PublicationDraft["lifecycle"],
@@ -90,6 +92,8 @@ export async function buildPublicationDraft(payload: Payload, product: PayloadPr
     variants: variants.map((variant) => {
       const thumbnailId = relationId(variant.thumbnailId as Relation);
       const imageId = relationId(variant.imageId as Relation);
+      const galleryImageIds = [...new Set((Array.isArray(variant.galleryImageIds) ? variant.galleryImageIds : [])
+        .map((value) => relationId(value as Relation)).filter((id): id is string => Boolean(id)))];
       return {
         operationalVariantId: typeof variant.operationalVariantId === "string" ? variant.operationalVariantId : undefined,
         cmsVariantId: String(variant.id ?? ""),
@@ -99,6 +103,8 @@ export async function buildPublicationDraft(payload: Payload, product: PayloadPr
         colorSwatch: typeof variant.colorSwatch === "string" ? variant.colorSwatch : undefined,
         thumbnailId,
         imageId,
+        galleryImageIds,
+        images: galleryImageIds.map((mediaId, position) => ({ mediaId, position, url: media.get(mediaId) ?? "" })),
         thumbnailUrl: thumbnailId ? media.get(thumbnailId) : undefined,
         imageUrl: imageId ? media.get(imageId) : undefined,
         salePriceJpy: Number(variant.salePriceJpy),

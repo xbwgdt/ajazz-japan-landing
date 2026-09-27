@@ -100,6 +100,7 @@ function transactionAdapter(database: TransactionDatabase): PublicationTransacti
             rms_manage_number = ${snapshot.rmsManageNumber}, slug = ${snapshot.slug},
             name = ${snapshot.name}, short_statement = ${snapshot.shortStatement},
             description_html = ${snapshot.descriptionHtml}, category = ${snapshot.category},
+            gallery_mode = ${snapshot.galleryMode ?? "shared"},
             seo_title = ${snapshot.seoTitle}, seo_description = ${snapshot.seoDescription},
             featured = ${snapshot.featured}, merchandising_order = ${snapshot.merchandisingOrder},
             lifecycle = 'active', published = TRUE, published_at = NOW(), unpublished_at = NULL,
@@ -114,13 +115,13 @@ function transactionAdapter(database: TransactionDatabase): PublicationTransacti
             cms_product_id, source_type, rms_manage_number, slug, name, short_statement,
             description_html, category, seo_title, seo_description, featured,
             merchandising_order, lifecycle, published, published_at,
-            publication_revision, last_publication_correlation_id
+            publication_revision, last_publication_correlation_id, gallery_mode
           ) VALUES (
             ${snapshot.cmsProductId}, ${snapshot.sourceType}, ${snapshot.rmsManageNumber},
             ${snapshot.slug}, ${snapshot.name}, ${snapshot.shortStatement},
             ${snapshot.descriptionHtml}, ${snapshot.category}, ${snapshot.seoTitle},
             ${snapshot.seoDescription}, ${snapshot.featured}, ${snapshot.merchandisingOrder},
-            'active', TRUE, NOW(), ${snapshot.revision}, ${snapshot.correlationId}
+            'active', TRUE, NOW(), ${snapshot.revision}, ${snapshot.correlationId}, ${snapshot.galleryMode ?? "shared"}
           ) RETURNING id
         `);
       }
@@ -197,7 +198,15 @@ function transactionAdapter(database: TransactionDatabase): PublicationTransacti
             ) RETURNING id
           `);
         }
-        activeIds.push(String(rows[0].id));
+        const variantId = Number(rows[0].id);
+        await database.execute(sql`DELETE FROM public.product_variant_images WHERE variant_id = ${variantId}`);
+        for (const image of variant.images ?? []) {
+          await database.execute(sql`
+            INSERT INTO public.product_variant_images (variant_id, cms_media_id, url, position)
+            VALUES (${variantId}, ${image.mediaId}, ${image.url}, ${image.position})
+          `);
+        }
+        activeIds.push(String(variantId));
       }
       return activeIds;
     },

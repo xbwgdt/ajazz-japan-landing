@@ -173,6 +173,10 @@ export const Products: CollectionConfig = {
         {
           label: "Media and colors",
           fields: [
+            { name: "galleryMode", type: "select", required: true, defaultValue: "shared", options: [
+              { label: "Shared product gallery (legacy)", value: "shared" },
+              { label: "Independent color galleries", value: "color" },
+            ] },
             { name: "primaryImageId", type: "relationship", relationTo: "media" },
             { name: "galleryImageIds", type: "relationship", relationTo: "media", hasMany: true },
             { name: "sceneImageIds", type: "relationship", relationTo: "media", hasMany: true },

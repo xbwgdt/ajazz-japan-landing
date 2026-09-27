@@ -11,6 +11,7 @@ const PRODUCT_MEDIA_PATHS = [
   "seoImageId",
   "variants.thumbnailId",
   "variants.imageId",
+  "variants.galleryImageIds",
 ] as const;
 const MEDIA_FIELD_PATTERN = /(?:image|media)ids?$/i;
 

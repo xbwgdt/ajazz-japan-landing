@@ -256,6 +256,19 @@ describe("draft product adapter", () => {
     expect(() => adaptDraftProduct({ ...base, primaryImageId: media(1, "https://r2.example/a.webp") } as never)).toThrow(/media/i);
   });
 
+  it("resolves ordered color galleries and rejects invalid color media", () => {
+    const base = { id: 7, name: "AF84", slug: "af84", galleryMode: "color" };
+    const variant = { sku: "GREEN", colorName: "Green", salePriceJpy: 10000, active: true,
+      inventoryMode: "manual", galleryImageIds: [media(2, "/api/cms/media/file/green.webp"), media(3, "/api/cms/media/file/detail.webp")] };
+    const result = adaptDraftProduct({ ...base, variants: [variant] } as never);
+    expect(result).toMatchObject({ galleryMode: "color", variants: [{
+      galleryImages: ["/api/cms/media/file/green.webp", "/api/cms/media/file/detail.webp"], availableQuantity: 0,
+    }] });
+    for (const invalid of [3, media(3, "https://r2.example/a.webp"), media(3, "/api/cms/media/file/a.webp", "2026-09-27")]) {
+      expect(() => adaptDraftProduct({ ...base, variants: [{ ...variant, galleryImageIds: [invalid] }] } as never)).toThrow(/media/i);
+    }
+  });
+
   it("renders a completely new product variant with a deterministic index fallback", () => {
     const product = adaptDraftProduct({
       id: 11,

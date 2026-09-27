@@ -87,6 +87,29 @@ function fakePublicationStore(options: { failAtVariant?: number } = {}) {
 }
 
 describe("atomic product publication", () => {
+  it("carries color galleries and mode into the publication transaction", async () => {
+    const input = validInput();
+    input.draft.galleryMode = "color";
+    input.draft.variants[0].images = [{ mediaId: "green", url: "/green.jpg", position: 0 }];
+    const snapshots: unknown[] = [];
+    const variants: unknown[] = [];
+    const { store } = fakePublicationStore();
+    await publishProduct(input, { transaction: (work) => store.transaction((tx) => work({
+      ...tx,
+      async upsertProduct(snapshot) { snapshots.push(snapshot); return tx.upsertProduct(snapshot); },
+      async upsertVariants(id, values) { variants.push(...values); return tx.upsertVariants(id, values); },
+    })) });
+    expect(snapshots[0]).toMatchObject({ galleryMode: "color" });
+    expect(variants[0]).toMatchObject({ images: input.draft.variants[0].images });
+  });
+
+  it("rejects unresolved color images before publishing", async () => {
+    const input = validInput();
+    input.draft.variants[0].images = [{ mediaId: "green", url: "", position: 0 }];
+    const { store } = fakePublicationStore();
+    await expect(publishProduct(input, store)).rejects.toBeInstanceOf(PublicationValidationError);
+  });
+
   it("does not alter live data or audit state when a variant write fails", async () => {
     const { state, store } = fakePublicationStore({ failAtVariant: 1 });
     await expect(publishProduct(validInput(), store)).rejects.toThrow("variant write failed");
