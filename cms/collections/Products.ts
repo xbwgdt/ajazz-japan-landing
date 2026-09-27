@@ -85,6 +85,7 @@ export const Products: CollectionConfig = {
     components: {
       beforeListTable: ["/cms/admin/ProductListStockFilter#ProductListStockFilter"],
       edit: {
+        PublishButton: "/cms/admin/ProductActions#NativePublishButton",
         beforeDocumentControls: [
           "/cms/admin/ProductActions#ProductActions",
           "/cms/admin/ManualInventoryAction#ManualInventoryAction",

@@ -23,6 +23,7 @@ import { BoldFeatureClient as BoldFeatureClient_e70f5e05f09f93e00b997edb1ef0c864
 import { ItalicFeatureClient as ItalicFeatureClient_e70f5e05f09f93e00b997edb1ef0c864 } from '@payloadcms/richtext-lexical/client'
 import { ProductListStockFilter as ProductListStockFilter_d936af5adb015d1f09a3ebee7ce57765 } from '../../../cms/admin/ProductListStockFilter'
 import { ProductActions as ProductActions_ee51f343d8707f26dccbc49095481bd0 } from '../../../cms/admin/ProductActions'
+import { NativePublishButton } from '../../../cms/admin/ProductActions'
 import { ManualInventoryAction as ManualInventoryAction_a44dbe9573183b423ce55479921f8715 } from '../../../cms/admin/ManualInventoryAction'
 import { Dashboard as Dashboard_bcc9457ef7c3b677576160df84c91a20 } from '../../../cms/admin/Dashboard'
 import { S3ClientUploadHandler as S3ClientUploadHandler_f97aa6c64367fa259c5bc0567239ef24 } from '@payloadcms/storage-s3/client'
@@ -56,6 +57,7 @@ export const importMap = {
   "@payloadcms/richtext-lexical/client#ItalicFeatureClient": ItalicFeatureClient_e70f5e05f09f93e00b997edb1ef0c864,
   "/cms/admin/ProductListStockFilter#ProductListStockFilter": ProductListStockFilter_d936af5adb015d1f09a3ebee7ce57765,
   "/cms/admin/ProductActions#ProductActions": ProductActions_ee51f343d8707f26dccbc49095481bd0,
+  "/cms/admin/ProductActions#NativePublishButton": NativePublishButton,
   "/cms/admin/ManualInventoryAction#ManualInventoryAction": ManualInventoryAction_a44dbe9573183b423ce55479921f8715,
   "/cms/admin/Dashboard#Dashboard": Dashboard_bcc9457ef7c3b677576160df84c91a20,
   "@payloadcms/storage-s3/client#S3ClientUploadHandler": S3ClientUploadHandler_f97aa6c64367fa259c5bc0567239ef24,
