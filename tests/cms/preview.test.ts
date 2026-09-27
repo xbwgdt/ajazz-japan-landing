@@ -159,7 +159,7 @@ describe("product preview routes", () => {
     vi.unstubAllEnvs();
   });
 
-  it("enables draft mode only after the real entry route authenticates and binds the draft", async () => {
+  it.each(["https://ajazz.jp", "http://0.0.0.0:8080"])("keeps authorized preview redirects same-site behind proxy %s", async (origin) => {
     vi.stubEnv("PAYLOAD_SECRET", SECRET);
     const now = Math.floor(Date.now() / 1_000);
     const token = createPreviewToken(
@@ -173,21 +173,22 @@ describe("product preview routes", () => {
     const { GET } = await import("../../app/api/cms/preview/route");
 
     const response = await GET(new Request(
-      `https://ajazz.jp/api/cms/preview?token=${token}&slug=ak820`,
+      `${origin}/api/cms/preview?token=${token}&slug=ak820`,
+      { headers: { "x-forwarded-host": "evil.example", "x-forwarded-proto": "http" } },
     ));
 
     expect(response.status).toBe(307);
-    expect(response.headers.get("location")).toBe("https://ajazz.jp/products/ak820");
+    expect(response.headers.get("location")).toBe("/products/ak820");
     expect(routeMocks.enable).toHaveBeenCalledTimes(1);
   });
 
-  it("disables draft mode and redirects to a fixed same-site path", async () => {
+  it.each(["https://ajazz.jp", "http://0.0.0.0:8080"])("disables draft mode and redirects to a fixed same-site path behind %s", async (origin) => {
     const { GET } = await import("../../app/api/cms/preview/exit/route");
-    const response = await GET(new Request("https://ajazz.jp/api/cms/preview/exit?next=https://evil.example"));
+    const response = await GET(new Request(`${origin}/api/cms/preview/exit?next=https://evil.example`));
 
     expect(routeMocks.disable).toHaveBeenCalledTimes(1);
     expect(response.status).toBe(307);
-    expect(response.headers.get("location")).toBe("https://ajazz.jp/");
+    expect(response.headers.get("location")).toBe("/");
   });
 
   it("generates the Products admin preview URL from the saved ID, slug, and revision", async () => {

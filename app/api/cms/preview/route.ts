@@ -13,5 +13,6 @@ export async function GET(request: Request): Promise<Response> {
     getPayload: () => getPayload({ config: configPromise }),
   });
   if ("code" in result) return Response.json({ code: result.code }, { status: result.status });
-  return Response.redirect(new URL(result.path, request.url), 307);
+  // Keep the browser's public origin when the server runs behind a proxy.
+  return new Response(null, { status: 307, headers: { Location: result.path } });
 }
