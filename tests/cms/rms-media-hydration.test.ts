@@ -22,6 +22,37 @@ function payload(productOverrides: Record<string, unknown> = {}) {
 }
 
 describe("RMS product media hydration", () => {
+  it("refuses uploads when all product images are ranking posters", async () => {
+    const client = payload({ sourceSnapshot: { images: ["https://image.rakuten.co.jp/ajazz/cabinet/tj/r-img_rr/1/model.jpg"], variants: [] } });
+    const uploadImage = vi.fn();
+    await expect(hydrateRmsProductMedia({ apply: true, confirmation: "AJAZZ_RMS_MEDIA_2026",
+      draftSaveContext: {}, sourceIngestionContext: {}, payload: client,
+      rmsManageNumber: "model", uploadImage })).rejects.toThrow("no eligible product images");
+    expect(uploadImage).not.toHaveBeenCalled();
+    expect(client.update).not.toHaveBeenCalled();
+  });
+
+  it.each([false, true])("excludes ranking images from every image role (apply=%s)", async (apply) => {
+    const ranking = "https://image.rakuten.co.jp/ajazz/cabinet/tj/r-img_rr/1/model.jpg";
+    const client = payload({ sourceSnapshot: {
+      images: [ranking, "https://example.test/main.jpg"],
+      variants: [{ operationalVariantId: 11, rmsSkuNumber: "BLUE", imageUrl: ranking }],
+    } });
+    const uploadImage = vi.fn(async () => "safe-media");
+    const result = await hydrateRmsProductMedia({ apply, confirmation: "AJAZZ_RMS_MEDIA_2026",
+      draftSaveContext: {}, sourceIngestionContext: {}, payload: client,
+      rmsManageNumber: "model", uploadImage });
+    expect(result.urls).toEqual(["https://example.test/main.jpg"]);
+    expect(result.excludedUrls).toEqual([ranking]);
+    if (apply) {
+      expect(uploadImage).toHaveBeenCalledTimes(1);
+      expect(client.update).toHaveBeenCalledWith(expect.objectContaining({ data: {
+        primaryImageId: "safe-media", galleryImageIds: [],
+        variants: [expect.not.objectContaining({ imageId: expect.anything() })],
+      } }));
+    }
+  });
+
   it("is read-only by default and reports unique source images", async () => {
     const client = payload();
     const uploadImage = vi.fn();

@@ -39,6 +39,14 @@ function sourceData(product: RecordValue) {
   return { images: [...new Set(images)], variants };
 }
 
+function isRankingImage(url: string): boolean {
+  try {
+    return decodeURIComponent(new URL(url).pathname).toLowerCase().includes("/cabinet/tj/r-img_rr/");
+  } catch {
+    return true;
+  }
+}
+
 function hasEditorialMedia(product: RecordValue): boolean {
   if (relationId(product.primaryImageId as Relation)) return true;
   if (Array.isArray(product.galleryImageIds) && product.galleryImageIds.some((value) => relationId(value as Relation))) return true;
@@ -73,13 +81,16 @@ export async function hydrateRmsProductMedia(dependencies: HydrateRmsMediaDepend
   if (hasEditorialMedia(product)) throw new Error("Refusing to overwrite existing editorial media.");
 
   const source = sourceData(product);
-  if (source.images.length === 0) throw new Error("The RMS source snapshot has no product images.");
   const variantImageUrls = source.variants
     .map((variant) => variant.imageUrl)
     .filter((value): value is string => typeof value === "string" && /^https:\/\//.test(value));
-  const urls = [...new Set([...source.images, ...variantImageUrls])];
+  const allUrls = [...new Set([...source.images, ...variantImageUrls])];
+  const excludedUrls = allUrls.filter(isRankingImage);
+  source.images = source.images.filter((url) => !isRankingImage(url));
+  if (source.images.length === 0) throw new Error("The RMS source snapshot has no eligible product images after ranking exclusion.");
+  const urls = allUrls.filter((url) => !isRankingImage(url));
   if (!dependencies.apply) {
-    return { applied: false, cmsProductId: String(product.id), imageCount: urls.length, urls };
+    return { applied: false, cmsProductId: String(product.id), imageCount: urls.length, urls, excludedUrls };
   }
   if (dependencies.confirmation !== APPLY_CONFIRMATION) {
     throw new Error(`Apply requires RMS_MEDIA_CONFIRM=${APPLY_CONFIRMATION}.`);
@@ -122,7 +133,7 @@ export async function hydrateRmsProductMedia(dependencies: HydrateRmsMediaDepend
     overrideAccess: true,
     user: actor,
   });
-  return { applied: true, cmsProductId: String(product.id), imageCount: urls.length, urls };
+  return { applied: true, cmsProductId: String(product.id), imageCount: urls.length, urls, excludedUrls };
 }
 
 async function uploadImage(payload: PayloadLike, url: string, alt: string): Promise<string> {
