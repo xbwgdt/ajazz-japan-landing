@@ -375,7 +375,8 @@ export function createPayloadProductLifecycleStore(
           async updateProduct(id, data) {
             await payload.update({
               collection: "products",
-              context: productDraftSaveContext,
+              // Rich-text hooks add request-local state to this context.
+              context: { ...productDraftSaveContext },
               data: {
                 ...(data.lifecycle ? { lifecycle: data.lifecycle } : {}),
                 ...(data.status ? { _status: data.status } : {}),

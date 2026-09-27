@@ -9,6 +9,7 @@ import {
   type ProductLifecycleStore,
 } from "../../lib/cms/product-lifecycle";
 import { PublicationConflictError } from "../../lib/cms/publication";
+import { productDraftSaveContext } from "../../cms/hooks/protectSourceFields";
 
 const admin = { id: 1, email: "xiet@a-jazz.com" };
 
@@ -198,6 +199,30 @@ function sqlText(query: unknown): string {
 }
 
 describe("Payload lifecycle store protections", () => {
+  it("provides a fresh mutable context for rich-text validation on every lifecycle update", async () => {
+    const contexts: Record<PropertyKey, unknown>[] = [];
+    const update = vi.fn(async ({ context }: { context: Record<PropertyKey, unknown> }) => {
+      expect(context.internal).toBeUndefined();
+      context.internal = { richTextValidation: true };
+      contexts.push(context);
+    });
+    const payload = { update } as unknown as Parameters<typeof createPayloadProductLifecycleStore>[0];
+    const store = createPayloadProductLifecycleStore(payload, async (_payload, work) => work({} as never));
+    await store.transaction(admin, async (tx) => {
+      await tx.updateProduct("40", { lifecycle: "archived", status: "draft" });
+      await tx.updateProduct("40", { lifecycle: "unpublished", status: "draft" });
+    });
+    expect(contexts).toHaveLength(2);
+    expect(contexts[0]).not.toBe(contexts[1]);
+    for (const context of contexts) {
+      for (const marker of Object.getOwnPropertySymbols(productDraftSaveContext)) {
+        expect(context[marker]).toBe(true);
+      }
+    }
+    expect(Object.isFrozen(productDraftSaveContext)).toBe(true);
+    expect(update.mock.calls[0][0]).toMatchObject({ data: { lifecycle: "archived", _status: "draft" } });
+  });
+
   it("locks every operational variant and active reservation before checking order history", async () => {
     const queries: string[] = [];
     const payload = {
