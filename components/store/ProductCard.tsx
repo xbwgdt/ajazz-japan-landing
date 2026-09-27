@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { productPresentation } from "../../lib/commerce/product-presentation";
 import { useState } from "react";
 import { productCategoryLabel, type ProductCategoryKey } from "../../lib/commerce/product-categories";
 
@@ -46,7 +47,7 @@ export function ProductCard({
     <div className="store-card-body">
       <div className="store-card-meta">
         <p>{productCategoryLabel(category)}</p>
-        <h3>{name}</h3>
+        <h3>{productPresentation(name, slug).title}</h3>
         <span>{tagline}</span>
       </div>
       <div className="store-card-commerce">

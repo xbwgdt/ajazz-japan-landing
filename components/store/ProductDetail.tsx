@@ -1,6 +1,8 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import Link from "next/link";
+import { productPresentation } from "../../lib/commerce/product-presentation";
 import { VariantPurchasePanel, type PurchasableVariant } from "./VariantPurchasePanel";
 import { DRIVER_LINK_PROPS } from "../../lib/cms/site-settings";
 import { productSpecificationRows, type ProductSpecifications } from "../../lib/commerce/product-specifications";
@@ -8,6 +10,7 @@ import { productSpecificationRows, type ProductSpecifications } from "../../lib/
 interface StoreVariant extends PurchasableVariant {}
 
 interface StoreProduct {
+  slug?: string;
   name: string;
   sanitizedDescriptionHtml: string;
   images: string[];
@@ -16,6 +19,7 @@ interface StoreProduct {
 }
 
 export function ProductDetail({ product }: { product: StoreProduct }) {
+  const presentation = productPresentation(product.name, product.slug);
   const [selectedIndex, setSelectedIndex] = useState(0);
   const selected = product.variants[selectedIndex];
   const gallery = useMemo(
@@ -24,7 +28,7 @@ export function ProductDetail({ product }: { product: StoreProduct }) {
   );
   const [galleryIndex, setGalleryIndex] = useState(0);
   const activeImage = gallery[galleryIndex] ?? gallery[0];
-  const specificationRows = useMemo(() => productSpecificationRows(product.specifications ?? {}), [product.specifications]);
+  const specificationRows = productSpecificationRows({ ...presentation.specifications, ...product.specifications });
 
   const selectVariant = (index: number) => {
     setSelectedIndex(index);
@@ -33,6 +37,7 @@ export function ProductDetail({ product }: { product: StoreProduct }) {
 
   return (
     <article className="store-product-detail">
+      <nav className="store-product-breadcrumb" aria-label="パンくずリスト"><Link href="/">ホーム</Link><span aria-hidden="true">/</span><Link href="/#products">製品一覧</Link><span aria-hidden="true">/</span><span aria-current="page">{presentation.title}</span></nav>
       <section className="store-product-gallery-shell" aria-label="商品ギャラリー">
         <div className="store-product-media">
           <div className="store-product-main-image">
@@ -44,29 +49,32 @@ export function ProductDetail({ product }: { product: StoreProduct }) {
         </div>
       </section>
       <aside className="store-product-purchase-summary">
-        <p className="store-overline">AJAZZ PERFORMANCE SERIES</p>
-        <h1>{product.name}</h1>
-        <p className="store-product-lead">高性能ゲーミングデバイスを、日本全国送料無料でお届けします。</p>
-        <VariantPurchasePanel name={product.name} variants={product.variants} selectedIndex={selectedIndex} onSelect={selectVariant} />
+        <p className="store-overline">AJAZZ JAPAN</p>
+        <h1>{presentation.title}</h1>
+        {presentation.subtitle ? <p className="store-product-subtitle">{presentation.subtitle}</p> : null}
+        {presentation.lead ? <p className="store-product-lead">{presentation.lead}</p> : null}
+        {presentation.highlights.length ? <ul className="store-product-highlights">{presentation.highlights.map((feature) => <li key={feature}>{feature}</li>)}</ul> : null}
+        <VariantPurchasePanel name={presentation.title} variants={product.variants} selectedIndex={selectedIndex} onSelect={selectVariant} />
+        <p className="store-product-shipping-note">全国送料無料・ご注文から3営業日以内に発送</p>
       </aside>
       <div className="store-product-content">
-        <section className="store-product-feature-band">
+        {product.sanitizedDescriptionHtml ? <section className="store-product-feature-band">
           <p className="store-overline">PERFORMANCE</p>
           <h2>製品の特長</h2>
-          {product.sanitizedDescriptionHtml ? <div className="store-product-description" dangerouslySetInnerHTML={{ __html: product.sanitizedDescriptionHtml }} /> : <p>応答性、操作精度、長時間使用時の快適性まで、プレイ環境に必要な性能を一つのデバイスにまとめました。</p>}
-        </section>
-        <section className="store-product-specification-band">
+          <div className="store-product-description" dangerouslySetInnerHTML={{ __html: product.sanitizedDescriptionHtml }} />
+        </section> : null}
+        {specificationRows.length ? <section className="store-product-specification-band">
           <p className="store-overline">SPECIFICATIONS</p>
           <h2>商品仕様</h2>
-          {specificationRows.length ? <dl className="store-product-specifications">
+          <dl className="store-product-specifications">
             {specificationRows.map((row) => <div key={row.label}><dt>{row.label}</dt><dd>{row.value}</dd></div>)}
-          </dl> : <p>詳細仕様は順次更新します。</p>}
-        </section>
+          </dl>
+        </section> : null}
         <section className="store-product-driver-band">
           <p className="store-overline">SOFTWARE</p>
-          <h2>ドライバー・マニュアル</h2>
-          <p>対応ソフトウェア、ファームウェア、取扱説明書をドライバーダウンロードページから確認できます。</p>
-          <a {...DRIVER_LINK_PROPS}>対応ファイルを確認する</a>
+          <h2>ドライバーダウンロード</h2>
+          <p>AJAZZ公式ダウンロードページで、お使いのモデルに対応するソフトウェアをご確認ください。</p>
+          <a {...DRIVER_LINK_PROPS}>公式ダウンロードページへ</a>
         </section>
         <section className="store-product-delivery-band">
           <p className="store-overline">DELIVERY</p>

@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { productPresentation } from "../../../lib/commerce/product-presentation";
 import { notFound } from "next/navigation";
 import { draftMode, headers } from "next/headers";
 import { cache } from "react";
@@ -115,7 +116,7 @@ const loadProductRequestData = cache(async (slug: string): Promise<ProductReques
 });
 
 export function buildProductMetadata(slug: string, product: ProductMetadataInput): Metadata {
-  const title = product.seoTitle?.trim() || product.name;
+  const title = product.seoTitle?.trim() || productPresentation(product.name, slug).title;
   const description = product.seoDescription?.trim().slice(0, 160)
     || plainTextDescription(product.descriptionHtml)
     || `${product.name}の商品情報。AJAZZ JAPAN公式オンラインストア。`;

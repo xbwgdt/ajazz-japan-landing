@@ -15,6 +15,7 @@ describe("product detail", () => {
   it("shows an available RMS product with price, image, shipping, and returns terms", () => {
     const html = renderToStaticMarkup(<CartProvider><ProductDetail product={{
       name: "AK820 MAX", sanitizedDescriptionHtml: "<p>Rapid trigger keyboard</p>",
+      specifications: { keyboardLayout: "75%" },
       images: ["https://image.rakuten.co.jp/ajazz/cabinet/12437413/ak820/hero.jpg"],
       variants: [{
         rmsSkuNumber: "AK820-BLACK",
@@ -38,7 +39,7 @@ describe("product detail", () => {
     expect(html).toContain("獲得予定");
     expect(html).toContain("aria-pressed=\"true\"");
     expect(html).toContain("商品仕様");
-    expect(html).toContain("ドライバー・マニュアル");
+    expect(html).toContain("ドライバーダウンロード");
     expect(html).toContain("https://image.rakuten.co.jp/ajazz/cabinet/12437413/ak820/hero.jpg");
     expect(html).toContain('class="store-product-gallery-shell"');
     expect(html).toContain('class="store-product-purchase-summary"');

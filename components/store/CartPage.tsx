@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { productPresentation } from "../../lib/commerce/product-presentation";
 import { useRef, useState } from "react";
 import { useCart } from "./CartProvider";
 import type { CartLine } from "../../lib/commerce/types";
@@ -92,7 +93,7 @@ export function CartPage() {
             {line.imageUrl ? <img className="store-cart-line-image" src={line.imageUrl} alt="" /> : null}
             <div>
               <p className="store-cart-line-label">SELECTED PRODUCT</p>
-              <h2>{line.name}</h2>
+              <h2>{productPresentation(line.name).title}</h2>
               {line.colorName ? <p className="store-cart-line-variant">カラー：{line.colorName}</p> : null}
               <p>単価 ¥{line.priceJpy.toLocaleString("ja-JP")}</p>
             </div>
