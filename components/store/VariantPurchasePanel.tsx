@@ -18,18 +18,20 @@ export function VariantPurchasePanel({
   variants,
   selectedIndex: controlledIndex,
   onSelect,
+  isPreview = false,
 }: {
   name: string;
   variants: PurchasableVariant[];
   selectedIndex?: number;
   onSelect?: (index: number) => void;
+  isPreview?: boolean;
 }) {
   const [internalIndex, setInternalIndex] = useState(0);
   const [quantity, setQuantity] = useState(1);
   const selectedIndex = controlledIndex ?? internalIndex;
   const selected = variants[selectedIndex];
   if (!selected) return null;
-  const available = selected.availableQuantity > 0;
+  const available = !isPreview && selected.availableQuantity > 0;
   const price = new Intl.NumberFormat("ja-JP", { style: "currency", currency: "JPY", maximumFractionDigits: 0 }).format(selected.priceJpy);
   const compareAtPrice = typeof selected.compareAtPriceJpy === "number"
     && Number.isFinite(selected.compareAtPriceJpy)
@@ -55,7 +57,6 @@ export function VariantPurchasePanel({
             aria-label={`${variant.colorName ?? variant.rmsSkuNumber}を選択`}
             aria-pressed={index === selectedIndex}
             className={index === selectedIndex ? "is-selected" : undefined}
-            disabled={variant.availableQuantity <= 0}
             onClick={() => selectVariant(index)}
           >
             {variant.imageUrl
@@ -72,7 +73,7 @@ export function VariantPurchasePanel({
       </div>
       <p className="store-points"><strong>{points}ポイント</strong>獲得予定</p>
     </div>
-    <p className={available ? "store-stock is-available" : "store-stock is-unavailable"}>{available ? "在庫あり" : "在庫切れ"}</p>
+    <p className={available ? "store-stock is-available" : "store-stock is-unavailable"}>{isPreview ? "プレビュー・購入不可" : available ? "在庫あり" : "在庫切れ"}</p>
     <p className="store-selected-sku">SKU {selected.rmsSkuNumber}</p>
     <div className="store-product-purchase-controls">
       <div className="store-product-quantity" aria-label="数量">
@@ -80,7 +81,9 @@ export function VariantPurchasePanel({
         <output aria-live="polite">{quantity}</output>
         <button type="button" aria-label="数量を増やす" disabled={!available || quantity >= selected.availableQuantity} onClick={() => setQuantity((value) => Math.min(selected.availableQuantity, value + 1))}>＋</button>
       </div>
-      <AddToCartButton variantId={selected.id} name={name} colorName={selected.colorName} imageUrl={selected.imageUrl} priceJpy={selected.priceJpy} available={available} quantity={quantity} />
+      {isPreview
+        ? <button type="button" className="store-add-button" disabled>プレビュー・購入不可</button>
+        : <AddToCartButton variantId={selected.id} name={name} colorName={selected.colorName} imageUrl={selected.imageUrl} priceJpy={selected.priceJpy} available={available} quantity={quantity} />}
     </div>
   </>;
 }

@@ -61,7 +61,7 @@ describe("product detail", () => {
     expect(html).toContain("在庫切れ");
   });
 
-  it("hides unsafe comparison prices and disables unavailable variants", () => {
+  it("hides unsafe comparison prices and allows inspecting unavailable variants", () => {
     const html = renderToStaticMarkup(<CartProvider><ProductDetail product={{
       name: "AK820 MAX", sanitizedDescriptionHtml: "", images: [],
       variants: [
@@ -71,7 +71,35 @@ describe("product detail", () => {
     }} /></CartProvider>);
 
     expect(html).not.toContain("通常価格");
-    expect(html).toContain('aria-label="AK820-WHITEを選択" aria-pressed="false" disabled=""');
+    expect(html).toContain('aria-label="AK820-WHITEを選択" aria-pressed="false"');
+    expect(html).not.toContain('aria-label="AK820-WHITEを選択" aria-pressed="false" disabled=""');
+  });
+
+  it.each([0, 5])("allows preview color changes without purchases when stock is %i", async (stock) => {
+    const container = document.createElement("div");
+    document.body.append(container);
+    const root = createRoot(container);
+    await act(async () => root.render(<CartProvider><ProductDetail product={{
+      isPreview: true, name: "AJ159 APEX", sanitizedDescriptionHtml: "", images: [],
+      variants: [
+        { id: "orange", rmsSkuNumber: "ORANGE", colorName: "Orange", imageUrl: "/orange.jpg", priceJpy: 9980, availableQuantity: stock },
+        { id: "blue", rmsSkuNumber: "BLUE", colorName: "Blue", imageUrl: "/blue.jpg", priceJpy: 9980, availableQuantity: stock },
+      ],
+    }} /></CartProvider>));
+    try {
+      const blue = container.querySelector<HTMLButtonElement>('[aria-label="Blueを選択"]')!;
+      expect(blue.disabled).toBe(false);
+      await act(async () => blue.click());
+      expect(blue.getAttribute("aria-pressed")).toBe("true");
+      expect(container.querySelector(".store-selected-sku")?.textContent).toContain("BLUE");
+      expect(container.querySelector(".store-product-active-image")?.getAttribute("src")).toBe("/blue.jpg");
+      expect(container.querySelector(".store-stock")?.textContent).toBe("プレビュー・購入不可");
+      expect(container.querySelector<HTMLButtonElement>(".store-add-button")?.disabled).toBe(true);
+      expect(container.querySelector<HTMLButtonElement>('[aria-label="数量を増やす"]')?.disabled).toBe(true);
+    } finally {
+      await act(async () => root.unmount());
+      container.remove();
+    }
   });
 
   it("adds the selected quantity to the browser cart", async () => {

@@ -3,6 +3,7 @@ import { toStorefrontCards, type StorefrontCard } from "./storefront";
 import { mapCmsSpecifications, type CmsSpecificationRow, type ProductSpecifications } from "./product-specifications";
 
 export interface StorefrontDatabaseProduct {
+  isPreview?: boolean;
   name: string;
   descriptionHtml: string;
   images: string[];

@@ -96,6 +96,7 @@ export function adaptDraftProduct(product: Product): StorefrontDatabaseProduct {
   };
 
   return {
+    isPreview: true,
     name: product.name,
     descriptionHtml: descriptionHTML(product.description),
     images: [...new Set(images)],

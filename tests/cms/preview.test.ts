@@ -244,7 +244,9 @@ describe("draft product adapter", () => {
       createElement(ProductDetail, { product: sanitizeProductForRendering(product) }),
     ));
     expect(html).toContain("SKU NEW");
-    expect(html).toMatch(/<button[^>]*disabled=""[^>]*class="store-add-button"/);
+    expect(product.isPreview).toBe(true);
+    expect(html).toContain("プレビュー・購入不可");
+    expect(html).toMatch(/<button(?=[^>]*disabled="")(?=[^>]*class="store-add-button")[^>]*>/);
   });
 
   it("rejects retired, unresolved, and direct object-storage media", () => {

@@ -10,6 +10,7 @@ import { productSpecificationRows, type ProductSpecifications } from "../../lib/
 interface StoreVariant extends PurchasableVariant {}
 
 interface StoreProduct {
+  isPreview?: boolean;
   slug?: string;
   name: string;
   sanitizedDescriptionHtml: string;
@@ -54,7 +55,7 @@ export function ProductDetail({ product }: { product: StoreProduct }) {
         {presentation.subtitle ? <p className="store-product-subtitle">{presentation.subtitle}</p> : null}
         {presentation.lead ? <p className="store-product-lead">{presentation.lead}</p> : null}
         {presentation.highlights.length ? <ul className="store-product-highlights">{presentation.highlights.map((feature) => <li key={feature}>{feature}</li>)}</ul> : null}
-        <VariantPurchasePanel name={presentation.title} variants={product.variants} selectedIndex={selectedIndex} onSelect={selectVariant} />
+        <VariantPurchasePanel name={presentation.title} variants={product.variants} selectedIndex={selectedIndex} onSelect={selectVariant} isPreview={product.isPreview} />
         <p className="store-product-shipping-note">全国送料無料・ご注文から3営業日以内に発送</p>
       </aside>
       <div className="store-product-content">
