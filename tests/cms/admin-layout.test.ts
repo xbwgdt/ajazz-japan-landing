@@ -3,6 +3,10 @@ import { resolve } from "node:path";
 import { describe, expect, it } from "vitest";
 
 describe("Payload admin layout", () => {
+  it("loads the vendor styles needed for upload drawers and admin controls", () => {
+    const layout = readFileSync(resolve(process.cwd(), "app/(payload)/layout.tsx"), "utf8");
+    expect(layout).toContain('import "@payloadcms/next/css";');
+  });
   it("wraps Payload server functions in a local Next.js server action", () => {
     const layout = readFileSync(
       resolve(process.cwd(), "app/(payload)/layout.tsx"),
