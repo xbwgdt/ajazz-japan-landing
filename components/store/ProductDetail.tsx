@@ -46,10 +46,10 @@ export function ProductDetail({ product }: { product: StoreProduct }) {
       <section className="store-product-gallery-shell" aria-label="商品ギャラリー">
         <div className="store-product-media">
           <div className="store-product-main-image">
-            {activeImage ? <img key={activeImage} className="store-product-active-image is-active" src={activeImage} alt={`${product.name} ${selected?.colorName ?? ""}`} /> : <div className="store-product-placeholder" aria-hidden="true" />}
+            {activeImage ? <img key={activeImage} className="store-product-active-image is-active" src={activeImage} alt={`${presentation.title} ${selected?.colorName ?? ""}`} /> : <div className="store-product-placeholder" aria-hidden="true" />}
           </div>
           {gallery.length > 1 ? <div className="store-product-gallery" aria-label="商品画像">
-            {gallery.map((image, index) => <button key={image} type="button" aria-label={`${product.name}の商品画像${index + 1}`} aria-pressed={index === galleryIndex} onClick={() => setGalleryIndex(index)}><img src={image} alt="" /></button>)}
+            {gallery.map((image, index) => <button key={image} type="button" aria-label={`${presentation.title}の商品画像${index + 1}`} aria-pressed={index === galleryIndex} onClick={() => setGalleryIndex(index)}><img src={image} alt="" /></button>)}
           </div> : null}
         </div>
       </section>
