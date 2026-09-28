@@ -3,8 +3,13 @@ import { renderToStaticMarkup } from "react-dom/server";
 import { productPresentation } from "../../lib/commerce/product-presentation";
 import { ProductDetail } from "../../components/store/ProductDetail";
 import { CartProvider } from "../../components/store/CartProvider";
+import { readFileSync } from "node:fs";
 
 describe("product presentation", () => {
+  it("passes the route identity to the detail view for live and draft products", () => {
+    const page = readFileSync(new URL("../../app/products/[slug]/page.tsx", import.meta.url), "utf8");
+    expect(page).toContain("<ProductDetail product={{ ...product, slug }} />");
+  });
   it.each([
     ["af84", "AF84", "メンブレンキーボード"],
     ["aj159apex", "AJ159 APEX", "ゲーミングマウス"],

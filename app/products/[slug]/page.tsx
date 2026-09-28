@@ -186,7 +186,7 @@ export default async function ProductPage({ params }: { params: Promise<{ slug: 
 
   return (
     <StoreShell settings={settings} className="store-product-route">
-      <div className="store-product-page"><ProductDetail product={product} /></div>
+      <div className="store-product-page"><ProductDetail product={{ ...product, slug }} /></div>
     </StoreShell>
   );
 }
