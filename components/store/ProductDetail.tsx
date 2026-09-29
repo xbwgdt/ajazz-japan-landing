@@ -75,12 +75,12 @@ export function ProductDetail({ product }: { product: StoreProduct }) {
             {specificationRows.map((row) => <div key={row.label}><dt>{row.label}</dt><dd>{row.value}</dd></div>)}
           </dl>
         </section> : null}
-        <section className="store-product-driver-band">
+        {product.slug !== "mousepad" ? <section className="store-product-driver-band">
           <p className="store-overline">SOFTWARE</p>
           <h2>ドライバーダウンロード</h2>
           <p>AJAZZ公式ダウンロードページで、お使いのモデルに対応するソフトウェアをご確認ください。</p>
           <a {...DRIVER_LINK_PROPS}>公式ダウンロードページへ</a>
-        </section>
+        </section> : null}
         <section className="store-product-delivery-band">
           <p className="store-overline">DELIVERY</p>
           <h2>全国送料無料</h2>

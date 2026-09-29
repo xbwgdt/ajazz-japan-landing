@@ -12,6 +12,25 @@ import { ProductDetail } from "../../components/store/ProductDetail";
 (globalThis as typeof globalThis & { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
 
 describe("product detail", () => {
+  it.each([undefined, "6976412986147", "   "])("does not present an unknown single-variant color as a barcode (%s)", (colorName) => {
+    const html = renderToStaticMarkup(<CartProvider><ProductDetail product={{
+      name: "AK820 MAX ULTRA", sanitizedDescriptionHtml: "", images: [],
+      variants: [{ rmsSkuNumber: "6976412986147", colorName, priceJpy: 11980, availableQuantity: 0 }],
+    }} /></CartProvider>);
+    expect(html).not.toContain('class="store-variant-picker"');
+    expect(html).toContain("SKU 6976412986147");
+    expect(html).toContain("11,980");
+  });
+
+  it("omits the software section for the mousepad only", () => {
+    const render = (slug: string) => renderToStaticMarkup(<CartProvider><ProductDetail product={{
+      slug, name: slug, sanitizedDescriptionHtml: "", images: [],
+      variants: [{ rmsSkuNumber: "SKU", priceJpy: 1000, availableQuantity: 1 }],
+    }} /></CartProvider>);
+    expect(render("mousepad")).not.toContain('class="store-product-driver-band"');
+    expect(render("aj159apex")).toContain('class="store-product-driver-band"');
+  });
+
   it("switches the entire color gallery, deduplicates the main image and resets its position", async () => {
     const container = document.createElement("div");
     const root = createRoot(container);

@@ -40,6 +40,9 @@ export function VariantPurchasePanel({
     ? new Intl.NumberFormat("ja-JP", { style: "currency", currency: "JPY", maximumFractionDigits: 0 }).format(selected.compareAtPriceJpy)
     : undefined;
   const points = Math.floor(selected.priceJpy / 100);
+  const colorName = selected.colorName?.trim();
+  const showVariantPicker = variants.length > 1
+    || Boolean(colorName && colorName !== selected.rmsSkuNumber);
 
   const selectVariant = (index: number) => {
     setInternalIndex(index);
@@ -48,7 +51,7 @@ export function VariantPurchasePanel({
   };
 
   return <>
-    <fieldset className="store-variant-picker">
+    {showVariantPicker ? <fieldset className="store-variant-picker">
       <legend>カラー：<strong>{selected.colorName ?? selected.rmsSkuNumber}</strong></legend>
       <div className="store-variant-thumbnails">
         {variants.map((variant, index) => (
@@ -66,7 +69,7 @@ export function VariantPurchasePanel({
           </button>
         ))}
       </div>
-    </fieldset>
+    </fieldset> : null}
     <div className="store-product-price-block">
       <div className="store-price-row">
         <p className="store-price">{price}<small>税込</small></p>
