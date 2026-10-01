@@ -324,6 +324,8 @@
 .store-product-quantity output { display:grid; height:100%; place-items:center; border-inline:1px solid var(--store-line); font-size:.82rem; font-weight:800; font-variant-numeric:tabular-nums; }
 .store-product-purchase-controls .store-add-button { min-height:54px; margin:0; }
 .store-variant-thumbnails button:disabled { cursor:not-allowed; opacity:.35; }
+.store-variant-thumbnails button.has-text { display:grid; place-items:center; width:150px; max-width:100%; height:72px; padding:8px 12px; color:var(--store-text); font-size:.75rem; font-weight:700; line-height:1.45; letter-spacing:0; }
+.store-variant-thumbnails button.has-text span { max-width:100%; overflow-wrap:anywhere; }
 .store-product-content { grid-column:1/-1; display:grid; grid-template-columns:repeat(12,minmax(0,1fr)); gap:1px; margin:clamp(4rem,8vw,8rem) calc(50% - 50vw) 0; padding:1px 5vw; border:0; background:var(--store-line); }
 .store-product-content section { min-width:0; min-height:300px; padding:clamp(2rem,4vw,4rem); background:var(--store-bg); }
 .store-product-feature-band,.store-product-specification-band { grid-column:1/-1; }

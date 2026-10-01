@@ -60,12 +60,12 @@ export function VariantPurchasePanel({
             type="button"
             aria-label={`${variant.colorName ?? variant.rmsSkuNumber}を選択`}
             aria-pressed={index === selectedIndex}
-            className={index === selectedIndex ? "is-selected" : undefined}
+            className={[index === selectedIndex ? "is-selected" : "", !variant.imageUrl ? "has-text" : ""].filter(Boolean).join(" ") || undefined}
             onClick={() => selectVariant(index)}
           >
             {variant.imageUrl
               ? <img src={variant.imageUrl} alt="" />
-              : <span>{variant.colorName?.slice(0, 1) ?? index + 1}</span>}
+              : <span>{variant.colorName?.trim() || variant.rmsSkuNumber}</span>}
           </button>
         ))}
       </div>

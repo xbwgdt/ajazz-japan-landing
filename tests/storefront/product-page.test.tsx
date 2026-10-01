@@ -12,6 +12,28 @@ import { ProductDetail } from "../../components/store/ProductDetail";
 (globalThis as typeof globalThis & { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
 
 describe("product detail", () => {
+  it("distinguishes colors without thumbnails by their full visible names", async () => {
+    const container = document.createElement("div");
+    const root = createRoot(container);
+    await act(async () => root.render(<CartProvider><ProductDetail product={{
+      name: "AK029", sanitizedDescriptionHtml: "", images: [], isPreview: true,
+      variants: [
+        { rmsSkuNumber: "RED", colorName: "クリアレッド", priceJpy: 6000, availableQuantity: 0 },
+        { rmsSkuNumber: "WHITE", colorName: "クリアホワイト", priceJpy: 6000, availableQuantity: 0 },
+        { rmsSkuNumber: "PINK", colorName: "クリアピンク（猫ちゃん）", priceJpy: 6000, availableQuantity: 0 },
+      ],
+    }} /></CartProvider>));
+    try {
+      const buttons = Array.from(container.querySelectorAll<HTMLButtonElement>(".store-variant-thumbnails button"));
+      expect(buttons.map(button => button.textContent)).toEqual(["クリアレッド", "クリアホワイト", "クリアピンク（猫ちゃん）"]);
+      await act(async () => buttons[2].click());
+      expect(container.querySelector(".store-selected-sku")?.textContent).toContain("PINK");
+      expect(buttons[2].getAttribute("aria-pressed")).toBe("true");
+    } finally {
+      await act(async () => root.unmount());
+    }
+  });
+
   it.each([undefined, "6976412986147", "   "])("does not present an unknown single-variant color as a barcode (%s)", (colorName) => {
     const html = renderToStaticMarkup(<CartProvider><ProductDetail product={{
       name: "AK820 MAX ULTRA", sanitizedDescriptionHtml: "", images: [],
